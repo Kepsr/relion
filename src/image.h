@@ -643,106 +643,6 @@ class Image {
         int mode = WRITE_OVERWRITE
     );
 
-    // Cast a page of data from type U (encoded by DataType) to type T
-    void castPage2T(char *page, T *ptrDest, DataType datatype, size_t pageSize) {
-        switch (datatype) {
-
-            case Unknown_Type:
-            REPORT_ERROR("ERROR: datatype is Unknown_Type");
-
-            case UChar: {
-                using U = unsigned char;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case SChar: {
-                using U = signed char;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case UShort: {
-                using U = unsigned short;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case Short: {
-                using U = short;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case UInt: {
-                using U = unsigned int;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case Int: {
-                using U = int;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case Long: {
-                using U = long;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case Float: {
-                using U = float;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case Double: {
-                using U = RFLOAT;
-                page_cast_copy<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            case UHalf: {
-                using U = unsigned char;
-                page_cast_copy_half<T, U>(ptrDest, (U*) page, pageSize);
-            } break;
-
-            default:
-            std::cerr << "Datatype= " << datatype << std::endl;
-            REPORT_ERROR(" ERROR: cannot cast datatype to T");
-
-        }
-    }
-
-    // Cast a page of data from type T to type U (encoded by DataType)
-    void castPage2Datatype(char *page, T *srcPtr, DataType datatype, size_t pageSize) {
-        switch (datatype) {
-
-            case Float: {
-                using U = float;
-                page_cast_copy<T, U>(srcPtr, (U*) page, pageSize);
-            } break;
-
-            case Double: {
-                using U = RFLOAT;
-                page_cast_copy<T, RFLOAT>(srcPtr, (U*) page, pageSize);
-            } break;
-
-            case Short: {
-                using U = short;
-                page_cast_copy<T, short>(srcPtr, (U*) page, pageSize);
-            } break;
-
-            case UShort: {
-                using U = unsigned short;
-                page_cast_copy<T, unsigned short>(srcPtr, (U*) page, pageSize);
-            } break;
-
-            case UChar: {
-                using U = unsigned char;
-                page_cast_copy<T, U>(srcPtr, (U*) page, pageSize);
-            } break;
-
-            default:
-            std::cerr << "outputDatatype= " << datatype << std::endl;
-            REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
-
-        }
-    }
-
     /** Write an entire page as datatype
      *
      * A page of datasize_n elements T is cast to datatype and written to fimg
@@ -753,25 +653,8 @@ class Image {
         const size_t datasize = datasize_n * sizeof(DataType2type<datatype>::type);
         const auto deleter = [] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
         const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
-        castPage2Datatype(page.get(), data.data, datatype, datasize_n);
+        castToPage(page.get(), data.data, datatype, datasize_n);
         fwrite(page.get(), datasize, 1, fimg);
-    }
-
-    // Swap a page of n elements, each of size size
-    void swapPage(char *page, size_t n, size_t size) {
-        #ifdef DEBUG
-            std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
-            << swap << " datatypesize= " << size
-            << " pageNrElements " << n
-            << " datatype " << datatype
-            << std::endl;
-        #endif
-
-        // Swap bytes if required
-        if (swap >= 1) {
-            const size_t di = swap == 1 ? size : swap;
-            for (size_t i = 0; i < n; i += di) swapbytes(page + i, di);
-        }
     }
 
     // Read the raw data
@@ -787,7 +670,7 @@ class Image {
             if (Xsize(data) * Ysize(data) % 2 != 0) {
                 REPORT_ERROR("For UHalf, Xsize(data) * Ysize(data) must be even.");
             }
-            /// BUG: datatypesize not set
+            // datatypesize not assigned because half-bytes cannot be represented
             pagesize = Xsize(data) * Ysize(data) * Zsize(data) / 2;
         } else {
             datatypesize = gettypesize(datatype);
@@ -831,7 +714,7 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            int err = page_allocate(pagesize, myoffset, datatype, datatypesize);
+            int err = allocatePage(pagesize, myoffset, datatype, datatypesize);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");
@@ -841,7 +724,7 @@ class Image {
         }
     }
 
-    int page_allocate(size_t pagesize, size_t off, DataType datatype, size_t datatypesize);
+    int allocatePage(size_t pagesize, size_t off, DataType datatype, size_t datatypesize);
 
     /** Data access
      *
@@ -1093,10 +976,6 @@ class Image {
         return o;
     }
 
-    void sumWithFile(const FileName &fn) {
-        data += Image<T>::from_filename(fn).data;
-    }
-
     int readTiffInMemory(
         void* buf, size_t size, bool readdata = true, long int select_img = -1,
         bool mapData = false, bool is_2D = false
@@ -1168,5 +1047,120 @@ void rewindow(Image<RFLOAT> &I, int mysize);
 //@}
 
 std::pair<RFLOAT, RFLOAT> getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
+
+// Swap a page of n elements, each of size size
+static void swapPage(char *page, size_t n, size_t size, size_t swap) {
+    #ifdef DEBUG
+        std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
+        << swap << " datatypesize= " << size
+        << " pageNrElements " << n
+        << std::endl;
+    #endif
+
+    const size_t di = swap == 1 ? size : swap;
+    for (size_t i = 0; i < n; i += di) swapbytes(page + i, di);
+}
+
+// Cast a page of data from type U (encoded by DataType) to type T
+template <typename T>
+void castFromPage(T *dest, char *page, DataType datatype, size_t pageSize) {
+    switch (datatype) {
+
+        case Unknown_Type:
+        REPORT_ERROR("ERROR: datatype is Unknown_Type");
+
+        case UChar: {
+            using U = unsigned char;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case SChar: {
+            using U = signed char;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case UShort: {
+            using U = unsigned short;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case Short: {
+            using U = short;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case UInt: {
+            using U = unsigned int;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case Int: {
+            using U = int;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case Long: {
+            using U = long;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case Float: {
+            using U = float;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case Double: {
+            using U = RFLOAT;
+            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        case UHalf: {
+            using U = unsigned char;
+            page_cast_copy_half<T, U>(dest, (U*) page, pageSize);
+        } return;
+
+        default:
+        std::cerr << "Datatype= " << datatype << std::endl;
+        REPORT_ERROR(" ERROR: cannot cast datatype to T");
+
+    }
+}
+
+// Cast a page of data from type T to type U (encoded by DataType)
+template <typename T>
+void castToPage(char *page, T *src, DataType datatype, size_t pageSize) {
+    switch (datatype) {
+
+        case Float: {
+            using U = float;
+            page_cast_copy<U, T>((U*) page, src, pageSize);
+        } return;
+
+        case Double: {
+            using U = RFLOAT;
+            page_cast_copy<U, T>((U*) page, src, pageSize);
+        } return;
+
+        case Short: {
+            using U = short;
+            page_cast_copy<U, T>((U*) page, src, pageSize);
+        } return;
+
+        case UShort: {
+            using U = unsigned short;
+            page_cast_copy<U, T>((U*) page, src, pageSize);
+        } return;
+
+        case UChar: {
+            using U = unsigned char;
+            page_cast_copy<U, T>((U*) page, src, pageSize);
+        } return;
+
+        default:
+        std::cerr << "outputDatatype= " << datatype << std::endl;
+        REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
+
+    }
+}
 
 #endif

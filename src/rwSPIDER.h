@@ -329,7 +329,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
 
     // write only once, ignore select_img
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        castPage2Datatype(page.get(), data.data, Float, datasize_n);
+        castToPage(page.get(), data.data, Float, datasize_n);
         fwrite(page.get(), datasize, 1, fimg);
     } else {
         switch (mode) {

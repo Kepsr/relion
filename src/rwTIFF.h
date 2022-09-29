@@ -208,7 +208,7 @@ int Image<T>::readTIFF(
                 if (packed_4bit) {
                     actually_read_n *= 2; // convert physical size to logical size
                 }
-                castPage2T((char*) buf, data.data + haveread_n, datatype, actually_read_n);
+                castFromPage(data.data + haveread_n, (char*) buf, datatype, actually_read_n);
                 haveread_n += actually_read_n;
             }
 

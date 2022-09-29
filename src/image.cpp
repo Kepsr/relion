@@ -79,23 +79,23 @@ size_t gettypesize(DataType type) throw (RelionError) {
 // }
 
 template <typename T>
-int Image<T>::page_allocate(
+int Image<T>::allocatePage(
     size_t pagesize, size_t off,
     DataType datatype, size_t datatypesize
 ) {
-
-    size_t haveread_n = 0;  // Number of pixels (not necessarily bytes!) processed so far
-    const size_t pagemax = 1073741824; // 1 GB
+    // pagesize: size of object
+    static const size_t pagemax = 0x40000000;  // 1 GB (1 << 30)
     const size_t size = std::max(pagesize, pagemax) * sizeof(char);
     const auto deleter = [size] (char *ptr) { callocator<char>::deallocate(ptr, size); };
     const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(size), deleter);
     // Because we requested XYsize to be even for UHalf, this is always safe.
     if (fseek(fimg, off, SEEK_SET) != 0) return -1;
 
+    size_t pixel_progress = 0;  // Number of pixels processed so far
     for (size_t n = 0; n < Nsize(data); n++) {
         for (size_t j = 0; j < pagesize; j += pagemax) {
-            // pagesize size of object
-            // Read next page. Divide pages larger than pagemax
+            // Read next page
+            // Divide pages larger than pagemax
             size_t readsize = std::min(pagesize - j, pagemax);
 
             size_t readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
@@ -108,11 +108,11 @@ int Image<T>::page_allocate(
             // Read page from disk
             if (fread(page.get(), readsize, 1, fimg) != 1) return -2;
 
-            // swap per page
-            if (swap) swapPage(page.get(), readsize, gettypesize(datatype));
-            // cast to T per page
-            castPage2T(page.get(), data.data + haveread_n, datatype, readsize_n);
-            haveread_n += readsize_n;
+            // Swap bytes if required
+            if (swap) swapPage(page.get(), readsize, gettypesize(datatype), swap);
+            // Cast to T
+            castFromPage(data.data + pixel_progress, page.get(), datatype, readsize_n);
+            pixel_progress += readsize_n;
         }
         if (pad > 0) {
             // fread(padpage, pad, 1, fimg);
