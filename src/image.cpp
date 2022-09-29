@@ -79,10 +79,7 @@ size_t gettypesize(DataType type) throw (RelionError) {
 // }
 
 template <typename T>
-int Image<T>::allocatePage(
-    size_t pagesize, size_t off,
-    DataType datatype, size_t datatypesize
-) {
+int Image<T>::allocatePage(size_t pagesize, size_t off, DataType datatype) {
     // pagesize: size of object
     static const size_t pagemax = 0x40000000;  // 1 GB (1 << 30)
     const size_t size = std::max(pagesize, pagemax) * sizeof(char);
@@ -98,7 +95,7 @@ int Image<T>::allocatePage(
             // Divide pages larger than pagemax
             size_t readsize = std::min(pagesize - j, pagemax);
 
-            size_t readsize_n = datatype == UHalf ? readsize * 2 : readsize / datatypesize;
+            size_t readsize_n = datatype == UHalf ? readsize * 2 : readsize / sizeof(RTTI(datatype));
 
             #ifdef DEBUG
             std::cout << "NX = " << Xsize(data) << " NY = " << Ysize(data) << " NZ = " << Zsize(data) << std::endl;
@@ -109,9 +106,9 @@ int Image<T>::allocatePage(
             if (fread(page.get(), readsize, 1, fimg) != 1) return -2;
 
             // Swap bytes if required
-            if (swap) swapPage(page.get(), readsize, gettypesize(datatype), swap);
+            if (swap) swapPage(page.get(), readsize, sizeof(RTTI(datatype)), swap);
             // Cast to T
-            castFromPage(data.data + pixel_progress, page.get(), datatype, readsize_n);
+            castFromPage(data.data + pixel_progress, page.get(), typeid(RTTI(datatype)), readsize_n);
             pixel_progress += readsize_n;
         }
         if (pad > 0) {

@@ -51,6 +51,7 @@
 
 #include <memory>
 #include <typeinfo>
+#include <typeindex>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -72,73 +73,38 @@
 // Allows for image data type inspection/manipulation at run time
 enum DataType {
     Unknown_Type,   // Undefined data type
-    UChar,          // Unsigned character or byte type
-    SChar,          // Signed character (for CCP4)
-    UShort,         // Unsigned integer (2-byte)
-    Short,          // Signed integer (2-byte)
-    UInt,           // Unsigned integer (4-byte)
-    Int,            // Signed integer (4-byte)
-    Long,           // Signed integer (4 or 8 byte, depending on system)
-    Float,          // Floating point (4-byte)
-    Double,         // Double precision floating point (8-byte)
-    Boolean,        // Boolean (1-byte?)
+    UChar,          // Unsigned character or byte type (unsigned char)
+    SChar,          // Signed character (for CCP4) (signed char)
+    UShort,         // Unsigned integer (2-byte) (unsigned short)
+    Short,          // Signed integer (2-byte) (short)
+    UInt,           // Unsigned integer (4-byte) (unsigned int)
+    Int,            // Signed integer (4-byte) (int)
+    Long,           // Signed integer (4 or 8 byte, depending on system) (long)
+    Float,          // Floating point (4-byte) (float)
+    Double,         // Double precision floating point (8-byte) (RFLOAT)
+    Boolean,        // Boolean (1-byte?) (bool)
     UHalf,          // Signed 4-bit integer (SerialEM extension)
 };
 
-template <DataType datatype>
-struct DataType2type {
-    using type = void;
-};
+struct uhalf_t { unsigned char bits: 4; };
 
-template <>
-struct DataType2type<UChar> {
-    using type = char;
-};
-
-template <>
-struct DataType2type<SChar> {
-    using type = char;
-};
-
-template <>
-struct DataType2type<UShort> {
-    using type = short;
-};
-
-template <>
-struct DataType2type<Short> {
-    using type = short;
-};
-
-template <>
-struct DataType2type<UInt> {
-    using type = int;
-};
-
-template <>
-struct DataType2type<Int> {
-    using type = int;
-};
-
-template <>
-struct DataType2type<Float> {
-    using type = float;
-};
-
-template <>
-struct DataType2type<Double> {
-    using type = RFLOAT;
-};
-
-template <>
-struct DataType2type<Boolean> {
-    using type = bool;
-};
-
-template <>
-struct DataType2type<UHalf> {
-    using type = unsigned char;
-};
+static std::type_index RTTI(DataType datatype) {
+    switch (datatype) {
+        case Unknown_Type: return std::type_index(typeid(void));
+        case UChar:        return std::type_index(typeid(unsigned char));
+        case SChar:        return std::type_index(typeid(signed char));
+        case UShort:       return std::type_index(typeid(unsigned short));
+        case Short:        return std::type_index(typeid(short));  // short is signed by default
+        case UInt:         return std::type_index(typeid(unsigned int));
+        case Int:          return std::type_index(typeid(int));  // int is signned by default
+        case Long:         return std::type_index(typeid(long));
+        case Float:        return std::type_index(typeid(float));
+        case Double:       return std::type_index(typeid(double));
+        case Boolean:      return std::type_index(typeid(bool));
+        case UHalf:        return std::type_index(typeid(uhalf_t));
+        default:           return std::type_index(typeid(void));
+    }
+}
 
 // Convert string to int corresponding to value in enum
 // int DataType::String2Int(std::string s);
@@ -157,8 +123,6 @@ static void page_cast_copy(T *dest, U *src, size_t size) {
         }
     }
 }
-
-// struct uhalf_t { unsigned char bits: 4; };
 
 // Unfortunately, we cannot partially specialise template functions
 template <typename T, typename U=unsigned char>
@@ -181,34 +145,35 @@ static void page_cast_copy_half(T *dest, U *src, size_t size) throw (RelionError
 
 // Check file Datatype is same as T type to use mmap.
 template <typename T>
-static bool checkMmap(DataType datatype) {
-    switch (datatype) {
-        case Unknown_Type:
-        REPORT_ERROR("ERROR: datatype is Unknown_Type");
-        case UChar:
-        return typeid(T) == typeid(unsigned char);
-        case SChar:
-        return typeid(T) == typeid(signed char);
-        case UShort:
-        return typeid(T) == typeid(unsigned short);
-        case Short:
-        return typeid(T) == typeid(short);
-        case UInt:
-        return typeid(T) == typeid(unsigned int);
-        case Int:
-        return typeid(T) == typeid(int);
-        case Long:
-        return typeid(T) == typeid(long);
-        case Float:
-        return typeid(T) == typeid(float);
-        case Double:
-        return typeid(T) == typeid(RFLOAT);
-        case UHalf:
-        return false;
-        default:
-        std::cerr << "Datatype= " << datatype << std::endl;
-        REPORT_ERROR(" ERROR: cannot cast datatype to T");
-    }
+static bool checkMmap(std::type_index u) {
+    return std::type_index(typeid(T)) == u;
+    // switch (datatype) {
+    //     case Unknown_Type:
+    //     REPORT_ERROR("ERROR: datatype is Unknown_Type");
+    //     case UChar:
+    //     return typeid(T) == typeid(unsigned char);
+    //     case SChar:
+    //     return typeid(T) == typeid(signed char);
+    //     case UShort:
+    //     return typeid(T) == typeid(unsigned short);
+    //     case Short:
+    //     return typeid(T) == typeid(short);
+    //     case UInt:
+    //     return typeid(T) == typeid(unsigned int);
+    //     case Int:
+    //     return typeid(T) ==  typeid(int);
+    //     case Long:
+    //     return typeid(T) == typeid(long);
+    //     case Float:
+    //     return typeid(T) == typeid(float);
+    //     case Double:
+    //     return typeid(T) == typeid(RFLOAT);
+    //     case UHalf:
+    //     return false;
+    //     default:
+    //     std::cerr << "Datatype= " << datatype << std::endl;
+    //     REPORT_ERROR(" ERROR: cannot cast datatype to T");
+    // }
 }
 
 /** WriteMode
@@ -648,12 +613,12 @@ class Image {
      * A page of datasize_n elements T is cast to datatype and written to fimg
      * The memory for the casted page is allocated and freed internally.
      */
-    template <DataType datatype>
+    template <typename U>
     void writePageAsDatatype(size_t datasize_n) {
-        const size_t datasize = datasize_n * sizeof(DataType2type<datatype>::type);
+        const size_t datasize = datasize_n * sizeof(U);
         const auto deleter = [] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
         const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
-        castToPage(page.get(), data.data, datatype, datasize_n);
+        castToPage(page.get(), data.data, typeid(U), datasize_n);
         fwrite(page.get(), datasize, 1, fimg);
     }
 
@@ -673,14 +638,14 @@ class Image {
             // datatypesize not assigned because half-bytes cannot be represented
             pagesize = Xsize(data) * Ysize(data) * Zsize(data) / 2;
         } else {
-            datatypesize = gettypesize(datatype);
+            datatypesize = sizeof(RTTI(datatype));
             pagesize = Xsize(data) * Ysize(data) * Zsize(data) * datatypesize;
         }
 
         if (data.getMmap()) { delete mmapper; mmapper = nullptr; }
 
         // Check if mapping is possible
-        if (mmapper && !checkMmap<T>(datatype)) {
+        if (mmapper && !checkMmap<T>(RTTI(datatype))) {
             std::cout << "WARNING: Image Class. File datatype and image declaration not compatible with mmap. Loading into memory." << std::endl;
             delete mmapper;
             mmapper = nullptr;
@@ -714,7 +679,7 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            int err = allocatePage(pagesize, myoffset, datatype, datatypesize);
+            int err = allocatePage(pagesize, myoffset, datatype);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");
@@ -724,7 +689,7 @@ class Image {
         }
     }
 
-    int allocatePage(size_t pagesize, size_t off, DataType datatype, size_t datatypesize);
+    int allocatePage(size_t pagesize, size_t off, DataType datatype);
 
     /** Data access
      *
@@ -1061,106 +1026,116 @@ static void swapPage(char *page, size_t n, size_t size, size_t swap) {
     for (size_t i = 0; i < n; i += di) swapbytes(page + i, di);
 }
 
-// Cast a page of data from type U (encoded by DataType) to type T
+// Cast a page of data from type U (index u) to type T
 template <typename T>
-void castFromPage(T *dest, char *page, DataType datatype, size_t pageSize) {
-    switch (datatype) {
+void castFromPage(T *dest, char *page, std::type_index u, size_t pageSize) {
 
-        case Unknown_Type:
+    if (u == typeid(void)) {
         REPORT_ERROR("ERROR: datatype is Unknown_Type");
-
-        case UChar: {
-            using U = unsigned char;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case SChar: {
-            using U = signed char;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case UShort: {
-            using U = unsigned short;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case Short: {
-            using U = short;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case UInt: {
-            using U = unsigned int;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case Int: {
-            using U = int;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case Long: {
-            using U = long;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case Float: {
-            using U = float;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case Double: {
-            using U = RFLOAT;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        case UHalf: {
-            using U = unsigned char;
-            page_cast_copy_half<T, U>(dest, (U*) page, pageSize);
-        } return;
-
-        default:
-        std::cerr << "Datatype= " << datatype << std::endl;
-        REPORT_ERROR(" ERROR: cannot cast datatype to T");
-
     }
+
+    if (u == typeid(unsigned char)) {
+        using U = unsigned char;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(signed char)) {
+        using U = signed char;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(unsigned short)) {
+        using U = unsigned short;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(short)) {
+        using U = short;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(unsigned int)) {
+        using U = unsigned int;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(int)) {
+        using U = int;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(long)) {
+        using U = long;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(float)) {
+        using U = float;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(double)) {
+        using U = RFLOAT;
+        page_cast_copy<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    if (u == typeid(uhalf_t)) {
+        using U = unsigned char;
+        page_cast_copy_half<T, U>(dest, (U*) page, pageSize);
+        return;
+    }
+
+    std::cerr << "Datatype= " << u.name() << std::endl;
+    REPORT_ERROR(" ERROR: cannot cast datatype to T");
+
 }
 
-// Cast a page of data from type T to type U (encoded by DataType)
+// Cast a page of data from type T to type U (index u)
 template <typename T>
-void castToPage(char *page, T *src, DataType datatype, size_t pageSize) {
-    switch (datatype) {
+void castToPage(char *page, T *src, std::type_index u, size_t pageSize) {
 
-        case Float: {
-            using U = float;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
-        } return;
-
-        case Double: {
-            using U = RFLOAT;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
-        } return;
-
-        case Short: {
-            using U = short;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
-        } return;
-
-        case UShort: {
-            using U = unsigned short;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
-        } return;
-
-        case UChar: {
-            using U = unsigned char;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
-        } return;
-
-        default:
-        std::cerr << "outputDatatype= " << datatype << std::endl;
-        REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
-
+    if (u == typeid(float)) {
+        using U = float;
+        page_cast_copy<U, T>((U*) page, src, pageSize);
+        return;
     }
+
+    if (u == typeid(RFLOAT)) {
+        using U = RFLOAT;
+        page_cast_copy<U, T>((U*) page, src, pageSize);
+        return;
+    }
+
+    if (u == typeid(short)) {
+        using U = short;
+        page_cast_copy<U, T>((U*) page, src, pageSize);
+        return;
+    }
+
+    if (u == typeid(unsigned short)) {
+        using U = unsigned short;
+        page_cast_copy<U, T>((U*) page, src, pageSize);
+        return;
+    }
+
+    if (u == typeid(unsigned char)) {
+        using U = unsigned char;
+        page_cast_copy<U, T>((U*) page, src, pageSize);
+        return;
+    }
+
+    std::cerr << "outputDatatype= " << u.name() << std::endl;
+    REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
+
 }
 
 #endif

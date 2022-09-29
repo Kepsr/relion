@@ -62,7 +62,7 @@ int Image<T>::readTIFF(
     printf("DEBUG readTIFF: Reading TIFF file. img_select %d\n", img_select);
     #endif
 
-    // libtiff uses uint16 and uin32
+    // libtiff uses uint16 and uint32
 
     uint32 width, length;  // Apparent file dimensions
     if (
@@ -208,7 +208,7 @@ int Image<T>::readTIFF(
                 if (packed_4bit) {
                     actually_read_n *= 2; // convert physical size to logical size
                 }
-                castFromPage(data.data + haveread_n, (char*) buf, datatype, actually_read_n);
+                castFromPage(data.data + haveread_n, (char*) buf, typeid(RTTI(datatype)), actually_read_n);
                 haveread_n += actually_read_n;
             }
 
