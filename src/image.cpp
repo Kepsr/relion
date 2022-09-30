@@ -78,47 +78,6 @@ size_t gettypesize(DataType type) throw (RelionError) {
 //     REPORT_ERROR("DataType::String2int; unknown datatype");
 // }
 
-template <typename T>
-int Image<T>::allocatePage(size_t pagesize, size_t off, std::type_index index_u, size_t size_u) {
-    // pagesize: size of object
-    static const size_t pagemax = 0x40000000;  // 1 GB (1 << 30)
-    const size_t size = std::max(pagesize, pagemax) * sizeof(char);
-    const auto deleter = [size] (char *ptr) { callocator<char>::deallocate(ptr, size); };
-    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(size), deleter);
-    // Because we requested XYsize to be even for UHalf, this is always safe.
-    if (fseek(fimg, off, SEEK_SET) != 0) return -1;
-
-    size_t pixel_progress = 0;  // Number of pixels processed so far
-    for (size_t n = 0; n < Nsize(data); n++) {
-        for (size_t j = 0; j < pagesize; j += pagemax) {
-            // Read next page
-            // Divide pages larger than pagemax
-            size_t readsize = std::min(pagesize - j, pagemax);
-
-            size_t readsize_n = index_u == typeid(uhalf_t) ? readsize * 2 : readsize / size_u;
-
-            #ifdef DEBUG
-            std::cout << "NX = " << Xsize(data) << " NY = " << Ysize(data) << " NZ = " << Zsize(data) << std::endl;
-            std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " readsize_n = " << readsize_n << std::endl;
-            #endif
-
-            // Read page from disk
-            if (fread(page.get(), readsize, 1, fimg) != 1) return -2;
-
-            // Swap bytes if required
-            if (swap) swapPage(page.get(), readsize, size_u, swap);
-            // Cast to T
-            castFromPage(data.data + pixel_progress, page.get(), index_u, readsize_n);
-            pixel_progress += readsize_n;
-        }
-        if (pad > 0) {
-            // fread(padpage, pad, 1, fimg);
-            if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
-        }
-    }
-    return 0;
-}
-
 // Some image-specific operations
 void normalise(
     Image<RFLOAT> &I,

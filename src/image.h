@@ -65,6 +65,7 @@
 #include "src/transformations.h"
 #include "src/metadata_table.h"
 #include "src/fftw.h"
+#include "src/page_operations.h"
 
 /// @defgroup Images Images
 //@{
@@ -85,8 +86,6 @@ enum DataType {
     Boolean,        // Boolean (1-byte?) (bool)
     UHalf,          // Signed 4-bit integer (SerialEM extension)
 };
-
-struct uhalf_t { unsigned char bits: 4; };
 
 namespace RTTI {
 
@@ -134,36 +133,6 @@ namespace RTTI {
 /** Returns memory size of datatype
  */
 size_t gettypesize(DataType type) throw (RelionError);
-
-template <typename T, typename U>
-static void page_cast_copy(T *dest, U *src, size_t size) {
-    if (typeid(T) == typeid(U)) {
-        memcpy(dest, src, size * sizeof(T));
-    } else {
-        for (size_t i = 0; i < size; i++) {
-            dest[i] = (T) src[i];
-        }
-    }
-}
-
-// Unfortunately, we cannot partially specialise template functions
-template <typename T, typename U=unsigned char>
-static void page_cast_copy_half(T *dest, U *src, size_t size) throw (RelionError) {
-
-    if (size % 2 != 0) {
-        REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
-    }
-
-    for (size_t i = 0; 2 * i < size; i++) {
-        // Here we are assuming the fill-order is LSB2MSB according to IMOD's
-        // iiProcessReadLine() in libiimod/mrcsec.c.
-        // The default fill-order in the TIFF specification is MSB2LSB
-        // but IMOD assumes LSB2MSB even for TIFF.
-        // See IMOD's iiTIFFCheck() in libiimod/iitif.c.
-        dest[i * 2    ] = (T) ( (src)[i]       & 0b1111);
-        dest[i * 2 + 1] = (T) (((src)[i] >> 4) & 0b1111);
-    }
-}
 
 // Check file datatype is same as T type to use mmap.
 template <typename T>
@@ -690,7 +659,7 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            int err = allocatePage(pagesize, myoffset, index_u, size_u);
+            const int err = pages::allocatePage(fimg, pagesize, myoffset, index_u, size_u, data, swap, pad);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");
@@ -1023,130 +992,5 @@ void rewindow(Image<RFLOAT> &I, int mysize);
 //@}
 
 std::pair<RFLOAT, RFLOAT> getImageContrast(MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast);
-
-// Swap a page of n elements, each of size size
-static void swapPage(char *page, size_t n, size_t size, size_t swap) {
-    #ifdef DEBUG
-        std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
-        << swap << " datatypesize= " << size
-        << " pageNrElements " << n
-        << std::endl;
-    #endif
-
-    const size_t di = swap == 1 ? size : swap;
-    for (size_t i = 0; i < n; i += di) swapbytes(page + i, di);
-}
-
-// Cast a page of data from type U (index u) to type T
-template <typename T>
-void castFromPage(T *dest, char *page, std::type_index u, size_t pageSize) {
-
-    if (u == typeid(void)) {
-        REPORT_ERROR("ERROR: datatype is Unknown_Type");
-    }
-
-    if (u == typeid(unsigned char)) {
-        using U = unsigned char;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(signed char)) {
-        using U = signed char;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(unsigned short)) {
-        using U = unsigned short;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(short)) {
-        using U = short;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(unsigned int)) {
-        using U = unsigned int;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(int)) {
-        using U = int;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(long)) {
-        using U = long;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(float)) {
-        using U = float;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(double)) {
-        using U = RFLOAT;
-        page_cast_copy<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    if (u == typeid(uhalf_t)) {
-        using U = unsigned char;
-        page_cast_copy_half<T, U>(dest, (U*) page, pageSize);
-        return;
-    }
-
-    std::cerr << "Datatype= " << u.name() << std::endl;
-    REPORT_ERROR(" ERROR: cannot cast datatype to T");
-
-}
-
-// Cast a page of data from type T to type U (index u)
-template <typename T>
-void castToPage(char *page, T *src, std::type_index u, size_t pageSize) {
-
-    if (u == typeid(float)) {
-        using U = float;
-        page_cast_copy<U, T>((U*) page, src, pageSize);
-        return;
-    }
-
-    if (u == typeid(RFLOAT)) {
-        using U = RFLOAT;
-        page_cast_copy<U, T>((U*) page, src, pageSize);
-        return;
-    }
-
-    if (u == typeid(short)) {
-        using U = short;
-        page_cast_copy<U, T>((U*) page, src, pageSize);
-        return;
-    }
-
-    if (u == typeid(unsigned short)) {
-        using U = unsigned short;
-        page_cast_copy<U, T>((U*) page, src, pageSize);
-        return;
-    }
-
-    if (u == typeid(unsigned char)) {
-        using U = unsigned char;
-        page_cast_copy<U, T>((U*) page, src, pageSize);
-        return;
-    }
-
-    std::cerr << "outputDatatype= " << u.name() << std::endl;
-    REPORT_ERROR(" ERROR: cannot cast T to outputDatatype");
-
-}
 
 #endif
