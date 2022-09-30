@@ -589,7 +589,7 @@ class Image {
      */
     int read(
         const FileName &name, bool readdata = true, long int select_img = -1,
-        bool mapData = false, bool is_2D = false
+        image_mmapper *mmapper = nullptr, bool is_2D = false
     );
 
     /** Read from an open file
@@ -598,9 +598,8 @@ class Image {
         const FileName &name, fImageHandler &hFile, long int select_img,
         bool is_2D = false
     ) {
-        int err = _read(name, hFile, true, select_img, false, is_2D);
-        // Reposition file pointer for a next read
-        rewind(fimg);
+        const int err = _read(name, hFile, true, select_img, nullptr, is_2D);
+        rewind(fimg);  // Reposition file pointer for a next read
         return err;
     }
 
@@ -955,14 +954,14 @@ class Image {
 
     int readTiffInMemory(
         void* buf, size_t size, bool readdata = true, long int select_img = -1,
-        bool mapData = false, bool is_2D = false
+        image_mmapper *mmapper = nullptr, bool is_2D = false
     );
 
     private:
 
     int _read(
         const FileName &name, fImageHandler &hFile, bool readdata = true, long int select_img = -1,
-        bool mapData = false, bool is_2D = false
+        image_mmapper *mmapper = nullptr, bool is_2D = false
     );
 
     void _write(

@@ -103,7 +103,7 @@ class estimate_gain {
             if (!dont_invert)
                 REPORT_ERROR("The input movie is EER. For EER, the gain reference is expected to be the average of counts, not the inverse as in K2/K3. Thus, you need the --dont_invert flag.");
         } else {
-            Ihead.read(fn_img, false, -1, false, true); // select_img -1, mmap false, is_2D true
+            Ihead.read(fn_img, false, -1, nullptr, true); // select_img -1, mmap false, is_2D true
             ny = Ysize(Ihead());
             nx = Xsize(Ihead());
         }
@@ -129,7 +129,7 @@ class estimate_gain {
 
             int n_frames;
             if (!EERRenderer::isEER(fn_img)) {
-                Ihead.read(fn_img, false, -1, false, true);
+                Ihead.read(fn_img, false, -1, nullptr, true);
                 n_frames = Nsize(Ihead());
 
                 if (ny != Ysize(Ihead()) || nx != Xsize(Ihead())) {
@@ -140,7 +140,7 @@ class estimate_gain {
                 #pragma omp parallel for num_threads(n_threads)
                 for (int iframe = 0; iframe < n_frames; iframe++) {
                     Image<RFLOAT> Iframe;
-                    Iframe.read(fn_img, true, iframe, false, true); // mmap false, is_2D true
+                    Iframe.read(fn_img, true, iframe, nullptr, true); // mmap false, is_2D true
                     const int tid = omp_get_thread_num();
                     Isums[tid]() += Iframe();
                 }

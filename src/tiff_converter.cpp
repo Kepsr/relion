@@ -67,7 +67,7 @@ void TIFFConverter::read(int argc, char **argv) {
 
 void TIFFConverter::estimate(FileName fn_movie) {
     Image<float> frame;
-    frame.read(fn_movie, false, -1, false, true); // select_img -1, mmap false, is_2D true
+    frame.read(fn_movie, false, -1, nullptr, true); // select_img -1, mmap false, is_2D true
     if (Xsize(frame()) != Xsize(gain()) || Ysize(frame()) != Ysize(gain()))
         REPORT_ERROR("The movie " + fn_movie + " has a different size from others.");
 
@@ -76,7 +76,7 @@ void TIFFConverter::estimate(FileName fn_movie) {
     for (int iframe = 0; iframe < nframes; iframe++) {
         int error = 0, changed = 0, stable = 0, negative = 0;
 
-        frame.read(fn_movie, true, iframe, false, true);
+        frame.read(fn_movie, true, iframe, nullptr, true);
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error, changed, negative)
         for (long int n = 0; n < frame().size(); n++) {
@@ -155,7 +155,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
     Image<float> frame;
     char msg[256];
 
-    frame.read(fn_movie, false, -1, false, true); // select_img -1, mmap false, is_2D true
+    frame.read(fn_movie, false, -1, nullptr, true); // select_img -1, mmap false, is_2D true
     if (Xsize(frame()) != Xsize(gain()) || Ysize(frame()) != Ysize(gain()))
         REPORT_ERROR("The movie " + fn_movie + " has a different size from others.");
 
@@ -166,7 +166,7 @@ void TIFFConverter::unnormalise(FileName fn_movie, FileName fn_tiff) {
     for (int iframe = 0; iframe < nframes; iframe++) {
         int error = 0;
 
-        frame.read(fn_movie, true, iframe, false, true);
+        frame.read(fn_movie, true, iframe, nullptr, true);
 
         #pragma omp parallel for num_threads(nr_threads) reduction(+:error)
         for (long int n = 0; n < frame().size(); n++) {
@@ -239,12 +239,12 @@ void TIFFConverter::only_compress(FileName fn_movie, FileName fn_tiff) {
 
     if (!EERRenderer::isEER(fn_movie)) {
         Image<T> frame;
-        frame.read(fn_movie, false, -1, false, true); // select_img -1, mmap false, is_2D true
+        frame.read(fn_movie, false, -1, nullptr, true); // select_img -1, mmap false, is_2D true
         const int nframes = Nsize(frame());
         const float angpix = frame.samplingRateX();
 
         for (int iframe = 0; iframe < nframes; iframe++) {
-            frame.read(fn_movie, true, iframe, false, true);
+            frame.read(fn_movie, true, iframe, nullptr, true);
             write_tiff_one_page(tif, frame(), angpix, decide_filter(Xsize(frame())), deflate_level, line_by_line);
             printf(" %s Frame %3d / %3d\n", fn_movie.c_str(), iframe + 1, nframes);
         }
@@ -351,7 +351,7 @@ void TIFFConverter::initialise(int _rank, int _total_ranks) {
 
         // Check type and mode of the input
         Image<RFLOAT> Ihead;
-        Ihead.read(fn_first, false, -1, false, true); // select_img -1, mmap false, is_2D true
+        Ihead.read(fn_first, false, -1, nullptr, true); // select_img -1, mmap false, is_2D true
         mrc_mode = checkMRCtype(fn_first);
         const int nx = Xsize(Ihead()), ny = Ysize(Ihead()), nn = Nsize(Ihead());
         if (rank == 0)

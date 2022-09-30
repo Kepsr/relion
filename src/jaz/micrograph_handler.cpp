@@ -415,7 +415,7 @@ std::vector<std::vector<Image<Complex>>> MicrographHandler::loadMovie(
             #pragma omp parallel for num_threads(nr_omp_threads)
             for (int iframe = 0; iframe < n_frames; iframe++) {
                 Image<float> img;
-                img.read(mgFn, true, iframe, false, true);
+                img.read(mgFn, true, iframe, nullptr, true);
                 Iframes[iframe] = img();
             }
 

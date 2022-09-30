@@ -428,13 +428,13 @@ std::pair<RFLOAT, RFLOAT> getImageContrast(
 template <typename T>
 int Image<T>::read(
     const FileName &name, bool readdata, long int select_img,
-    bool mapData, bool is_2D
+    image_mmapper *mmapper, bool is_2D
 ) {
     if (name.empty())
         REPORT_ERROR("ERROR: trying to read image with empty file name!");
     fImageHandler hFile;
     hFile.openFile(name);
-    return _read(name, hFile, readdata, select_img, mapData, is_2D);
+    return _read(name, hFile, readdata, select_img, mmapper, is_2D);
     // fImageHandler's destructor will close the file
 }
 
@@ -453,15 +453,16 @@ void Image<T>::write(
 template <typename T>
 int Image<T>::_read(
     const FileName &name, fImageHandler &hFile,
-    bool readdata, long int select_img, bool mapData, bool is_2D
+    bool readdata, long int select_img, image_mmapper *mmapper, bool is_2D
 ) {
     int err = 0;  // Exit code (negative is bad)
 
     // readdata indicates whether to read the data or only the header
     // We won't read the individual header and the data if not necessary
 
-    // Check whether to map the data or not
-    mmapper = mapData ? new image_mmapper : nullptr;
+    // mmapper, if not null, will be used to map the data
+    delete this->mmapper;
+    this->mmapper = mmapper;
 
     FileName ext_name = hFile.ext_name;
     fimg = hFile.fimg;
@@ -642,17 +643,15 @@ void Image<T>::_write(
 template <typename T>
 int Image<T>::readTiffInMemory(
     void *buf, size_t size, bool readdata, long int select_img,
-    bool mapData, bool is_2D
+    image_mmapper *mmapper, bool is_2D
 ) {
-    int err = 0;
-
     TiffInMemory handle;
     handle.buf = (unsigned char *) buf;
     handle.size = size;
     handle.pos = 0;
 
-    // Check whether to map the data or not
-    mmapper = mapData ? new image_mmapper : nullptr;
+    delete this->mmapper;
+    this->mmapper = mmapper;
 
     // Just clear the header before reading
     header.clear();
@@ -664,9 +663,8 @@ int Image<T>::readTiffInMemory(
         TiffInMemoryCloseProc, TiffInMemorySizeProc,  TiffInMemoryMapFileProc,
         TiffInMemoryUnmapFileProc
     );
-    err = readTIFF(ftiff, select_img, readdata, true, "in-memory-tiff");
+    const int err = readTIFF(ftiff, select_img, readdata, true, "in-memory-tiff");
     TIFFClose(ftiff);
-
     return err;
 }
 
