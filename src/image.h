@@ -88,23 +88,45 @@ enum DataType {
 
 struct uhalf_t { unsigned char bits: 4; };
 
-static std::type_index RTTI(DataType datatype) {
-    switch (datatype) {
-        case Unknown_Type: return std::type_index(typeid(void));
-        case UChar:        return std::type_index(typeid(unsigned char));
-        case SChar:        return std::type_index(typeid(signed char));
-        case UShort:       return std::type_index(typeid(unsigned short));
-        case Short:        return std::type_index(typeid(short));  // short is signed by default
-        case UInt:         return std::type_index(typeid(unsigned int));
-        case Int:          return std::type_index(typeid(int));  // int is signned by default
-        case Long:         return std::type_index(typeid(long));
-        case Float:        return std::type_index(typeid(float));
-        case Double:       return std::type_index(typeid(double));
-        case Boolean:      return std::type_index(typeid(bool));
-        case UHalf:        return std::type_index(typeid(uhalf_t));
-        default:           return std::type_index(typeid(void));
+namespace RTTI {
+
+    static std::type_index index(DataType datatype) {
+        switch (datatype) {
+            case Unknown_Type: return std::type_index(typeid(void));
+            case UChar:        return std::type_index(typeid(unsigned char));
+            case SChar:        return std::type_index(typeid(signed char));
+            case UShort:       return std::type_index(typeid(unsigned short));
+            case Short:        return std::type_index(typeid(short));  // short is signed by default
+            case UInt:         return std::type_index(typeid(unsigned int));
+            case Int:          return std::type_index(typeid(int));  // int is signed by default
+            case Long:         return std::type_index(typeid(long));
+            case Float:        return std::type_index(typeid(float));
+            case Double:       return std::type_index(typeid(double));
+            case Boolean:      return std::type_index(typeid(bool));
+            case UHalf:        return std::type_index(typeid(uhalf_t));
+            default:           return std::type_index(typeid(void));
+        }
     }
-}
+
+    static size_t size(DataType datatype) {
+        switch (datatype) {
+            case Unknown_Type: return 0;
+            case UChar:        return sizeof(unsigned char);
+            case SChar:        return sizeof(signed char);
+            case UShort:       return sizeof(unsigned short);
+            case Short:        return sizeof(short);
+            case UInt:         return sizeof(unsigned int);
+            case Int:          return sizeof(int);
+            case Long:         return sizeof(long);
+            case Float:        return sizeof(float);
+            case Double:       return sizeof(double);
+            case Boolean:      return sizeof(bool);
+            case UHalf:        throw "size_t cannot represent fractions of bytes!";
+            default:           return 0;
+        }
+    }
+
+};
 
 // Convert string to int corresponding to value in enum
 // int DataType::String2Int(std::string s);
@@ -143,37 +165,25 @@ static void page_cast_copy_half(T *dest, U *src, size_t size) throw (RelionError
     }
 }
 
-// Check file Datatype is same as T type to use mmap.
+// Check file datatype is same as T type to use mmap.
 template <typename T>
 static bool checkMmap(std::type_index u) {
-    return std::type_index(typeid(T)) == u;
-    // switch (datatype) {
-    //     case Unknown_Type:
-    //     REPORT_ERROR("ERROR: datatype is Unknown_Type");
-    //     case UChar:
-    //     return typeid(T) == typeid(unsigned char);
-    //     case SChar:
-    //     return typeid(T) == typeid(signed char);
-    //     case UShort:
-    //     return typeid(T) == typeid(unsigned short);
-    //     case Short:
-    //     return typeid(T) == typeid(short);
-    //     case UInt:
-    //     return typeid(T) == typeid(unsigned int);
-    //     case Int:
-    //     return typeid(T) ==  typeid(int);
-    //     case Long:
-    //     return typeid(T) == typeid(long);
-    //     case Float:
-    //     return typeid(T) == typeid(float);
-    //     case Double:
-    //     return typeid(T) == typeid(RFLOAT);
-    //     case UHalf:
-    //     return false;
-    //     default:
-    //     std::cerr << "Datatype= " << datatype << std::endl;
-    //     REPORT_ERROR(" ERROR: cannot cast datatype to T");
-    // }
+    if (u == std::type_index(typeid(void)))
+        REPORT_ERROR("ERROR: unknown datatype");
+    if (u == std::type_index(typeid(uhalf_t)))
+        return false;
+    return u == std::type_index(typeid(T));
+    // u must be std::type_index(typeid(U))
+    // where U is one of:
+    // - signed/unsigned char
+    // - signed/unsigned int
+    // - signed/unsigned short
+    // - long
+    // - float
+    // - double (RFLOAT)
+    // Otherwise:
+    // std::cerr << "Datatype= " << u.name << std::endl;
+    // REPORT_ERROR(" ERROR: cannot cast datatype to T");
 }
 
 /** WriteMode
@@ -629,23 +639,25 @@ class Image {
         std::cerr << "entering " << __func__ << std::endl;
         #endif
 
-        size_t datatypesize; // bytes
+        const auto index_u = RTTI::index(datatype);
+
+        size_t size_u; // bytes
         size_t pagesize; // bytes
-        if (datatype == UHalf) {
+        if (index_u == std::type_index(typeid(uhalf_t))) {
             if (Xsize(data) * Ysize(data) % 2 != 0) {
                 REPORT_ERROR("For UHalf, Xsize(data) * Ysize(data) must be even.");
             }
-            // datatypesize not assigned because half-bytes cannot be represented
+            // size_u not assigned because half-bytes cannot be represented
             pagesize = Xsize(data) * Ysize(data) * Zsize(data) / 2;
         } else {
-            datatypesize = sizeof(RTTI(datatype));
-            pagesize = Xsize(data) * Ysize(data) * Zsize(data) * datatypesize;
+            size_u = RTTI::size(datatype);
+            pagesize = Xsize(data) * Ysize(data) * Zsize(data) * size_u;
         }
 
         if (data.getMmap()) { delete mmapper; mmapper = nullptr; }
 
         // Check if mapping is possible
-        if (mmapper && !checkMmap<T>(RTTI(datatype))) {
+        if (mmapper && !checkMmap<T>(index_u)) {
             std::cout << "WARNING: Image Class. File datatype and image declaration not compatible with mmap. Loading into memory." << std::endl;
             delete mmapper;
             mmapper = nullptr;
@@ -679,7 +691,7 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            int err = allocatePage(pagesize, myoffset, datatype);
+            int err = allocatePage(pagesize, myoffset, index_u, size_u);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");
@@ -689,7 +701,7 @@ class Image {
         }
     }
 
-    int allocatePage(size_t pagesize, size_t off, DataType datatype);
+    int allocatePage(size_t pagesize, size_t off, std::type_index index_u, size_t size_u);
 
     /** Data access
      *

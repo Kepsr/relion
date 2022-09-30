@@ -27,7 +27,18 @@
 
 #include "src/image.h"
 
-inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat) throw (int) {
+inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat, uint32 width, uint32 length) throw (int) {
+
+    // Detect 4-bit packed TIFFs. This is IMOD's own extension.
+    // It is not easy to detect this format. Here we check only the image size.
+    // See IMOD's iiTIFFCheck() in libiimod/iitif.c and sizeCanBe4BitK2SuperRes() in libiimod/mrcfiles.c.
+    if (bitsPerSample == 8 && (
+        width == 5760 && length == 8184  || width == 8184  && length == 5760 || // K3 SR: 11520 x 8184
+        width == 4092 && length == 11520 || width == 11520 && length == 4092 ||
+        width == 3710 && length == 7676  || width == 7676  && length == 3710 || // K2 SR: 7676 x 7420
+        width == 3838 && length == 7420  || width == 7420  && length == 3838
+    )) return UHalf;
+
     switch (bitsPerSample) {
 
         case 8:
@@ -89,25 +100,15 @@ int Image<T>::readTIFF(
     );
     #endif
 
-    // Detect 4-bit packed TIFFs. This is IMOD's own extension.
-    // It is not easy to detect this format. Here we check only the image size.
-    // See IMOD's iiTIFFCheck() in libiimod/iitif.c and sizeCanBe4BitK2SuperRes() in libiimod/mrcfiles.c.
-    const bool packed_4bit = (bitsPerSample == 8 && (
-        width == 5760 && length == 8184  || width == 8184  && length == 5760 || // K3 SR: 11520 x 8184
-        width == 4092 && length == 11520 || width == 11520 && length == 4092 ||
-        width == 3710 && length == 7676  || width == 7676  && length == 3710 || // K2 SR: 7676 x 7420
-        width == 3838 && length == 7420  || width == 7420  && length == 3838
-    ));
-
-    if (packed_4bit) dims[0] *= 2;
-
     DataType datatype;
     try {
-        datatype = packed_4bit ? UHalf : determine_datatype(bitsPerSample, sampleFormat);
+        datatype = determine_datatype(bitsPerSample, sampleFormat, width, length);
     } catch (int) {
         std::cerr << "Unsupported TIFF format in " << name << ": sample format = " << sampleFormat << ", bits per sample = " << bitsPerSample << std::endl;
         REPORT_ERROR("Unsupported TIFF format.\n");
     }
+
+    if (datatype == UHalf) dims[0] *= 2;
 
     const long int i = header.size() - 1;
     header.setValue(EMDL::IMAGE_DATATYPE, (int) datatype, i);
@@ -133,7 +134,7 @@ int Image<T>::readTIFF(
     }
 
     // TODO: TIFF is always a stack, isn't it?
-    if (isStack) {
+    if (this->isStack = isStack) {
         dims[2] = 1;
         replaceNsize = dims[3];
         if (img_select >= (int) dims[3]) {
@@ -205,10 +206,8 @@ int Image<T>::readTIFF(
                 #ifdef DEBUG_TIFF
                 std::cout << "Reading strip: " << strip << "actually read byte:" << actually_read << std::endl;
                 #endif
-                if (packed_4bit) {
-                    actually_read_n *= 2; // convert physical size to logical size
-                }
-                castFromPage(data.data + haveread_n, (char*) buf, typeid(RTTI(datatype)), actually_read_n);
+                if (datatype == UHalf) actually_read_n *= 2;  // convert physical size to logical size
+                castFromPage(data.data + haveread_n, (char*) buf, RTTI::index(datatype), actually_read_n);
                 haveread_n += actually_read_n;
             }
 
