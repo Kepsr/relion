@@ -3,26 +3,28 @@
 struct uhalf_t { unsigned char bits: 4; };
 
 namespace pages {
-        
-    // Swap a page of n elements, each of size size
-    static void swapPage(char *page, size_t n, size_t size, size_t swap) {
+    
+    // Given a page of page_size bytes,
+    // reverse the bytes of each word,
+    // each of size word_size.
+    static void swapPage(char *page, size_t page_size, size_t word_size) {
         #ifdef DEBUG
-            std::cerr << "DEBUG " << __func__ << ": Swapping image data with swap= "
-            << swap << " datatypesize= " << size
+            std::cerr << "DEBUG " << __func__ << ": "
+            << "Swapping image data with swap= " << swap
+            << " datatypesize= " << word_size
             << " pageNrElements " << n
             << std::endl;
         #endif
-
-        const size_t di = swap == 1 ? size : swap;
-        for (size_t i = 0; i < n; i += di) swapbytes(page + i, di);
+        for (size_t i = 0; i < page_size; i += word_size)
+            swapbytes(page + i, word_size);
     }
 
     template <typename T, typename U>
-    static void page_cast_copy(T *dest, U *src, size_t size) {
+    static void page_cast_copy(T *dest, U *src, unsigned long int n) {
         if (typeid(T) == typeid(U)) {
-            memcpy(dest, src, size * sizeof(T));
+            memcpy(dest, src, n * sizeof(T));
         } else {
-            for (size_t i = 0; i < size; i++) {
+            for (size_t i = 0; i < n; i++) {
                 dest[i] = (T) src[i];
             }
         }
@@ -30,13 +32,13 @@ namespace pages {
 
     // Unfortunately, we cannot partially specialise template functions
     template <typename T, typename U=unsigned char>
-    static void page_cast_copy_half(T *dest, U *src, size_t size) throw (RelionError) {
+    static void page_cast_copy_half(T *dest, U *src, unsigned long int n) throw (RelionError) {
 
-        if (size % 2 != 0) {
+        if (n % 2 != 0) {
             REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");
         }
 
-        for (size_t i = 0; 2 * i < size; i++) {
+        for (size_t i = 0; 2 * i < n; i++) {
             // Here we are assuming the fill-order is LSB2MSB according to IMOD's
             // iiProcessReadLine() in libiimod/mrcsec.c.
             // The default fill-order in the TIFF specification is MSB2LSB
@@ -47,9 +49,9 @@ namespace pages {
         }
     }
 
-    // Cast a page of data from type U (index u) to type T
+    // Cast a page of n data from type U (index u) to type T
     template <typename T>
-    void castFromPage(T *dest, char *page, std::type_index u, size_t pageSize) {
+    void castFromPage(T *dest, char *page, std::type_index u, unsigned long int n) {
 
         if (u == typeid(void)) {
             REPORT_ERROR("ERROR: datatype is Unknown_Type");
@@ -57,61 +59,61 @@ namespace pages {
 
         if (u == typeid(unsigned char)) {
             using U = unsigned char;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(signed char)) {
             using U = signed char;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(unsigned short)) {
             using U = unsigned short;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(short)) {
             using U = short;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(unsigned int)) {
             using U = unsigned int;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(int)) {
             using U = int;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(long)) {
             using U = long;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(float)) {
             using U = float;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(double)) {
             using U = RFLOAT;
-            page_cast_copy<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy<T, U>(dest, (U*) page, n);
             return;
         }
 
         if (u == typeid(uhalf_t)) {
             using U = unsigned char;
-            page_cast_copy_half<T, U>(dest, (U*) page, pageSize);
+            page_cast_copy_half<T, U>(dest, (U*) page, n);
             return;
         }
 
@@ -120,37 +122,37 @@ namespace pages {
 
     }
 
-    // Cast a page of data from type T to type U (index u)
+    // Cast a page of n data from type T to type U (index u)
     template <typename T>
-    void castToPage(char *page, T *src, std::type_index u, size_t pageSize) {
+    void castToPage(char *page, T *src, std::type_index u, unsigned long int n) {
 
         if (u == typeid(float)) {
             using U = float;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
+            page_cast_copy<U, T>((U*) page, src, n);
             return;
         }
 
         if (u == typeid(RFLOAT)) {
             using U = RFLOAT;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
+            page_cast_copy<U, T>((U*) page, src, n);
             return;
         }
 
         if (u == typeid(short)) {
             using U = short;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
+            page_cast_copy<U, T>((U*) page, src, n);
             return;
         }
 
         if (u == typeid(unsigned short)) {
             using U = unsigned short;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
+            page_cast_copy<U, T>((U*) page, src, n);
             return;
         }
 
         if (u == typeid(unsigned char)) {
             using U = unsigned char;
-            page_cast_copy<U, T>((U*) page, src, pageSize);
+            page_cast_copy<U, T>((U*) page, src, n);
             return;
         }
 
@@ -160,46 +162,42 @@ namespace pages {
     }
 
     template <typename T>
-    int allocatePage(FILE *fimg, size_t pagesize, size_t off, std::type_index index_u, size_t size_u, MultidimArray<T> &data, size_t swap, size_t pad) {
-        // pagesize: size of object
+    int allocateViaPage(FILE *fimg, size_t pagesize, size_t off, std::type_index index_u, size_t size_u, MultidimArray<T> &data, bool swap, size_t pad) {
+        // pagesize: number of bytes in an XYZ slice of data
         static const size_t pagemax = 0x40000000;  // 1 GB (1 << 30)
-        const size_t memsize = std::max(pagesize, pagemax) * sizeof(char);
+        const size_t memsize = std::max(pagesize, pagemax);
         const auto deleter = [memsize] (char *ptr) { callocator<char>::deallocate(ptr, memsize); };
         const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(memsize), deleter);
         // Because we requested XYsize to be even for UHalf, this is always safe.
         if (fseek(fimg, off, SEEK_SET) != 0) return -1;
 
-        std::function<size_t (size_t)> pixels_per_page;
+        std::function<size_t (size_t)> how_many_pixels;
         if (index_u == typeid(uhalf_t))
-            pixels_per_page = [      ] (size_t readsize) -> size_t { return readsize * 2; };
+            how_many_pixels = [      ] (size_t bytes) -> size_t { return bytes * 2; };
         else
-            pixels_per_page = [size_u] (size_t readsize) -> size_t { return readsize / size_u; };
+            how_many_pixels = [size_u] (size_t bytes) -> size_t { return bytes / size_u; };
 
         size_t pixel_progress = 0;  // Number of pixels processed so far
         for (size_t n = 0; n < Nsize(data); n++) {
             for (size_t j = 0; j < pagesize; j += pagemax) {
-                // Read next page
-                // Divide pages larger than pagemax
-                size_t readsize = std::min(pagesize - j, pagemax);
-                size_t num_pixels = pixels_per_page(readsize);
+                // Read no more than than pagemax bytes in one go
+                const size_t readsize = std::min(pagesize - j, pagemax);
+                const unsigned long int num_pixels = how_many_pixels(readsize);
 
                 #ifdef DEBUG
                 std::cout << "NX = " << Xsize(data) << " NY = " << Ysize(data) << " NZ = " << Zsize(data) << std::endl;
                 std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " num_pixels = " << num_pixels << std::endl;
                 #endif
 
-                // Read page from disk
+                // Read into page
                 if (fread(page.get(), readsize, 1, fimg) != 1) return -2;
-                // Swap bytes if required
-                if (swap) swapPage(page.get(), readsize, size_u, swap);
-                // Cast to T
+                // Maybe swap bytes
+                if (swap) swapPage(page.get(), readsize, size_u);
+                // Copy into data, while casting to T
                 castFromPage(data.data + pixel_progress, page.get(), index_u, num_pixels);
                 pixel_progress += num_pixels;
             }
-            if (pad > 0) {
-                // fread(padpage, pad, 1, fimg);
-                if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
-            }
+            if (pad > 0 && fseek(fimg, pad, SEEK_CUR) != 0) return -1;
         }
         return 0;
     }

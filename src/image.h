@@ -448,10 +448,10 @@ class Image {
     FILE *fimg;  // Image  file handle
     FILE *fhed;  // Header file handle
     bool isStack;
-    int swap;  // Perform byte swapping upon reading
+    bool swap;  // Swap bytes when reading
     size_t pad;
-    unsigned long offset; // Data offset
-    long int replaceNsize; // Stack size in the replace case
+    unsigned long offset;  // Data offset
+    long int replaceNsize;  // Stack size in the replace case
     bool _exists;  // Does the target file exist? 0 if file does not exist or is not a stack.
 
     // Allocation
@@ -513,7 +513,7 @@ class Image {
         data.clear();
 
         filename.clear();
-        swap = 0;
+        swap = false;
         offset = 0;
         replaceNsize = 0;
     }
@@ -649,9 +649,8 @@ class Image {
             // (Assume xdim, ydim, zdim and ndim are already set)
             // if memory already allocated use it (no resize allowed)
             data.coreAllocate();
-            size_t myoffset = offset + select_img * (pagesize + pad);
+            const size_t myoffset = offset + select_img * (pagesize + pad);
             // #define DEBUG
-
             #ifdef DEBUG
             data.printShape();
             printf("DEBUG: Page size: %ld offset= %d \n", pagesize, offset);
@@ -659,7 +658,7 @@ class Image {
             printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
             #endif
 
-            const int err = pages::allocatePage(fimg, pagesize, myoffset, index_u, size_u, data, swap, pad);
+            const int err = pages::allocateViaPage(fimg, pagesize, myoffset, index_u, size_u, data, swap, pad);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");
@@ -668,8 +667,6 @@ class Image {
             return err;
         }
     }
-
-    int allocatePage(size_t pagesize, size_t off, std::type_index index_u, size_t size_u);
 
     /** Data access
      *

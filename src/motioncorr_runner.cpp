@@ -481,7 +481,7 @@ bool MotioncorrRunner::executeMotioncor2(Micrograph &mic, int rank) {
     if (last_frame_sum > 0) {
         // Read in header of the movie, to see how many frames it has
         Image<RFLOAT> Ihead;
-        Ihead.read(fn_mic, false, -1, false, true); // select_img -1, mmap false, is_2D true
+        Ihead.read(fn_mic, false, -1, nullptr, true); // select_img -1, mmap false, is_2D true
         int n_frames = Nsize(Ihead());
 
         int trunc = n_frames - last_frame_sum;
@@ -883,7 +883,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
     // Check image size
     if (!isEER) {
-        Ihead.read(fn_mic, false, -1, false, true); // select_img -1, mmap false, is_2D true
+        Ihead.read(fn_mic, false, -1, nullptr, true); // select_img -1, mmap false, is_2D true
         nx = Xsize(Ihead()); 
         ny = Ysize(Ihead()); 
         nn = Nsize(Ihead());
@@ -971,7 +971,7 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
     #pragma omp parallel for num_threads(n_io_threads)
     for (int iframe = 0; iframe < n_frames; iframe++) {
         if (!isEER) {
-            Iframes[iframe].read(fn_mic, true, frames[iframe], false, true); // mmap false, is_2D true
+            Iframes[iframe].read(fn_mic, true, frames[iframe], nullptr, true); // mmap false, is_2D true
         } else {
             renderer.renderFrames(frames[iframe] * eer_grouping + 1, (frames[iframe] + 1) * eer_grouping, Iframes[iframe]());
         }

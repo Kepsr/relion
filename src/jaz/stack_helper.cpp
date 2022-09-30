@@ -135,7 +135,7 @@ std::vector<Image<RFLOAT>> StackHelper::loadStack(
     #pragma omp parallel for num_threads(threads)
     for (long i = 0; i < ic; i++) {
         std::string sliceName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, i);
-        out[i].read(sliceName, true, -1, false, true);
+        out[i].read(sliceName, true, -1, nullptr, true);
     }
 
     return out;
@@ -174,7 +174,7 @@ std::vector<Image<Complex>> StackHelper::loadStackFS(
 
         std::string sliceName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, i);
         Image<RFLOAT> in;
-        in.read(sliceName, true, -1, false, true);
+        in.read(sliceName, true, -1, nullptr, true);
 
         NewFFT::FourierTransform(in(), out[i](), plan);
 
@@ -360,7 +360,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
     using R = Image<RFLOAT>;
     using C = Image<Complex>;
     std::vector<R> raux (threads, {sqMg, sqMg});
-    std::vector<C> caux (threads, outPs == moviePs ? C{} : C{sqMg / 2 + 1, sqMg});
+    std::vector<C> caux (threads, outPs == moviePs ? C() : C(sqMg / 2 + 1, sqMg));
 
     int threads_f = saveMemory ? 1 : threads;
     int threads_p = saveMemory ? threads : 1;
@@ -370,7 +370,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
         int tf = omp_get_thread_num();
 
         Image<float> muGraph;
-        muGraph.read(movieFn, true, f + firstFrame, false, true);
+        muGraph.read(movieFn, true, f + firstFrame, nullptr, true);
 
         if (verbose) { std::cout << f + 1 << "/" << fc << "\n"; }
 

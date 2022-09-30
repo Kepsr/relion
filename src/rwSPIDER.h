@@ -134,18 +134,15 @@ DataType Image<T>::readSPIDER(long int img_select) {
     if (fread(&header, SPIDERSIZE, 1, fimg) < 1)
         REPORT_ERROR("rwSPIDER: cannot allocate memory for header");
 
-    swap = 0;
-
     // Determine byte order and swap bytes if from different-endian machine
     char*    b = (char *) &header;
     int      i;
     int      extent = SPIDERSIZE - 180;  // exclude char bytes from swapping
-    if (
+    if (swap = (
         fabs(header.nrow)  > SWAPTRIG ||
         fabs(header.iform) > SWAPTRIG ||
         fabs(header.nslice) < 1
-    ) {
-        swap = 1;
+    )) {
         for (i = 0; i < extent; i += 4) { swapbytes(b + i, 4); }
     }
 
@@ -153,7 +150,6 @@ DataType Image<T>::readSPIDER(long int img_select) {
         REPORT_ERROR((std::string) "Invalid Spider file:  " + filename);
 
     offset = (int) header.labbyt;
-    DataType datatype = Float;
 
     {
     const long int i = this->header.size() - 1;
@@ -198,7 +194,7 @@ DataType Image<T>::readSPIDER(long int img_select) {
     std::cerr << "DEBUG readSPIDER: img_select= " << img_select << " n= " << dims[3] << " pad = " << pad << std::endl;
     #endif
     // offset should point to the begin of the data
-    return datatype;
+    return Float;
 }
 /************************************************************************
 @Function: writeSPIDER

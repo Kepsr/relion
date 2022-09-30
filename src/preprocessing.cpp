@@ -141,8 +141,8 @@ void Preprocessing::initialise() {
         // Read the header of the micrograph to see how many frames there are.
         Image<RFLOAT> Imic;
 
-        FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
-        Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
+        const FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, 0);
+        Imic.read(fn_mic, false, -1, nullptr); // readData = false, select_image = -1, mapData= false, is_2D = true);
         Image<RFLOAT>::Dimensions dimensions = Imic.getDimensions();
              int xdim = dimensions.x;
              int ydim = dimensions.y;
@@ -258,10 +258,10 @@ void Preprocessing::joinAllStarFiles() {
     MetaDataTable MDout, MDmicnames, MDbatch;
     for (long int i : MDmics) {
         // Micrograph filename
-        FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
+        const FileName fn_mic = MDmics.getValue<std::string>(EMDL::MICROGRAPH_NAME, i);
 
         // Get the filename of the STAR file for just this micrograph
-        FileName fn_star = getOutputFileNameRoot(fn_mic) + "_extract.star";
+        const FileName fn_star = getOutputFileNameRoot(fn_mic) + "_extract.star";
 
         if (!fn_part_star.empty() && exists(fn_star)) {
             MetaDataTable MDonestack;
@@ -502,7 +502,7 @@ void Preprocessing::readHelicalCoordinates(FileName fn_mic, FileName fn_coord, M
 
     // Read the header of the micrograph to see X and Y dimensions
     Image<RFLOAT> Imic;
-    Imic.read(fn_mic, false, -1, false); // readData = false, select_image = -1, mapData= false, is_2D = true);
+    Imic.read(fn_mic, false, -1, nullptr); // readData = false, select_image = -1, mapData= false, is_2D = true);
 
     Image<RFLOAT>::Dimensions dimensions = Imic.getDimensions();
 
@@ -560,11 +560,11 @@ bool Preprocessing::extractParticlesFromFieldOfView(FileName fn_mic, long int im
     {
     ifdefPREP_TIMING(TicToc tt (timer, TIMING_READ_COORD);)
     // Read in the coordinates file
-    if (fn_data != "") {
+    if (!fn_data.empty()) {
         // Search for this micrograph in the MDdata table
         MDin = getCoordinateMetaDataTable(fn_mic);
     } else {
-        FileName fn_coord = getCoordinateFileName(fn_mic);
+        const FileName fn_coord = getCoordinateFileName(fn_mic);
         if (!exists(fn_coord)) return false;
         if (do_extract_helix) {
             readHelicalCoordinates(fn_mic, fn_coord, MDin);

@@ -216,12 +216,10 @@ DataType Image<T>::readMRC(long int img_select, bool isStack, const FileName &na
         REPORT_ERROR("rwMRC: error in reading header of image " + name);
 
     // Determine byte order and swap bytes if from little-endian machine
-    swap = 0;
-    if (abs(header.mode) > SWAPTRIG || abs(header.nx) > SWAPTRIG) {
+    if (swap = (abs(header.mode) > SWAPTRIG || abs(header.nx) > SWAPTRIG)) {
         #ifdef DEBUG
         fprintf(stderr, "Warning: Swapping header byte order for 4-byte types\n");
         #endif
-        swap = 1;
         const int extent = MRCSIZE - 800;  // exclude labels from swapping
         for (int i = 0; i < extent; i += 4) swapbytes((char*) &header + i, 4);
     }

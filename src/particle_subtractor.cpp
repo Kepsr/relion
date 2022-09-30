@@ -247,7 +247,7 @@ void ParticleSubtractor::revert() {
         if (!exists(fn_img))
             REPORT_ERROR("Failed to read " + fn_img + " to determine the box size.");
         Image<RFLOAT> Ihead;
-        Ihead.read(img_name, false, -1, false, true);
+        Ihead.read(img_name, false, -1, nullptr, true);
         if (Xsize(Ihead()) != Ysize(Ihead()))
             REPORT_ERROR("Particle " + img_name + " is not square.");
         obsModel.setBoxSize(og, Xsize(Ihead()));
