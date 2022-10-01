@@ -2,8 +2,7 @@
 
 struct uhalf_t { unsigned char bits: 4; };
 
-namespace pages {
-    
+namespace transcription {
     // Given a page of page_size bytes,
     // reverse the bytes of each word,
     // each of size word_size.
@@ -51,7 +50,7 @@ namespace pages {
 
     // Cast a page of n data from type U (index u) to type T
     template <typename T>
-    void castFromPage(T *dest, char *page, std::type_index u, unsigned long int n) {
+    static void castFromPage(T *dest, char *page, std::type_index u, unsigned long int n) {
 
         if (u == typeid(void)) {
             REPORT_ERROR("ERROR: datatype is Unknown_Type");
@@ -124,7 +123,7 @@ namespace pages {
 
     // Cast a page of n data from type T to type U (index u)
     template <typename T>
-    void castToPage(char *page, T *src, std::type_index u, unsigned long int n) {
+    static void castToPage(char *page, T *src, std::type_index u, unsigned long int n) {
 
         if (u == typeid(float)) {
             using U = float;
@@ -163,7 +162,7 @@ namespace pages {
 
     // pagesize: number of bytes in an XYZ slice of data
     template <typename T>
-    int allocateViaPage(MultidimArray<T> &data, FILE *fimg, size_t pagesize, std::type_index index_u, size_t size_u, long off, long pad, bool swap) {
+    static int copyViaPage(MultidimArray<T> &data, FILE *fimg, size_t pagesize, std::type_index index_u, size_t size_u, long off, long pad, bool swap) {
         static const size_t pagemax = 0x40000000;  // 1 GB (1 << 30)
         const size_t memsize = std::max(pagesize, pagemax);
         const auto deleter = [memsize] (char *ptr) { callocator<char>::deallocate(ptr, memsize); };

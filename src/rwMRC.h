@@ -445,7 +445,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     // think about writing in several chunks
 
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        pages::castToPage(page.get(), data.data, RTTI::index(output_type), datasize_n);
+        transcription::castToPage(page.get(), data.data, RTTI::index(output_type), datasize_n);
         fwrite(page.get(), datasize, 1, fimg);
     } else {
         if (mode == WRITE_APPEND) {
@@ -455,7 +455,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
         }
 
         for (size_t i = imgStart; i < imgEnd; i++) {
-            pages::castToPage(page.get(), data.data + i * datasize_n, RTTI::index(output_type), datasize_n);
+            transcription::castToPage(page.get(), data.data + i * datasize_n, RTTI::index(output_type), datasize_n);
             fwrite(page.get(), datasize, 1, fimg);
         }
     }

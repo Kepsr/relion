@@ -325,7 +325,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
 
     // write only once, ignore select_img
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        pages::castToPage(page.get(), data.data, RTTI::index(Float), datasize_n);
+        transcription::castToPage(page.get(), data.data, RTTI::index(Float), datasize_n);
         fwrite(page.get(), datasize, 1, fimg);
     } else {
         switch (mode) {

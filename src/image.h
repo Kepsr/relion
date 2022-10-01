@@ -298,29 +298,29 @@ class fImageHandler {
 struct image_mmapper {
 
     FileName mapFile;  // Mapped file name
-    int mFd;           // Mapped file handle
-    size_t mappedSize; // Size of the mapped file
+    int fd;            // Mapped file handle
+    size_t len;        // Size of the mapped file
+    size_t offset;
 
-    image_mmapper(): mapFile(""), mFd(0), mappedSize(0) {}
+    image_mmapper(): mapFile(""), fd(0), len(0), offset(0) {}
 
-    void* allocate(size_t size, off_t offset) {
-
-        // mFd = open(mapFile.c_str(), O_RDWR, S_IREAD | S_IWRITE);
-        mFd = open(mapFile.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
-        if (mFd == -1)
+    void* allocate(size_t size, size_t offset) {
+        this->offset = offset;
+        // fd = open(mapFile.c_str(), O_RDWR, S_IREAD | S_IWRITE);
+        fd = open(mapFile.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+        if (fd == -1)
             REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": Error opening the image file.");
 
-        mappedSize = size + offset;
-
-        char *ptr = (char*) mmap(0, mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0);
-        if (ptr == (void*) -1)
+        len = size + offset;
+        void *ptr = mmap(nullptr, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        if (ptr == MAP_FAILED)
             REPORT_ERROR((std::string) "Image<T>::" + __func__ + ": mmap of image file failed.");
-        return ptr + offset;
+        return ptr;
     }
 
-    void deallocate(void* ptr) {
-        munmap(ptr, mappedSize);
-        close(mFd);
+    void deallocate(void *ptr) {
+        munmap((char *) ptr - offset, len);
+        close(fd);
     }
 
 };
@@ -405,7 +405,7 @@ class Image {
     }
 
     void clear() {
-        if (mmapper) mmapper->deallocate(data.data - offset);
+        if (mmapper) mmapper->deallocate(data.data);
         delete mmapper;
         mmapper = nullptr;
 
@@ -558,7 +558,7 @@ class Image {
             printf("DEBUG: off = %d select_img= %d \n", off, select_img);
             #endif
 
-            const int err = pages::allocateViaPage
+            const int err = transcription::copyViaPage
                 (data, fimg, pagesize, index_u, size_u, off, pad, swap);
 
             #ifdef DEBUG
@@ -830,9 +830,6 @@ class Image {
         const FileName &name, fImageHandler &hFile, long int select_img=-1,
         bool isStack = false, int mode = WRITE_OVERWRITE
     );
-
-    template <typename U>
-    friend DataType mrc_read_header(Image<U> &image, long int img_select, bool isStack, const FileName &name) throw (RelionError);
 
 };
 
