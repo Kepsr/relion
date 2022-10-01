@@ -409,7 +409,7 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     offset = MRCSIZE + header.nsymbt;
     const size_t datasize_n = Xdim * Ydim * Zdim;
-    const size_t datasize = datasize_n * gettypesize(output_type);
+    const size_t datasize = datasize_n * RTTI::size(output_type);
 
     // #define DEBUG
     #ifdef DEBUG

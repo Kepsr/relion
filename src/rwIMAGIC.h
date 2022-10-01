@@ -232,7 +232,7 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         REPORT_ERROR("ERROR write IMAGIC image: invalid typeid(T)");
     }
 
-    const size_t datasize = dims[0] * dims[1] * dims[2] * gettypesize(Float);
+    const size_t datasize = dims[0] * dims[1] * dims[2] * RTTI::size(Float);
 
     if (!this->header.empty()) {
 

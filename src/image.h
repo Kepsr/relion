@@ -107,6 +107,7 @@ namespace RTTI {
         }
     }
 
+    // The in-memory size of datatype
     static size_t size(DataType datatype) {
         switch (datatype) {
             case Unknown_Type: return 0;
@@ -129,10 +130,6 @@ namespace RTTI {
 
 // Convert string to int corresponding to value in enum
 // int DataType::String2Int(std::string s);
-
-/** Returns memory size of datatype
- */
-size_t gettypesize(DataType type) throw (RelionError);
 
 // Check file datatype is same as T type to use mmap.
 template <typename T>

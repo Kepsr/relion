@@ -290,7 +290,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     sprintf(header.cdat, "%02d-%02d-%02d", t->tm_mday, t->tm_mon, t->tm_year);
 
     const size_t datasize_n = dims[0] * dims[1] * dims[2];
-    const size_t datasize = datasize_n * gettypesize(Float);
+    const size_t datasize = datasize_n * RTTI::size(Float);
 
     #ifdef DEBUG
     printf("DEBUG writeSPIDER: Date and time: %s %s\n", header.cdat, header.ctim);

@@ -31,42 +31,6 @@ inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
     return (x - mu) / sigma;
 }
 
-// Get size of datatype
-size_t gettypesize(DataType type) throw (RelionError) {
-
-    switch (type) {
-
-        case UChar:
-        case SChar:
-        return sizeof(char);
-
-        case UShort:
-        case Short:
-        return sizeof(short);
-
-        case UInt:
-        case Int:
-        return sizeof(int);
-
-        case Float:
-        return sizeof(float);
-
-        case Double:
-        return sizeof(RFLOAT);
-
-        case Boolean:
-        return sizeof(bool);
-
-        case UHalf:
-        unsigned long size;
-        REPORT_ERROR("Logic error: UHalf (4-bit) needs special consideration. Don't use this function.");
-        return size;
-
-        default:
-        return 0;
-    }
-}
-
 // int DataType::String2Int(std::string s) {
 //     toLower(s);
 //     if (!strcmp(s.c_str(), "uchar"))  return UChar;
