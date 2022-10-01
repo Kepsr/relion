@@ -161,14 +161,14 @@ namespace pages {
 
     }
 
+    // pagesize: number of bytes in an XYZ slice of data
     template <typename T>
-    int allocateViaPage(FILE *fimg, size_t pagesize, size_t off, std::type_index index_u, size_t size_u, MultidimArray<T> &data, bool swap, size_t pad) {
-        // pagesize: number of bytes in an XYZ slice of data
+    int allocateViaPage(MultidimArray<T> &data, FILE *fimg, size_t pagesize, std::type_index index_u, size_t size_u, long off, long pad, bool swap) {
         static const size_t pagemax = 0x40000000;  // 1 GB (1 << 30)
         const size_t memsize = std::max(pagesize, pagemax);
         const auto deleter = [memsize] (char *ptr) { callocator<char>::deallocate(ptr, memsize); };
         const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(memsize), deleter);
-        // Because we requested XYsize to be even for UHalf, this is always safe.
+        // Move the file pointer off bytes from the start of the file
         if (fseek(fimg, off, SEEK_SET) != 0) return -1;
 
         std::function<size_t (size_t)> how_many_pixels;
@@ -177,8 +177,9 @@ namespace pages {
         else
             how_many_pixels = [size_u] (size_t bytes) -> size_t { return bytes / size_u; };
 
-        size_t pixel_progress = 0;  // Number of pixels processed so far
+        unsigned long int pixel_progress = 0;  // Number of pixels processed so far
         for (size_t n = 0; n < Nsize(data); n++) {
+
             for (size_t j = 0; j < pagesize; j += pagemax) {
                 // Read no more than than pagemax bytes in one go
                 const size_t readsize = std::min(pagesize - j, pagemax);
@@ -197,7 +198,9 @@ namespace pages {
                 castFromPage(data.data + pixel_progress, page.get(), index_u, num_pixels);
                 pixel_progress += num_pixels;
             }
-            if (pad > 0 && fseek(fimg, pad, SEEK_CUR) != 0) return -1;
+            // Advance the file pointer by pad bytes to get to the next slice
+            if (fseek(fimg, pad, SEEK_CUR) != 0) return -1;
+
         }
         return 0;
     }

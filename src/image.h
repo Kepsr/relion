@@ -56,7 +56,6 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <tiffio.h>
 #include "src/funcs.h"
 #include "src/memory.h"
 #include "src/filename.h"
@@ -66,6 +65,7 @@
 #include "src/metadata_table.h"
 #include "src/fftw.h"
 #include "src/page_operations.h"
+#include "src/tiffio.h"
 
 /// @defgroup Images Images
 //@{
@@ -186,97 +186,6 @@ static std::string writemode2string(WriteMode mode, bool exist) {
 
 }
 
-extern "C" {
-
-    typedef struct TiffInMemory {
-        unsigned char *buf;
-        tsize_t size;
-        toff_t pos;
-    } TiffInMemory;
-
-    static tsize_t TiffInMemoryReadProc(thandle_t handle, tdata_t buf, tsize_t read_size) {
-        TiffInMemory *tiff_handle = (TiffInMemory *) handle;
-        #ifdef TIFF_DEBUG
-        std::cout << "TiffInMemoryReadProc: read_size = " << read_size << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
-        #endif
-        if (tiff_handle->pos + read_size >= tiff_handle->size)
-            REPORT_ERROR("TiffInMemoryReadProc: seeking beyond the end of the buffer.");
-
-        memcpy(buf, tiff_handle->buf + tiff_handle->pos, read_size);
-        tiff_handle->pos += read_size;
-
-        return read_size;
-    }
-
-    static tsize_t TiffInMemoryWriteProc(thandle_t handle, tdata_t buf, tsize_t write_size) {
-        #ifdef TIFF_DEBUG
-        REPORT_ERROR("TiffInMemoryWriteProc: Not implemented.");
-        #endif
-        return -1;
-    }
-
-    static toff_t TiffInMemorySeekProc(thandle_t handle, toff_t offset, int whence) {
-        TiffInMemory *tiff_handle = (TiffInMemory*) handle;
-        #ifdef TIFF_DEBUG
-        std::cout << "TiffInMemorySeekProc: offset = " << offset << " cur_pos = " << tiff_handle->pos << " buf_size = " << tiff_handle->size << std::endl;
-        #endif
-        switch (whence) {
-
-            case SEEK_SET:
-            tiff_handle->pos = 0;
-            break;
-
-            case SEEK_CUR:
-            tiff_handle->pos += offset;
-            break;
-
-            case SEEK_END:
-            REPORT_ERROR("TIFFInMemorySeekProc: SEEK_END is not supported.");
-            // break; // intentional to suppress compiler warnings.
-
-        }
-
-        if (tiff_handle->pos >= tiff_handle->size)
-            REPORT_ERROR("TIFFInMemorySeekProc: seeking beyond the end of the buffer.");
-
-        return 0;
-    }
-
-    static int TiffInMemoryCloseProc(thandle_t handle) {
-        #ifdef TIFF_DEBUG
-        std::cout << __func__ << std::endl;
-        #endif
-        return 0;
-    }
-
-    static toff_t TiffInMemorySizeProc(thandle_t handle) {
-        #ifdef TIFF_DEBUG
-        std::cout << __func__ << std::endl;
-        #endif
-        return ((TiffInMemory *) handle)->size;
-    }
-
-    static int TiffInMemoryMapFileProc(thandle_t handle, tdata_t *base, toff_t *size) {
-        TiffInMemory *tiff_handle = (TiffInMemory *) handle;
-        #ifdef TIFF_DEBUG
-        std::cout << __func__ << std::endl;
-        #endif
-
-        *base = tiff_handle->buf;
-        *size = tiff_handle->size;
-
-        return 1;
-    }
-
-    static void TiffInMemoryUnmapFileProc(thandle_t handle, tdata_t base, toff_t size) {
-        #ifdef TIFF_DEBUG
-            std::cout << __func__ << std::endl;
-        #endif
-
-        return;
-    }
-}
-
 /** File handler class
  * This struct is used to share the File handlers with Image Collection class
  */
@@ -291,13 +200,7 @@ class fImageHandler {
     bool	  exist;    // Does the file exist?
 
     // Empty constructor
-    fImageHandler() {
-        fimg = nullptr;
-        fhed = nullptr;
-        ftiff = nullptr;
-        ext_name = "";
-        exist = false;
-    }
+    fImageHandler(): fimg(nullptr), fhed(nullptr), ftiff(nullptr), ext_name(), exist(false) {}
 
     ~fImageHandler() { closeFile(); }
 
@@ -336,7 +239,7 @@ class fImageHandler {
             fileName = fileName.withoutExtension();
             headName = fileName.addExtension("hed");
             fileName = fileName.addExtension("img");
-        } else if (ext_name == "") {
+        } else if (ext_name.empty()) {
             ext_name = "spi"; // SPIDER is default format
             fileName = fileName.addExtension(ext_name);
         }
@@ -353,7 +256,7 @@ class fImageHandler {
             REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + name);
         }
 
-        if (headName != "") {
+        if (!headName.empty()) {
             if (!(fhed = fopen(headName.c_str(), wmstr.c_str())))
                 REPORT_ERROR((std::string) "Image::" + __func__ + " cannot open: " + headName);
         } else {
@@ -370,7 +273,7 @@ class fImageHandler {
         // Check whether the file was closed already
         if (!fimg && !fhed && !ftiff) return;
 
-        bool isTiff = ext_name.contains("tif");
+        const bool isTiff = ext_name.contains("tif");
         if (isTiff && ftiff) {
             TIFFClose(ftiff);
             ftiff = nullptr;
@@ -445,9 +348,9 @@ class Image {
     FILE *fimg;  // Image  file handle
     FILE *fhed;  // Header file handle
     bool isStack;
-    bool swap;  // Swap bytes when reading
-    size_t pad;
-    unsigned long offset;  // Data offset
+    long offset;  // Data offset
+    long pad;     // Data pad
+    bool swap;    // Swap bytes when reading
     long int replaceNsize;  // Stack size in the replace case
     bool _exists;  // Does the target file exist? 0 if file does not exist or is not a stack.
 
@@ -579,7 +482,7 @@ class Image {
      *	select_img counts from 0, while the number before "@" in the name from 1!
      */
     void write(
-        FileName name = "", long int select_img = -1, bool isStack = false,
+        const FileName &name = "", long int select_img = -1, bool isStack = false,
         int mode = WRITE_OVERWRITE
     );
 
@@ -605,13 +508,12 @@ class Image {
         #endif
 
         const auto index_u = RTTI::index(datatype);
-
         size_t size_u; // bytes
         size_t pagesize; // bytes
         if (index_u == std::type_index(typeid(uhalf_t))) {
-            if (Xsize(data) * Ysize(data) % 2 != 0) {
+            // Guarantee divisibility by 2
+            if (Xsize(data) * Ysize(data) % 2 != 0)
                 REPORT_ERROR("For UHalf, Xsize(data) * Ysize(data) must be even.");
-            }
             // size_u not assigned because half-bytes cannot be represented
             pagesize = Xsize(data) * Ysize(data) * Zsize(data) / 2;
         } else {
@@ -646,16 +548,18 @@ class Image {
             // (Assume xdim, ydim, zdim and ndim are already set)
             // if memory already allocated use it (no resize allowed)
             data.coreAllocate();
-            const size_t myoffset = offset + select_img * (pagesize + pad);
+            // Each image occupies pagesize + pad bytes
+            const size_t off = offset + select_img * (pagesize + pad);
             // #define DEBUG
             #ifdef DEBUG
             data.printShape();
             printf("DEBUG: Page size: %ld offset= %d \n", pagesize, offset);
             printf("DEBUG: Swap = %d  Pad = %ld  Offset = %ld\n", swap, pad, offset);
-            printf("DEBUG: myoffset = %d select_img= %d \n", myoffset, select_img);
+            printf("DEBUG: off = %d select_img= %d \n", off, select_img);
             #endif
 
-            const int err = pages::allocateViaPage(fimg, pagesize, myoffset, index_u, size_u, data, swap, pad);
+            const int err = pages::allocateViaPage
+                (data, fimg, pagesize, index_u, size_u, off, pad, swap);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");
@@ -678,14 +582,9 @@ class Image {
      * image1() = image2() + image3();
      * @endcode
      */
-    MultidimArray<T>& operator () () {
-        /// NOTE: [jhooker] Is this the most intuitive way to access data?
-        return data;
-    }
+    MultidimArray<T>& operator () () { return data; }
 
-    const MultidimArray<T>& operator () () const {
-        return data;
-    }
+    const MultidimArray<T>& operator () () const { return data; }
 
     /** Pixel access
     *

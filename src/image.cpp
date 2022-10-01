@@ -322,7 +322,7 @@ void rewindow(Image<RFLOAT> &I, int size) {
 std::pair<RFLOAT, RFLOAT> getImageContrast(
     MultidimArray<RFLOAT> &image, RFLOAT minval, RFLOAT maxval, RFLOAT &sigma_contrast
 ) {
-    // First check whether to apply sigma-contrast, 
+    // First check whether to apply sigma-contrast,
     // i.e. set minval and maxval to the mean +/- sigma_contrast times the stddev
     bool redo_minmax = sigma_contrast > 0.0 || minval != maxval;
 
@@ -358,19 +358,16 @@ int Image<T>::read(
     fImageHandler hFile;
     hFile.openFile(name);
     return _read(name, hFile, readdata, select_img, mmapper, is_2D);
-    // fImageHandler's destructor will close the file
 }
 
 template <typename T>
 void Image<T>::write(
-    FileName name, long int select_img, bool isStack,
+    const FileName &name, long int select_img, bool isStack,
     int mode
 ) {
-    const FileName &fname = name.empty() ? filename : name;
     fImageHandler hFile;
     hFile.openFile(name, mode);
-    _write(fname, hFile, select_img, isStack, mode);
-    // fImageHandler's destructor will close the file
+    _write(name.empty() ? filename : name, hFile, select_img, isStack, mode);
 }
 
 template <typename T>
@@ -387,17 +384,15 @@ int Image<T>::_read(
     delete this->mmapper;
     this->mmapper = mmapper;
 
-    FileName ext_name = hFile.ext_name;
+    const FileName ext_name = hFile.ext_name;
     fimg = hFile.fimg;
     fhed = hFile.fhed;
 
-    long int dump;
-    name.decompose(dump, filename);
-    // Subtract 1 to have numbering 0...N-1 instead of 1...N
-    if (dump > 0) { dump--; }
+    long int index;
+    name.decompose(index, filename);
     filename = name;
-
-    if (select_img == -1) { select_img = dump; }
+    // Subtract 1 to have numbering 0...N-1 instead of 1...N
+    if (select_img == -1) { select_img = index > 0 ? index - 1 : index; }
 
     #undef DEBUG
     // #define DEBUG
@@ -414,41 +409,35 @@ int Image<T>::_read(
     header.clear();
     header.addObject();
 
+    DataType datatype;
     if (
         ext_name.contains("spi") || ext_name.contains("xmp") ||
         ext_name.contains("stk") || ext_name.contains("vol")
     ) {
-        const DataType datatype = readSPIDER(select_img);
-        if (!isStack || readdata)
-        err = readData(select_img, datatype);
+        datatype = readSPIDER(select_img);
     } else if (ext_name.contains("mrcs") ||
                ext_name.contains("mrc") && is_2D) {
         // MRC stack MUST go BEFORE plain MRC
-        const DataType datatype = readMRC(select_img, true, name);
-        if (!isStack || readdata)
-        err = readData(select_img, datatype);
+        datatype = readMRC(select_img, true, name);
     } else if (ext_name.contains("tif")) {
-        err = readTIFF(hFile.ftiff, select_img, readdata, true, name);
+        return readTIFF(hFile.ftiff, select_img, readdata, true, name);
     } else if (select_img >= 0 && ext_name.contains("mrc")) {
         REPORT_ERROR("Image::read ERROR: stacks of images in MRC-format should have extension .mrcs; .mrc extensions are reserved for 3D maps.");
     } else if (ext_name.contains("mrc")) {
         // MRC 3D map
-        const DataType datatype = readMRC(select_img, false, name);
-        if (!isStack || readdata)
-        err = readData(select_img, datatype);
+        datatype = readMRC(select_img, false, name);
     } else if (ext_name.contains("img") || ext_name.contains("hed")) {
-        const DataType datatype = readIMAGIC(select_img);
-        if (!isStack || readdata)
-        err = readData(select_img, datatype);
+        datatype = readIMAGIC(select_img);
     } else if (ext_name.contains("dm")) {
         REPORT_ERROR("The Digital Micrograph format (DM3, DM4) is not supported. You can convert it to MRC by other programs, for example, dm2mrc in IMOD.");
     } else if (ext_name.contains("eer") || ext_name.contains("ecc")) {
         REPORT_ERROR("BUG: EER movies should be handled by EERRenderer, not by Image.");
     } else {
-        const DataType datatype = readSPIDER(select_img);
-        if (!isStack || readdata)
-        err = readData(select_img, datatype);
+        datatype = readSPIDER(select_img);
     }
+
+    if (!isStack || readdata)
+        err = readData(select_img, datatype);
     return err;
 }
 
@@ -459,29 +448,24 @@ void Image<T>::_write(
 ) {
     int err = 0;
 
-    FileName ext_name = hFile.ext_name;
+    const FileName ext_name = hFile.ext_name;
     fimg = hFile.fimg;
     fhed = hFile.fhed;
     _exists = hFile.exist;
 
     filename = name;
 
-    long int aux;
-    FileName filNamePlusExt(name);
-    name.decompose(aux, filNamePlusExt);
+    long int index;
+    FileName filNamePlusExt (name);
+    name.decompose(index, filNamePlusExt);
     // Subtract 1 to have numbering 0...N-1 instead of 1...N
-    if (aux > 0)
-        aux--;
+    if (select_img == -1) { select_img = index > 0 ? index - 1 : index; }
 
-    if (select_img == -1)
-        select_img = aux;
+    size_t found;
 
-    size_t found = filNamePlusExt.find_first_of("%");
-
-    std::string imParam = "";
-
+    found = filNamePlusExt.find_first_of("%");
     if (found != std::string::npos) {
-        imParam = filNamePlusExt.substr(found + 1).c_str();
+        // const std::string imParam = filNamePlusExt.substr(found + 1).c_str();
         filNamePlusExt = filNamePlusExt.substr(0, found) ;
     }
 
@@ -504,14 +488,12 @@ void Image<T>::_write(
     if (getSize() < 1)
         REPORT_ERROR("write Image ERROR: image is empty!");
 
-    replaceNsize = 0; // reset replaceNsize in case image is reused
+    replaceNsize = 0;  // reset replaceNsize in case image is reused
     if (select_img == -1 && mode == WRITE_REPLACE) {
         REPORT_ERROR("write: Please specify object to be replaced");
     } else if (!_exists && mode == WRITE_REPLACE) {
-        std::stringstream replace_number;
-        replace_number << select_img;
         REPORT_ERROR((std::string)
-            "Cannot replace object number: " + replace_number.str()
+            "Cannot replace object number: " + std::to_string(select_img)
             + " in file " + filename + ". It does not exist"
         );
     } else if (_exists && (mode == WRITE_REPLACE || mode == WRITE_APPEND)) {
@@ -568,10 +550,11 @@ int Image<T>::readTiffInMemory(
     void *buf, size_t size, bool readdata, long int select_img,
     image_mmapper *mmapper, bool is_2D
 ) {
-    TiffInMemory handle;
-    handle.buf = (unsigned char *) buf;
-    handle.size = size;
-    handle.pos = 0;
+    TiffInMemory handle {
+        .buf  = (unsigned char *) buf,
+        .size = (tsize_t) size,
+        .pos  = 0
+    };
 
     delete this->mmapper;
     this->mmapper = mmapper;
