@@ -40,40 +40,44 @@ const int MRCSIZE = 1024; // Minimum size of the MRC header (when nsymbt = 0)
 ///@defgroup MRC MRC File format
 ///@ingroup ImageFormats
 
-/** MRC Old Header
-  * @ingroup MRC
-*/
-struct MRCheadold {
-    // file header for MRC data
-    int nx;              //  0   0       image size
-    int ny;              //  1   4
-    int nz;              //  2   8
-    int mode;            //  3           0=uchar,1=short,2=float
-    int nxStart;         //  4           unit cell offset
-    int nyStart;         //  5
-    int nzStart;         //  6
-    int mx;              //  7           unit cell size in voxels
-    int my;              //  8
-    int mz;              //  9
-    float a;             // 10   40      cell dimensions in A
-    float b;             // 11
-    float c;             // 12
-    float alpha;         // 13           cell angles in degrees
-    float beta;          // 14
-    float gamma;         // 15
-    int mapc;            // 16           column axis
-    int mapr;            // 17           row axis
-    int maps;            // 18           section axis
-    float amin;          // 19           minimum density value
-    float amax;          // 20   80      maximum density value
-    float amean;         // 21           average density value
-    int ispg;            // 22           space group number
-    int nsymbt;          // 23           bytes used for sym. ops. table
-    float extra[29];     // 24           user-defined info
-    float xOrigin;       // 53           phase origin in pixels
-    float yOrigin;       // 54
-    int nlabl;           // 55           number of labels used
-    char labels[10][80]; // 56-255       10 80-character labels
+namespace legacy {
+
+    /** Old MRC format
+     * @ingroup MRC
+    */
+    struct MRChead {
+        // file header for MRC data
+        int nx;              //  0   0       image size
+        int ny;              //  1   4
+        int nz;              //  2   8
+        int mode;            //  3           0=uchar,1=short,2=float
+        int nxStart;         //  4           unit cell offset
+        int nyStart;         //  5
+        int nzStart;         //  6
+        int mx;              //  7           unit cell size in voxels
+        int my;              //  8
+        int mz;              //  9
+        float a;             // 10   40      cell dimensions in A
+        float b;             // 11
+        float c;             // 12
+        float alpha;         // 13           cell angles in degrees
+        float beta;          // 14
+        float gamma;         // 15
+        int mapc;            // 16           column axis
+        int mapr;            // 17           row axis
+        int maps;            // 18           section axis
+        float amin;          // 19           minimum density value
+        float amax;          // 20   80      maximum density value
+        float amean;         // 21           average density value
+        int ispg;            // 22           space group number
+        int nsymbt;          // 23           bytes used for sym. ops. table
+        float extra[29];     // 24           user-defined info
+        float xOrigin;       // 53           phase origin in pixels
+        float yOrigin;       // 54
+        int nlabl;           // 55           number of labels used
+        char labels[10][80]; // 56-255       10 80-character labels
+    };
+
 };
 
 /** MRC Header
@@ -125,7 +129,6 @@ enum {
 };
 
 static int systype() {
-
     const auto deleter = [] (char *ptr) { callocator<char>::deallocate(ptr, 12); };
     const auto test = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(12), deleter);
     int   *itest = (int*)   test.get();
@@ -220,8 +223,8 @@ DataType Image<T>::readMRC(long int img_select, bool isStack, const FileName &na
         #ifdef DEBUG
         fprintf(stderr, "Warning: Swapping header byte order for 4-byte types\n");
         #endif
-        const int extent = MRCSIZE - 800;  // exclude labels from swapping
-        for (int i = 0; i < extent; i += 4) swapbytes((char*) &header + i, 4);
+        for (int i = 0; i < MRCSIZE - 800; i += 4)  // Don't swap the bytes in the labels
+            swapbytes((char*) &header + i, 4);
     }
 
     std::array<int, 4> dims {header.nx, header.ny, header.nz, 1};
@@ -282,16 +285,16 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     strncpy(header.map, "MAP ", 4);
     set_CCP4_machine_stamp(header.machst);
 
-    const long int Xdim = Xsize(data), Ydim = Ysize(data), 
+    const long int Xdim = Xsize(data), Ydim = Ysize(data),
                    Zdim = Zsize(data), Ndim = Nsize(data);
     long int imgStart = 0, imgEnd = Ndim;
     if (img_select != -1) {
         imgStart = img_select;
-        imgEnd = img_select + 1;
+        imgEnd = imgStart + 1;
     }
     if (mode == WRITE_APPEND || mode == WRITE_REPLACE) {
         imgStart = 0;
-        imgEnd = 1;
+        imgEnd = imgStart + 1;
     }
     header.nx = Xdim;
     header.ny = Ydim;
@@ -408,12 +411,13 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
     // strncpy(header.labels, p->label.c_str(), 799);
 
     offset = MRCSIZE + header.nsymbt;
-    const size_t datasize_n = Xdim * Ydim * Zdim;
-    const size_t datasize = datasize_n * RTTI::size(output_type);
+    const size_t pixels_per_slice = Xdim * Ydim * Zdim;
+    const size_t pagesize = pixels_per_slice * RTTI::size(output_type);
+    // No padding means that pagesize = bytes_per_slice
 
     // #define DEBUG
     #ifdef DEBUG
-    printf("DEBUG rwMRC: Offset = %ld,  Datasize_n = %ld\n", offset, datasize_n);
+    printf("DEBUG rwMRC: Offset = %ld,  Datasize_n = %ld\n", offset, pixels_per_slice);
     #endif
 
     // For multi-image files
@@ -440,23 +444,23 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
         fwrite(&header, MRCSIZE, 1, fimg);
 
     // write only once, ignore select_img
-    const auto deleter = [datasize] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
-    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
+    const auto deleter = [pagesize] (char *ptr) { callocator<char>::deallocate(ptr, pagesize); };
+    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(pagesize), deleter);
     // think about writing in several chunks
 
     if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        transcription::castToPage(page.get(), data.data, RTTI::index(output_type), datasize_n);
-        fwrite(page.get(), datasize, 1, fimg);
+        transcription::castToPage(page.get(), data.data, RTTI::index(output_type), pixels_per_slice);
+        fwrite(page.get(), pagesize, 1, fimg);
     } else {
         if (mode == WRITE_APPEND) {
             fseek(fimg, 0, SEEK_END);
         } else if (mode == WRITE_REPLACE) {
-            fseek(fimg, offset + datasize * img_select, SEEK_SET);
+            fseek(fimg, offset + pagesize * img_select, SEEK_SET);
         }
 
         for (size_t i = imgStart; i < imgEnd; i++) {
-            transcription::castToPage(page.get(), data.data + i * datasize_n, RTTI::index(output_type), datasize_n);
-            fwrite(page.get(), datasize, 1, fimg);
+            transcription::castToPage(page.get(), data.data + i * pixels_per_slice, RTTI::index(output_type), pixels_per_slice);
+            fwrite(page.get(), pagesize, 1, fimg);
         }
     }
 

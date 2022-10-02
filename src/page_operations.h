@@ -14,6 +14,7 @@ namespace transcription {
             << " pageNrElements " << n
             << std::endl;
         #endif
+        if (word_size < 2) return;
         for (size_t i = 0; i < page_size; i += word_size)
             swapbytes(page + i, word_size);
     }
@@ -160,13 +161,12 @@ namespace transcription {
 
     }
 
-    // pagesize: number of bytes in an XYZ slice of data
     template <typename T>
-    static int copyViaPage(MultidimArray<T> &data, FILE *fimg, size_t pagesize, std::type_index index_u, size_t size_u, long off, long pad, bool swap) {
+    static int copyViaPage(MultidimArray<T> &data, FILE *fimg, size_t bytes_per_slice, std::type_index index_u, size_t size_u, long off, long pad, bool swap) {
         static const size_t pagemax = 0x40000000;  // 1 GB (1 << 30)
-        const size_t memsize = std::max(pagesize, pagemax);
-        const auto deleter = [memsize] (char *ptr) { callocator<char>::deallocate(ptr, memsize); };
-        const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(memsize), deleter);
+        const size_t pagesize = std::min(bytes_per_slice, pagemax);
+        const auto deleter = [pagesize] (char *ptr) { callocator<char>::deallocate(ptr, pagesize); };
+        const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(pagesize), deleter);
         // Move the file pointer off bytes from the start of the file
         if (fseek(fimg, off, SEEK_SET) != 0) return -1;
 
@@ -179,19 +179,19 @@ namespace transcription {
         unsigned long int pixel_progress = 0;  // Number of pixels processed so far
         for (size_t n = 0; n < Nsize(data); n++) {
 
-            for (size_t j = 0; j < pagesize; j += pagemax) {
+            for (size_t j = 0; j < bytes_per_slice; j += pagemax) {
                 // Read no more than than pagemax bytes in one go
-                const size_t readsize = std::min(pagesize - j, pagemax);
+                const size_t readsize = std::min(bytes_per_slice - j, pagemax);
                 const unsigned long int num_pixels = how_many_pixels(readsize);
 
                 #ifdef DEBUG
                 std::cout << "NX = " << Xsize(data) << " NY = " << Ysize(data) << " NZ = " << Zsize(data) << std::endl;
-                std::cout << "pagemax = " << pagemax << " pagesize = " << pagesize  << " readsize = " << readsize << " num_pixels = " << num_pixels << std::endl;
+                std::cout << "pagemax = " << pagemax << " bytes_per_slice = " << bytes_per_slice  << " readsize = " << readsize << " num_pixels = " << num_pixels << std::endl;
                 #endif
 
                 // Read into page
                 if (fread(page.get(), readsize, 1, fimg) != 1) return -2;
-                // Maybe swap bytes
+                // Maybe swap bytes (won't work for UHalf)
                 if (swap) swapPage(page.get(), readsize, size_u);
                 // Copy into data, while casting to T
                 castFromPage(data.data + pixel_progress, page.get(), index_u, num_pixels);

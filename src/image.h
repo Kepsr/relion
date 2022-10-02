@@ -509,16 +509,16 @@ class Image {
 
         const auto index_u = RTTI::index(datatype);
         size_t size_u; // bytes
-        size_t pagesize; // bytes
+        size_t bytes_per_slice; // bytes
         if (index_u == std::type_index(typeid(uhalf_t))) {
             // Guarantee divisibility by 2
             if (Xsize(data) * Ysize(data) % 2 != 0)
                 REPORT_ERROR("For UHalf, Xsize(data) * Ysize(data) must be even.");
             // size_u not assigned because half-bytes cannot be represented
-            pagesize = Xsize(data) * Ysize(data) * Zsize(data) / 2;
+            bytes_per_slice = Xsize(data) * Ysize(data) * Zsize(data) / 2;
         } else {
             size_u = RTTI::size(datatype);
-            pagesize = Xsize(data) * Ysize(data) * Zsize(data) * size_u;
+            bytes_per_slice = Xsize(data) * Ysize(data) * Zsize(data) * size_u;
         }
 
         if (data.getMmap()) { delete mmapper; mmapper = nullptr; }
@@ -538,7 +538,7 @@ class Image {
                 );
             }
             fclose(fimg);
-            data.data = reinterpret_cast<T*>(mmapper->allocate(pagesize, offset));
+            data.data = reinterpret_cast<T*>(mmapper->allocate(bytes_per_slice, offset));
             return 0;
         } else {
             // Reset select to get the correct offset
@@ -548,18 +548,18 @@ class Image {
             // (Assume xdim, ydim, zdim and ndim are already set)
             // if memory already allocated use it (no resize allowed)
             data.coreAllocate();
-            // Each image occupies pagesize + pad bytes
-            const size_t off = offset + select_img * (pagesize + pad);
+            // Each image occupies bytes_per_slice + pad bytes
+            const size_t off = offset + select_img * (bytes_per_slice + pad);
             // #define DEBUG
             #ifdef DEBUG
             data.printShape();
-            printf("DEBUG: Page size: %ld offset= %d \n", pagesize, offset);
+            printf("DEBUG: Page size: %ld offset= %d \n", bytes_per_slice, offset);
             printf("DEBUG: Swap = %d  Pad = %ld  Offset = %ld\n", swap, pad, offset);
             printf("DEBUG: off = %d select_img= %d \n", off, select_img);
             #endif
 
             const int err = transcription::copyViaPage
-                (data, fimg, pagesize, index_u, size_u, off, pad, swap);
+                (data, fimg, bytes_per_slice, index_u, size_u, off, pad, swap);
 
             #ifdef DEBUG
             printf("DEBUG img_read_data: Finished reading and converting data\n");

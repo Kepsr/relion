@@ -206,7 +206,7 @@ int Image<T>::readTIFF(
                 #ifdef DEBUG_TIFF
                 std::cout << "Reading strip: " << strip << "actually read byte:" << actually_read << std::endl;
                 #endif
-                if (datatype == UHalf) actually_read_n *= 2;  // convert physical size to logical size
+                if (datatype == UHalf) actually_read_n *= 2;  // Bytes to pixels
                 transcription::castFromPage(data.data + haveread_n, (char*) buf, RTTI::index(datatype), actually_read_n);
                 haveread_n += actually_read_n;
             }
