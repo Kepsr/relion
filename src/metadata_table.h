@@ -245,7 +245,7 @@ class MetaDataTable {
 
         long int operator *() const { return i; }
 
-        iterator &operator ++() { return *this; }
+        iterator &operator ++() { ++i; return *this; }
 
         bool operator != (const iterator &other) const {
             return i != other.i || mdt != other.mdt;
