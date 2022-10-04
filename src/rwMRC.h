@@ -274,6 +274,38 @@ DataType Image<T>::readMRC(long int img_select, bool isStack, const FileName &na
     return datatype;
 }
 
+template <typename T>
+void writeViaPageMRC(
+    MultidimArray<T> &data, FILE *fimg, long pixels_per_slice,
+    std::type_index index_u, size_t size_u,
+    long img_select, long imgStart, long imgEnd, long offset, int mode
+) {
+    // write only once, ignore select_img
+    const size_t pagesize = pixels_per_slice * size_u;
+    // No padding means that pagesize = bytes_per_slice
+    const auto deleter = [pagesize] (char *ptr) { callocator<char>::deallocate(ptr, pagesize); };
+    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(pagesize), deleter);
+    // think about writing in several chunks
+
+    if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
+        transcription::castToPage(page.get(), data.data, index_u, pixels_per_slice);
+        fwrite(page.get(), pagesize, 1, fimg);
+    } else {
+        if (mode == WRITE_APPEND) {
+            fseek(fimg, 0, SEEK_END);
+        } else if (mode == WRITE_REPLACE) {
+            fseek(fimg, offset + pagesize * img_select, SEEK_SET);
+        }
+
+        unsigned long int pixel_progress = 0;
+        for (long n = imgStart; n < imgEnd; n++) {
+            transcription::castToPage(page.get(), data.data + pixel_progress, index_u, pixels_per_slice);
+            fwrite(page.get(), pagesize, 1, fimg);
+            pixel_progress += pixels_per_slice;
+        }
+    }
+}
+
 /** MRC Writer
   * @ingroup MRC
 */
@@ -412,8 +444,6 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
 
     offset = MRCSIZE + header.nsymbt;
     const size_t pixels_per_slice = Xdim * Ydim * Zdim;
-    const size_t pagesize = pixels_per_slice * RTTI::size(output_type);
-    // No padding means that pagesize = bytes_per_slice
 
     // #define DEBUG
     #ifdef DEBUG
@@ -435,39 +465,25 @@ int Image<T>::writeMRC(long int img_select, bool isStack, int mode) {
         .l_pid    = getpid(),  // our PID
     };
 
-    // BLOCK
-    fl.l_type   = F_WRLCK;
-    fcntl(fileno(fimg), F_SETLKW, &fl);  // locked
+    // Lock
+    fl.l_type = F_WRLCK;
+    fcntl(fileno(fimg), F_SETLKW, &fl);
 
     // Write header
     if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)
         fwrite(&header, MRCSIZE, 1, fimg);
 
-    // write only once, ignore select_img
-    const auto deleter = [pagesize] (char *ptr) { callocator<char>::deallocate(ptr, pagesize); };
-    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(pagesize), deleter);
-    // think about writing in several chunks
+    writeViaPageMRC(
+        data, fimg, pixels_per_slice,
+        RTTI::index(output_type), RTTI::size(output_type),  // Type information
+        img_select, imgStart, imgEnd, offset, mode
+    );
 
-    if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        transcription::castToPage(page.get(), data.data, RTTI::index(output_type), pixels_per_slice);
-        fwrite(page.get(), pagesize, 1, fimg);
-    } else {
-        if (mode == WRITE_APPEND) {
-            fseek(fimg, 0, SEEK_END);
-        } else if (mode == WRITE_REPLACE) {
-            fseek(fimg, offset + pagesize * img_select, SEEK_SET);
-        }
-
-        for (size_t i = imgStart; i < imgEnd; i++) {
-            transcription::castToPage(page.get(), data.data + i * pixels_per_slice, RTTI::index(output_type), pixels_per_slice);
-            fwrite(page.get(), pagesize, 1, fimg);
-        }
-    }
-
-    // Unlock the file
+    // Unlock
     fl.l_type = F_UNLCK;
-    fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
+    fcntl(fileno(fimg), F_SETLK, &fl);
 
     return 0;
 }
+
 #endif

@@ -196,6 +196,36 @@ DataType Image<T>::readSPIDER(long int img_select) {
     // offset should point to the begin of the data
     return Float;
 }
+
+template <typename T>
+void writeViaPageSPIDER(
+    MultidimArray<T> &data, FILE *fimg, long pixels_per_slice,
+    std::type_index index_u, size_t size_u,
+    long select_img, long offset, int mode
+) {
+    const size_t datasize = pixels_per_slice * size_u;
+    const auto deleter = [datasize] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
+    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
+    // think about writing in several chucks
+
+    // write only once, ignore select_img
+    if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
+        transcription::castToPage(page.get(), data.data, index_u, pixels_per_slice);
+        fwrite(page.get(), datasize, 1, fimg);
+    } else {
+        switch (mode) {
+            case WRITE_APPEND:
+            fseek(fimg, 0, SEEK_END); break;
+            case WRITE_REPLACE:
+            fseek(fimg, offset + (offset + datasize) * select_img, SEEK_SET); break;
+        }
+
+        // Sjors 30 Oct 2012: I am completely unsure whether the code below will actually work....
+        // Let's just raise an error and exit...
+        REPORT_ERROR("writeSPIDER append/replace writing of SPIDER stacks not implemented yet....");
+    }
+}
+
 /************************************************************************
 @Function: writeSPIDER
 @Description:
@@ -247,7 +277,7 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     #endif
 
     header.iform = dims[2] <= 1 ? 1 : 2;  // 2D image or 3D volume?
-    header.imami = 0; // never trust max/min
+    header.imami = 0;  // never trust max/min
 
     if (!this->header.empty()) {
         #ifdef DEBUG
@@ -289,15 +319,13 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
     sprintf(header.ctim, "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
     sprintf(header.cdat, "%02d-%02d-%02d", t->tm_mday, t->tm_mon, t->tm_year);
 
-    const size_t datasize_n = dims[0] * dims[1] * dims[2];
-    const size_t datasize = datasize_n * RTTI::size(Float);
+    const size_t pixels_per_slice = dims[0] * dims[1] * dims[2];
 
     #ifdef DEBUG
     printf("DEBUG writeSPIDER: Date and time: %s %s\n", header.cdat, header.ctim);
     printf("DEBUG writeSPIDER: Text label: %s\n", header.ctit);
     printf("DEBUG writeSPIDER: Header size: %g\n", header.labbyt);
     printf("DEBUG writeSPIDER: Header records and record length: %g %g\n", header.labrec, header.lenbyt);
-    printf("DEBUG writeSPIDER: Data size: %ld\n", datasize);
     printf("DEBUG writeSPIDER: Data offset: %ld\n", offset);
     printf("DEBUG writeSPIDER: File %s\n", filename.c_str());
     #endif
@@ -311,37 +339,22 @@ int Image<T>::writeSPIDER(long int select_img, bool isStack, int mode) {
         .l_pid    = getpid(),  // our PID
     };
 
-    /*
-     * BLOCK HEADER IF NEEDED
-     */
-    fl.l_type   = F_WRLCK;
-    fcntl(fileno(fimg), F_SETLKW, &fl); /* locked */
-    if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)  //header must change
+    // Lock
+    fl.l_type = F_WRLCK;
+    fcntl(fileno(fimg), F_SETLKW, &fl);
+
+    if (mode == WRITE_OVERWRITE || mode == WRITE_APPEND)  // header must change
         fwrite(&header, offset, 1, fimg);
 
-    const auto deleter = [datasize] (char *ptr) { callocator<char>::deallocate(ptr, datasize); };
-    const auto page = std::unique_ptr<char, decltype(deleter)>(callocator<char>::allocate(datasize), deleter);
-    // think about writing in several chucks
+    writeViaPageSPIDER(
+        data, fimg, pixels_per_slice,
+        RTTI::index(Float), RTTI::size(Float),  // typeid(float), sizeof(float)
+        select_img, offset, mode
+    );
 
-    // write only once, ignore select_img
-    if (Nsize(data) == 1 && mode == WRITE_OVERWRITE) {
-        transcription::castToPage(page.get(), data.data, RTTI::index(Float), datasize_n);
-        fwrite(page.get(), datasize, 1, fimg);
-    } else {
-        switch (mode) {
-            case WRITE_APPEND:
-            fseek(fimg, 0, SEEK_END); break;
-            case WRITE_REPLACE:
-            fseek(fimg, offset + (offset + datasize) * select_img, SEEK_SET); break;
-        }
-
-        // Sjors 30 Oct 2012: I am completely unsure whether the code below will actually work....
-        // Let's just raise an error and exit...
-        REPORT_ERROR("writeSPIDER append/replace writing of SPIDER stacks not implemented yet....");
-    }
-    // I guess I do not need to unlock since we are going to close the file
-    fl.l_type   = F_UNLCK;
-    fcntl(fileno(fimg), F_SETLK, &fl); /* unlocked */
+    // Unlock
+    fl.l_type = F_UNLCK;
+    fcntl(fileno(fimg), F_SETLK, &fl);
 
     return 0;
 }

@@ -59,6 +59,61 @@ inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat, ui
     }
 }
 
+#include <memory>
+template <typename T>
+int readViaPageTIFF(
+    MultidimArray<T> &data, TIFF *ftiff,
+    uint16 bitsPerSample, DataType datatype,
+    const std::string& name, long img_select, uint32 width, uint32 length, uint16 sampleFormat
+) {
+    if (img_select == -1) img_select = 0;  // img_select starts from 0
+    const auto index_u = RTTI::index(datatype);
+    size_t pixel_progress = 0;
+    for (int i = 0; i < data.ndim; i++, img_select++) {
+        TIFFSetDirectory(ftiff, img_select);
+
+        // Make sure image property is consistent for all frames
+        uint32 cur_width, cur_length;
+        if (
+            TIFFGetField(ftiff, TIFFTAG_IMAGEWIDTH,  &cur_width)  != 1 ||
+            TIFFGetField(ftiff, TIFFTAG_IMAGELENGTH, &cur_length) != 1
+        ) REPORT_ERROR(name + ": The input TIFF file does not have the width or height field.");
+
+        uint16 cur_bitsPerSample, cur_sampleFormat;
+        TIFFGetFieldDefaulted(ftiff, TIFFTAG_BITSPERSAMPLE, &cur_bitsPerSample);
+        TIFFGetFieldDefaulted(ftiff, TIFFTAG_SAMPLEFORMAT,  &cur_sampleFormat);
+
+        if (
+            cur_width         != width         ||
+            cur_length        != length        ||
+            cur_bitsPerSample != bitsPerSample ||
+            cur_sampleFormat  != sampleFormat
+        ) REPORT_ERROR(name + ": All frames in a TIFF should have same width, height and pixel format.\n");
+
+        const tsize_t  stripSize      = TIFFStripSize(ftiff);
+        const tstrip_t numberOfStrips = TIFFNumberOfStrips(ftiff);
+        const auto deleter = [] (void *ptr) { _TIFFfree(ptr); };
+        const std::unique_ptr<void, decltype(deleter)> buf (_TIFFmalloc(stripSize), deleter);
+        #ifdef DEBUG_TIFF
+        size_t readsize_n = stripSize * 8 / bitsPerSample;
+        std::cout << "TIFF stripSize=" << stripSize << " numberOfStrips=" << numberOfStrips << " readsize_n=" << readsize_n << std::endl;
+        #endif
+        for (tstrip_t strip = 0; strip < numberOfStrips; strip++) {
+            const tsize_t actually_read = TIFFReadEncodedStrip(ftiff, strip, buf.get(), stripSize);
+            if (actually_read == -1)
+                REPORT_ERROR((std::string) "Failed to read an image data from " + name);
+            tsize_t pixels_per_strip = actually_read * 8 / bitsPerSample;
+            #ifdef DEBUG_TIFF
+            std::cout << "Reading strip: " << strip << "actually read byte:" << actually_read << std::endl;
+            #endif
+            if (datatype == UHalf) pixels_per_strip *= 2;  // Bytes to pixels
+            transcription::castFromPage(data.data + pixel_progress, (char*) buf.get(), index_u, pixels_per_strip);
+            pixel_progress += pixels_per_strip;
+        }
+    }
+    return 0;
+}
+
 // I/O prototypes
 /** TIFF Reader
   * @ingroup TIFF
@@ -138,9 +193,9 @@ int Image<T>::readTIFF(
         dims[2] = 1;
         replaceNsize = dims[3];
         if (img_select >= (int) dims[3]) {
-            std::string Num1str = std::to_string(img_select + 1);
-            std::string Num2str = std::to_string(dims[3]);
-            REPORT_ERROR((std::string) "readTIFF: Image number " + Num1str + " exceeds stack size " + Num2str + " of image " + name);
+            std::string imagenumber = std::to_string(img_select + 1);
+            std::string stacksize   = std::to_string(dims[3]);
+            REPORT_ERROR((std::string) "readTIFF: Image number " + imagenumber + " exceeds stack size " + stacksize + " of image " + name);
         }
     } else {
         replaceNsize = 0;
@@ -166,54 +221,9 @@ int Image<T>::readTIFF(
     */
 
     if (readdata) {
-        if (img_select == -1) { img_select = 0; }  // img_select starts from 0
-
-        size_t haveread_n = 0;
-        for (int i = 0; i < dims[3]; i++) {
-            TIFFSetDirectory(ftiff, img_select);
-
-            // Make sure image property is consistent for all frames
-
-            uint32 cur_width, cur_length;
-            if (
-                TIFFGetField(ftiff, TIFFTAG_IMAGEWIDTH,  &cur_width)  != 1 ||
-                TIFFGetField(ftiff, TIFFTAG_IMAGELENGTH, &cur_length) != 1
-            ) REPORT_ERROR(name + ": The input TIFF file does not have the width or height field.");
-
-            uint16 cur_bitsPerSample, cur_sampleFormat;
-            TIFFGetFieldDefaulted(ftiff, TIFFTAG_BITSPERSAMPLE, &cur_bitsPerSample);
-            TIFFGetFieldDefaulted(ftiff, TIFFTAG_SAMPLEFORMAT,  &cur_sampleFormat);
-
-            if (
-                cur_width         != width         ||
-                cur_length        != length        ||
-                cur_bitsPerSample != bitsPerSample ||
-                cur_sampleFormat  != sampleFormat
-            ) REPORT_ERROR(name + ": All frames in a TIFF should have same width, height and pixel format.\n");
-
-            tsize_t stripSize = TIFFStripSize(ftiff);
-            tstrip_t numberOfStrips = TIFFNumberOfStrips(ftiff);
-            tdata_t buf = _TIFFmalloc(stripSize);
-            #ifdef DEBUG_TIFF
-            size_t readsize_n = stripSize * 8 / bitsPerSample;
-            std::cout << "TIFF stripSize=" << stripSize << " numberOfStrips=" << numberOfStrips << " readsize_n=" << readsize_n << std::endl;
-            #endif
-            for (tstrip_t strip = 0; strip < numberOfStrips; strip++) {
-                tsize_t actually_read = TIFFReadEncodedStrip(ftiff, strip, buf, stripSize);
-                if (actually_read == -1)
-                    REPORT_ERROR((std::string) "Failed to read an image data from " + name);
-                tsize_t actually_read_n = actually_read * 8 / bitsPerSample;
-                #ifdef DEBUG_TIFF
-                std::cout << "Reading strip: " << strip << "actually read byte:" << actually_read << std::endl;
-                #endif
-                if (datatype == UHalf) actually_read_n *= 2;  // Bytes to pixels
-                transcription::castFromPage(data.data + haveread_n, (char*) buf, RTTI::index(datatype), actually_read_n);
-                haveread_n += actually_read_n;
-            }
-
-            _TIFFfree(buf);
-            img_select++;
-        }
+        readViaPageTIFF(
+            data, ftiff, bitsPerSample, datatype,
+            name, img_select, width, length, sampleFormat);
 
         /* Flip the Y axis.
 
@@ -230,19 +240,8 @@ int Image<T>::readTIFF(
            IMOD, EMAN2, SerialEM and MotionCor2 flip the Y axis whenever they read or write a TIFF file.
            We follow this.
         */
+        flipYAxis(data);
 
-        const int ylim = dims[1] / 2, z = 0;
-        for (int n = 0; n < dims[3]; n++)
-        for (int y1 = 0; y1 < ylim; y1++) {
-            const int y2 = dims[1] - 1 - y1;
-            for (int x = 0; x < dims[0]; x++) {
-                /// TODO: memcpy or pointer arithmetic is probably faster
-                std::swap(
-                    direct::elem(data, x, y1, z, n),
-                    direct::elem(data, x, y2, z, n)
-                );
-            }
-        }
     }
 
     return 0;

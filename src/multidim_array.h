@@ -2380,4 +2380,20 @@ inline MultidimArray<T> operator / (T scalar, MultidimArray<T> rhs) {
     for (auto &x : rhs) x = scalar / x; return std::move(rhs);
 }
 
+template <typename T>
+void flipYAxis(MultidimArray<T> &array) {
+    const int ylim = array.ydim / 2, z = 0;
+    for (int n = 0; n < array.zdim; n++)
+    for (int y1 = 0; y1 < ylim; y1++) {
+        const int y2 = array.ydim - 1 - y1;
+        for (int x = 0; x < array.xdim; x++) {
+            /// TODO: memcpy or pointer arithmetic is probably faster
+            std::swap(
+                direct::elem(array, x, y1, z, n),
+                direct::elem(array, x, y2, z, n)
+            );
+        }
+    }
+}
+
 #endif

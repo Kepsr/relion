@@ -238,20 +238,20 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
         const long int i = this->header.size() - 1;
 
-        try {
+        if (this->header.template containsLabel(EMDL::IMAGE_STATS_MIN)) {
             header.densmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
-        } catch (const char* errmsg) {}
-        try {
+        }
+        if (this->header.template containsLabel(EMDL::IMAGE_STATS_MAX)) {
             header.densmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
-        } catch (const char* errmsg) {}
-        try {
+        }
+        if (this->header.template containsLabel(EMDL::IMAGE_STATS_AVG)) {
             header.avdens = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
-        } catch (const char* errmsg) {}
-        try {
+        }
+        if (this->header.template containsLabel(EMDL::IMAGE_STATS_STDDEV)) {
             const float sigma = this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
             header.sigma = sigma;
             header.varian = sigma * sigma;
-        } catch (const char* errmsg) {}
+        }
     }
 
     memcpy(header.lastpr, "Xmipp", 5);
@@ -268,24 +268,30 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
         .l_pid    = getpid(),  // our PID
     };
 
-    fcntl(fileno(fimg), F_SETLKW, &fl);  // lock
-    fcntl(fileno(fhed), F_SETLKW, &fl);  // lock
+    // Lock
+    fcntl(fileno(fimg), F_SETLKW, &fl);
+    fcntl(fileno(fhed), F_SETLKW, &fl);
 
-    if (mode == WRITE_APPEND) {
+    // Don't actually write anything
+    switch (mode) {
+        case WRITE_APPEND:
         fseek(fimg, 0, SEEK_END);
         fseek(fhed, 0, SEEK_END);
-    } else if (mode == WRITE_REPLACE) {
+        break;
+        case WRITE_REPLACE:
         fseek(fimg, datasize   * img_select, SEEK_SET);
         fseek(fhed, IMAGICSIZE * img_select, SEEK_SET);
-    } else /* if (mode == WRITE_OVERWRITE) */ {
+        break;
+        case WRITE_OVERWRITE:
         fseek(fimg, 0, SEEK_SET);
         fseek(fhed, 0, SEEK_SET);
+        break;
     }
 
     // Unlock
-    fl.l_type   = F_UNLCK;
-    fcntl(fileno(fimg), F_SETLK, &fl);  // unlock
-    fcntl(fileno(fhed), F_SETLK, &fl);  // unlock
+    fl.l_type = F_UNLCK;
+    fcntl(fileno(fimg), F_SETLK, &fl);
+    fcntl(fileno(fhed), F_SETLK, &fl);
 
 }
 
