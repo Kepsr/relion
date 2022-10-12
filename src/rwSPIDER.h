@@ -135,15 +135,14 @@ DataType Image<T>::readSPIDER(long int img_select) {
         REPORT_ERROR("rwSPIDER: cannot allocate memory for header");
 
     // Determine byte order and swap bytes if from different-endian machine
-    char*    b = (char *) &header;
-    int      i;
-    int      extent = SPIDERSIZE - 180;  // exclude char bytes from swapping
+    char *b = (char *) &header;
     if (swap = (
         fabs(header.nrow)  > SWAPTRIG ||
         fabs(header.iform) > SWAPTRIG ||
         fabs(header.nslice) < 1
     )) {
-        for (i = 0; i < extent; i += 4) { swapbytes(b + i, 4); }
+        // Do not swap char bytes
+        for (int i = 0; i < SPIDERSIZE - 180; i += 4) swapbytes(b + i, 4);
     }
 
     if (header.labbyt != header.labrec * header.lenbyt)

@@ -127,9 +127,8 @@ DataType Image<T>::readIMAGIC(long int img_select) {
 
     // Determine byte order and swap bytes if from little-endian machine
     char *b = (char *) &header;
-    long int extent = IMAGICSIZE - 916;  // exclude char bytes from swapping
     if (abs(header.nyear) > SWAPTRIG || header.ixlp > SWAPTRIG) {
-        for (int i = 0; i < extent; i += 4)
+        for (int i = 0; i < IMAGICSIZE - 916; i += 4)  // Do not swap char bytes
             if (i != 56)          // exclude type string
                 swapbytes(b + i, 4);
     }
@@ -172,7 +171,7 @@ DataType Image<T>::readIMAGIC(long int img_select) {
     offset = 0;   // separate header file
 
    // Get the header information
-    int error_fseek = img_select > -1 ? fseek(fhed, img_select * IMAGICSIZE, SEEK_SET) : fseek(fhed, 0, SEEK_SET);
+    int error_fseek = fseek(fhed, img_select > -1 ? img_select * IMAGICSIZE : 0, SEEK_SET);
     if (error_fseek != 0) throw -1;
     return datatype;
 
