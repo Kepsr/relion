@@ -67,6 +67,7 @@ Matrix2D<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous) {
     result.at(0, 1) = -sinang;
     result.at(1, 0) =  sinang;
     result.at(1, 1) =  cosang;
+    return result;
 }
 
 // Decompose w into an integral part and a fractional part

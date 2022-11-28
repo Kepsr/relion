@@ -313,17 +313,20 @@ public:
 
 };
 
-class singleViewerCanvas : public basisViewerCanvas
-{
+class singleViewerCanvas : public basisViewerCanvas {
 
-protected:
+    protected:
+
+    // Returns 1 if event was handled, 0 otherwise.
     int handle(int ev);
 
-public:
+    public:
 
     // Constructor with w x h size of the window and a title
-    singleViewerCanvas(int X, int Y, int W, int H, const char* title=0): basisViewerCanvas(X,Y,W, H, title) { }
-private:
+    singleViewerCanvas(int X, int Y, int W, int H, const char* title=0):
+        basisViewerCanvas(X, Y, W, H, title) {}
+
+    private:
 
     // Functionalities for  popup menu
     void printMetaData();

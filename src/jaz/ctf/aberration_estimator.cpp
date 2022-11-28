@@ -358,7 +358,7 @@ bool AberrationEstimator::isFinished(const MetaDataTable &mdt) {
 
     std::vector<int> ogs = obsModel->getOptGroupsPresent(mdt);
 
-    std::all_of(
+    return std::all_of(
         ogs.begin(), ogs.end(),
         [&outRoot] (int og) {
             std::string ogstr = std::to_string(og + 1);

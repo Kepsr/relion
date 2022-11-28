@@ -318,6 +318,8 @@ MultidimArray<RFLOAT> FscHelper::computeNoiseSq(
             direct::elem(sigma2, x, f) /= divisor;
         }
     }
+
+    return sigma2;
 }
 
 Image<RFLOAT> FscHelper::computeSignalSq(

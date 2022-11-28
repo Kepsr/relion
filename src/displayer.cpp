@@ -1401,7 +1401,7 @@ int singleViewerCanvas::handle(int ev) {
                 printHelp();
             } else if (strcmp(m->label(), "Quit") == 0) {
                 exit(0);
-            } return 1;          // (tells caller we handled this event)
+            } return 1;  // Tell caller we handled this event
 
         } else if (Fl::event_button() == FL_MIDDLE_MOUSE) {
 
@@ -1450,6 +1450,7 @@ int singleViewerCanvas::handle(int ev) {
         return 0;
 
     }
+    return 0;
 }
 
 void singleViewerCanvas::printHelp() {
