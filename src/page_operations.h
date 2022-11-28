@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 struct uhalf_t { unsigned char bits: 4; };
 
 namespace transcription {

@@ -109,6 +109,15 @@ bool EMDL::is(const EMDL::EMDLabel &label) {
     return data.at(label).type == typeid(T);
 }
 
+#define INSTANTIATE(T) template bool EMDL::is<T>(const EMDL::EMDLabel &label);
+INSTANTIATE(void)
+INSTANTIATE(int)
+INSTANTIATE(double)
+INSTANTIATE(bool)
+INSTANTIATE(std::string)
+INSTANTIATE(std::vector<double>)
+#undef INSTANTIATE
+
 bool EMDL::isValidLabel(const EMDLabel &label) {
     return label > EMDL::UNDEFINED && label < EMDL::LAST_LABEL;
 }

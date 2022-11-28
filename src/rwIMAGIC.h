@@ -237,16 +237,16 @@ void Image<T>::writeIMAGIC(long int img_select, int mode) {
 
         const long int i = this->header.size() - 1;
 
-        if (this->header.template containsLabel(EMDL::IMAGE_STATS_MIN)) {
+        if (this->header.containsLabel(EMDL::IMAGE_STATS_MIN)) {
             header.densmin = this->header.template getValue<float>(EMDL::IMAGE_STATS_MIN, i);
         }
-        if (this->header.template containsLabel(EMDL::IMAGE_STATS_MAX)) {
+        if (this->header.containsLabel(EMDL::IMAGE_STATS_MAX)) {
             header.densmax = this->header.template getValue<float>(EMDL::IMAGE_STATS_MAX, i);
         }
-        if (this->header.template containsLabel(EMDL::IMAGE_STATS_AVG)) {
+        if (this->header.containsLabel(EMDL::IMAGE_STATS_AVG)) {
             header.avdens = this->header.template getValue<float>(EMDL::IMAGE_STATS_AVG, i);
         }
-        if (this->header.template containsLabel(EMDL::IMAGE_STATS_STDDEV)) {
+        if (this->header.containsLabel(EMDL::IMAGE_STATS_STDDEV)) {
             const float sigma = this->header.template getValue<float>(EMDL::IMAGE_STATS_STDDEV, i);
             header.sigma = sigma;
             header.varian = sigma * sigma;
