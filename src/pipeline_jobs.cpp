@@ -28,7 +28,7 @@ static string flankXXX(string s) {
     return "XXX" + s + "XXX";
 }
 
-FileName getTheOtherHalf(const FileName &fn_half1) throw (const char*) {
+FileName getTheOtherHalf(const FileName &fn_half1) {
     FileName fn_half2 = fn_half1.afterLastOf("/");
 
     if (fn_half2.contains("half1")) {
@@ -202,7 +202,7 @@ string JobOption::getCtfFitString(const string &s) {
     "";
 }
 
-float JobOption::getNumber() throw (string) {
+float JobOption::getNumber() {
 
     if (value.substr(0, 2) == "$$") return 0;
 
@@ -443,7 +443,7 @@ void RelionJob::write(const string &fn) {
 
 void RelionJob::saveJobSubmissionScript(
     const string &newfilename, const string &outputname, const vector<string> &commands
-) throw (string) {
+) {
     // Open the standard job submission file
     // Return true unless any of the following fails, in which case return false:
     // - reading from the template submission script
@@ -557,7 +557,7 @@ void RelionJob::initialisePipeline(string &outputname, const string &defaultname
 
 string RelionJob::prepareFinalCommand(
     const string &outputname, vector<string> &commands, bool do_makedir
-) throw (string) {
+) {
 
     // Create output directory if the outname contains a "/"
     if (do_makedir) {
@@ -829,7 +829,7 @@ To print a list of possible options, run the corresponding program from the comm
 string RelionJob::getCommands(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     switch (type) {
 
         case Process::IMPORT:
@@ -974,7 +974,7 @@ Note that due to a bug in a fltk library, you cannot import from directories tha
 string RelionJob::getCommandsImportJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::IMPORT_NAME, job_counter);
 
@@ -1156,7 +1156,7 @@ Note that multiple MotionCor2 processes should not share a GPU; otherwise, it ca
 string RelionJob::getCommandsMotioncorrJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::MOTIONCORR_NAME, job_counter);
 
@@ -1316,7 +1316,7 @@ void RelionJob::initialiseCtffindJob() {
 string RelionJob::getCommandsCtffindJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::CTFFIND_NAME, job_counter);
 
@@ -1431,7 +1431,7 @@ Particles that are not in this STAR file, but present in the picked coordinates 
 string RelionJob::getCommandsManualpickJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::MANUALPICK_NAME, job_counter);
     string command = "`which relion_manualpick`";
@@ -1614,7 +1614,7 @@ Helical tubes with shorter lengths will not be picked. Note that a long helical 
 string RelionJob::getCommandsAutopickJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::AUTOPICK_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
@@ -1803,7 +1803,7 @@ The optimal inter-box distance might also depend on the box size, the helical ri
 string RelionJob::getCommandsExtractJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::EXTRACT_NAME, job_counter);
     string command = "which relion_preprocess";
@@ -1954,7 +1954,7 @@ void RelionJob::initialiseSelectJob() {
 string RelionJob::getCommandsSelectJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASSSELECT_NAME, job_counter);
     string command;
@@ -2306,7 +2306,7 @@ This will affect the time it takes between the progress-bar in the expectation s
 string RelionJob::getCommandsClass2DJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASS2D_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
@@ -2536,7 +2536,7 @@ This will affect the time it takes between the progress-bar in the expectation s
 string RelionJob::getCommandsInimodelJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
 
     initialisePipeline(outputname, Process::INIMODEL_NAME, job_counter);
@@ -2859,7 +2859,7 @@ This will affect the time it takes between the progress-bar in the expectation s
 string RelionJob::getCommandsClass3DJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::CLASS3D_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
@@ -3262,7 +3262,7 @@ This will affect the time it takes between the progress-bar in the expectation s
 string RelionJob::getCommandsAutorefineJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::AUTO3D_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber() > 1 ?  // May throw
@@ -3558,7 +3558,7 @@ This will affect the time it takes between the progress-bar in the expectation s
 string RelionJob::getCommandsMultiBodyJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::MULTIBODY_NAME, job_counter);
 
@@ -3745,7 +3745,7 @@ The central part of the box contains more reliable information compared to the t
 string RelionJob::getCommandsMaskcreateJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::MASKCREATE_NAME, job_counter);
     string command = "`which relion_mask_create`";
@@ -3809,7 +3809,7 @@ void RelionJob::initialiseJoinstarJob() {
 string RelionJob::getCommandsJoinstarJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::JOINSTAR_NAME, job_counter);
     string command = "`which relion_star_handler`";
@@ -3938,7 +3938,7 @@ which you want to use for subtraction. It will use the maps from this run for th
 string RelionJob::getCommandsSubtractJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::SUBTRACT_NAME, job_counter);
     string command;
@@ -4032,7 +4032,7 @@ In such cases, set this option to Yes and provide an ad-hoc filter as described 
 string RelionJob::getCommandsPostprocessJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::POST_NAME, job_counter);
     string command = "`which relion_postprocess`";
@@ -4123,7 +4123,7 @@ This is a developmental feature in need of further testing, but initial results 
 string RelionJob::getCommandsLocalresJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::RESMAP_NAME, job_counter);
 
@@ -4248,7 +4248,7 @@ The mask used for this postprocessing will be applied to the unfiltered half-map
 string RelionJob::getCommandsMotionrefineJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::MOTIONREFINE_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber() > 1 ?
@@ -4385,7 +4385,7 @@ This option cannot be done simultaneously with higher-order aberration estimatio
 string RelionJob::getCommandsCtfrefineJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::CTFREFINE_NAME, job_counter);
     string command = joboptions["nr_mpi"].getNumber() > 1 ?
@@ -4511,7 +4511,7 @@ void RelionJob::initialiseExternalJob() {
 string RelionJob::getCommandsExternalJob(
     string &outputname, vector<string> &commands,
     bool do_makedir, int job_counter
-) throw (string) {
+) {
     commands.clear();
     initialisePipeline(outputname, Process::EXTERNAL_NAME, job_counter);
 

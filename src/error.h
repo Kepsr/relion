@@ -74,7 +74,7 @@
  *     REPORT_ERROR_STR("Requested " << num1 << " objects, only " << num2 << " available!");
  * @endcode
  */
-#define REPORT_ERROR_STR(m) std::stringstream sts; sts << m; throw RelionError(sts.str(), __FILE__, __LINE__)
+#define REPORT_ERROR_STR(m) { std::stringstream sts; sts << m; throw RelionError(sts.str(), __FILE__, __LINE__); }
 
 /** Exception class
  * @ingroup ErrorHandling

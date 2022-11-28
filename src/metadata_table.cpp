@@ -707,6 +707,7 @@ MetaDataTable MetaDataTable::combineMetaDataTables(std::vector<MetaDataTable> &M
 
     // Then we can just append entire tables
     for (const MetaDataTable &mdt: MDin) { MDc.append(mdt); }
+    return MDc;
 }
 
 bool MetaDataTable::compareLabels(

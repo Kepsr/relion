@@ -1461,7 +1461,6 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
             0.0;
         }
     }
-    }
 
     // Any particular reason why 13 comes before 12?
 
@@ -1594,6 +1593,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
             direct::elem(weight_out->data, x, y, z) *= pad3 / c;
         }
     }
+    return vol_out;
 }
 
 void BackProjector::symmetrise(

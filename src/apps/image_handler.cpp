@@ -35,8 +35,10 @@
 // Will only issue warning once, even when called multiple times
 void issue_division_warning() {
     static bool called = false;
-    if (!called++)
-    std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
+    if (!called) {
+        std::cout << "Warning: ignore very small pixel values in divide image..." << std::endl;
+        called = true;
+    }
 }
 
 RFLOAT get_scale(

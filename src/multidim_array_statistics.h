@@ -186,7 +186,7 @@ struct Stats {
  * than separately computing average, standard deviation, minimum, and maximum.
  */
 template <typename T>
-Stats<T> computeStats(const MultidimArray<T> &arr) throw (const char*) {
+Stats<T> computeStats(const MultidimArray<T> &arr) {
 
     if (arr.size() <= 0)
         throw "Statistics cannot be computed for a dimensionless array!";
@@ -195,8 +195,8 @@ Stats<T> computeStats(const MultidimArray<T> &arr) throw (const char*) {
     double sumxx = 0;
 
     Stats<T> stats;
-    stats.min = +std::numeric_limits<double>::max();
-    stats.max = -std::numeric_limits<double>::max();
+    stats.min = (T) +std::numeric_limits<double>::max();
+    stats.max = (T) -std::numeric_limits<double>::max();
 
     // Make one pass through the array.
     for (auto xx : arr) {
@@ -204,8 +204,8 @@ Stats<T> computeStats(const MultidimArray<T> &arr) throw (const char*) {
         sumx  += x;
         sumxx += x * x;
 
-            if (xx > stats.max) { stats.max = xx; } else
-            if (xx < stats.min) { stats.min = xx; }
+        if (xx > stats.max) { stats.max = xx; } else
+        if (xx < stats.min) { stats.min = xx; }
     }
 
     const long int N = arr.size();
@@ -232,7 +232,7 @@ Stats<T> computeStats(const MultidimArray<T> &arr) throw (const char*) {
  * @endcode
  */
 template <typename T>
-RFLOAT median(const MultidimArray<T> &arr) throw (const char*) {
+RFLOAT median(const MultidimArray<T> &arr) {
 
     if (arr.size <= 0) throw "Cannot take the median of an empty collection!";
 

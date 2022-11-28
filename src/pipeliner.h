@@ -200,7 +200,7 @@ class PipeLine {
         RelionJob &job, int current_job, bool is_main_continue,
         bool is_scheduled, bool do_makedir, bool do_overwrite_current,
         std::vector<std::string> &commands
-    ) throw (std::string);
+    );
 
     // Adds job to the pipeline and return the id of the newprocess
     long int addJob(
@@ -213,7 +213,7 @@ class PipeLine {
         RelionJob &job, int &current_job, 
         bool only_schedule, bool is_main_continue,
         bool is_scheduled, bool do_overwrite_current
-    ) throw (std::string);
+    );
 
     // Adds a scheduled job to the pipeline from the command line (with a name for job type)
     int addScheduledJob(std::string job_type, std::string fn_options);
@@ -248,22 +248,22 @@ class PipeLine {
     void getOutputNodesFromStarFile(int this_job);
 
     // Changes the status of this_job to finished in the pipeline, throws if job hasn't started yet
-    void markAsFinishedJob(int this_job, bool is_failed = false) throw (std::string);
+    void markAsFinishedJob(int this_job, bool is_failed = false);
 
     // Set the alias for a job, return true for success, false otherwise
-    void setAliasJob(int this_job, std::string alias) throw (std::string);
+    void setAliasJob(int this_job, std::string alias);
 
     // Make the flowchart for this job
-    void makeFlowChart(long int current_job, bool do_display_pdf) throw (std::string);
+    void makeFlowChart(long int current_job, bool do_display_pdf);
 
     // Undelete a JOb from the pipeline
     void undeleteJob(FileName fn_undel);
 
     // Clean up intermediate files from this_job
-    void cleanupJob(int this_job, bool do_harsh) throw (std::string);
+    void cleanupJob(int this_job, bool do_harsh);
 
     // Clean upintermediate files from all jobs in the pipeline
-    void cleanupAllJobs(bool do_harsh) throw (std::string);
+    void cleanupAllJobs(bool do_harsh);
 
     void replaceFilesForImportExportOfScheduledJobs(
         FileName fn_in_dir, FileName fn_out_dir,
@@ -271,7 +271,7 @@ class PipeLine {
     );
 
     // Export all scheduled jobs
-    void exportAllScheduledJobs(std::string mydir) throw (std::string);
+    void exportAllScheduledJobs(std::string mydir);
 
     // Import previously exported jobs
     void importJobs(FileName fn_export);

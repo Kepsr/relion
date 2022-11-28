@@ -34,7 +34,7 @@ namespace transcription {
 
     // Unfortunately, we cannot partially specialise template functions
     template <typename T, typename U=unsigned char>
-    static void page_cast_copy_half(T *dest, U *src, unsigned long int n) throw (RelionError) {
+    static void page_cast_copy_half(T *dest, U *src, unsigned long int n) {
 
         if (n % 2 != 0) {
             REPORT_ERROR((std::string) "Logic error in " + __func__ + "; for UHalf, pageSize must be even.");

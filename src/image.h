@@ -426,7 +426,7 @@ class Image {
 
     int writeSPIDER(long int select_img=-1, bool isStack = false, int mode = WRITE_OVERWRITE);
 
-    DataType readMRC(long int img_select, bool isStack = false, const FileName &name = "") throw (RelionError);
+    DataType readMRC(long int img_select, bool isStack = false, const FileName &name = "");
 
     int writeMRC(long int img_select, bool isStack = false, int mode = WRITE_OVERWRITE);
 

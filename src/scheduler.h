@@ -91,7 +91,7 @@ class SchedulerOperator {
         const std::string &input1="undefined",
         const std::string &input2="undefined",
         const std::string &output="undefined"
-    ) throw (std::string);
+    );
 
     // Generate a meaningful current_name for the operator
     std::string getName();

@@ -57,7 +57,7 @@ void SchedulerOperator::initialise(
     const std::string &type,
     const std::string &input1, const std::string &input2,
     const std::string &output
-) throw (std::string) {
+) {
 
     this->type = type;
 

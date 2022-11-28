@@ -82,12 +82,13 @@ struct IMAGIChead {
     char history[228];      // 199-255   history
 } ;
 
-inline DataType determine_datatype(const IMAGIChead &header) throw (RelionError) {
+inline DataType determine_datatype(const IMAGIChead &header) {
     if (strstr(header.type, "PACK")) return UChar;
     if (strstr(header.type, "INTG")) return Short;
     if (strstr(header.type, "REAL")) return Float;
     if (strstr(header.type, "RECO") || strstr(header.type, "COMP"))
-    REPORT_ERROR("readIMAGIC: only real-space images can be read into RELION");
+        REPORT_ERROR("readIMAGIC: only real-space images can be read into RELION");
+    REPORT_ERROR("Header type not recognised");
 }
 
 /************************************************************************

@@ -165,7 +165,7 @@ struct callocator {
      * If calloc returns nullptr, an exception is thrown.
      *
      */
-    static T* allocate(size_t memsize) throw (RelionError) {
+    static T* allocate(size_t memsize) {
         T *ptr = (T *) calloc(memsize, sizeof(T));
         if (!ptr) {
             std::cerr << "Failed to allocate " <<  memsize << " bytes." << std::endl;

@@ -27,7 +27,7 @@
 
 #include "src/image.h"
 
-inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat, uint32 width, uint32 length) throw (int) {
+inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat, uint32 width, uint32 length) {
 
     // Detect 4-bit packed TIFFs. This is IMOD's own extension.
     // It is not easy to detect this format. Here we check only the image size.
@@ -54,9 +54,10 @@ inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat, ui
         case 32:
         if (sampleFormat == SAMPLEFORMAT_IEEEFP) return Float;
 
-        default:
-        throw 1;
     }
+
+    throw 1;
+
 }
 
 #include <memory>

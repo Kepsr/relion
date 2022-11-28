@@ -150,7 +150,7 @@ struct gui_layout {
 };
 
 // Get the other half map by swapping half1 and half2
-FileName getTheOtherHalf(const FileName &fn_half1) throw (const char*);
+FileName getTheOtherHalf(const FileName &fn_half1);
 
 /*
  * The Node class represents data and metadata that are either input to or output from Processes
@@ -296,7 +296,7 @@ class JobOption {
     Node getNode();
 
     // Get a numbered value
-    float getNumber() throw (string);
+    float getNumber();
 
     // Get a boolean value
     bool getBoolean();
@@ -381,7 +381,7 @@ class RelionJob {
     void saveJobSubmissionScript(
         const string &newfilename, const string &outputname,
         const vector<string> &commands
-    ) throw (string);
+    );
 
     // Initialise pipeline stuff for each job, return outputname
     void initialisePipeline(
@@ -392,7 +392,7 @@ class RelionJob {
     // Returns true to go ahead, and false to cancel
     string prepareFinalCommand(
         const string &outputname, vector<string> &commands, bool do_makedir
-    ) throw (string);
+    );
 
     // Initialise the generic RelionJob
     void initialise(int job_type);
@@ -401,128 +401,128 @@ class RelionJob {
     string getCommands(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     // Now all the specific job types are defined
     void initialiseImportJob();
     string getCommandsImportJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseMotioncorrJob();
     string getCommandsMotioncorrJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseCtffindJob();
     string getCommandsCtffindJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseManualpickJob();
     string getCommandsManualpickJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseAutopickJob();
     string getCommandsAutopickJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseExtractJob();
     string getCommandsExtractJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseSelectJob();
     string getCommandsSelectJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseClass2DJob();
     string getCommandsClass2DJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseInimodelJob();
     string getCommandsInimodelJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseClass3DJob();
     string getCommandsClass3DJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseAutorefineJob();
     string getCommandsAutorefineJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseMultiBodyJob();
     string getCommandsMultiBodyJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseMaskcreateJob();
     string getCommandsMaskcreateJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseJoinstarJob();
     string getCommandsJoinstarJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseSubtractJob();
     string getCommandsSubtractJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialisePostprocessJob();
     string getCommandsPostprocessJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseLocalresJob();
     string getCommandsLocalresJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseMotionrefineJob();
     string getCommandsMotionrefineJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseCtfrefineJob();
     string getCommandsCtfrefineJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
     void initialiseExternalJob();
     string getCommandsExternalJob(
         string &outputname, vector<string> &commands,
         bool do_makedir, int job_counter
-    ) throw (string);
+    );
 
 };
 

@@ -164,7 +164,7 @@ static void set_CCP4_machine_stamp(char machst[4]) {
     }
 }
 
-static DataType determine_datatype(int mode, int nx, int ny) throw (RelionError) {
+static DataType determine_datatype(int mode, int nx, int ny) {
 
     switch (mode) {
 
@@ -207,7 +207,7 @@ static DataType determine_datatype(int mode, int nx, int ny) throw (RelionError)
   * @ingroup MRC
 */
 template <typename T>
-DataType Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) throw (RelionError) {
+DataType Image<T>::readMRC(long int img_select, bool isStack, const FileName &name) {
     #undef DEBUG
     // #define DEBUG
     #ifdef DEBUG

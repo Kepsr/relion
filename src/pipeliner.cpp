@@ -343,7 +343,7 @@ std::string PipeLine::getCommandLineJob(
     RelionJob &thisjob, int current_job, bool is_main_continue,
     bool is_scheduled, bool do_makedir, bool do_overwrite_current,
     std::vector<std::string> &commands
-) throw (std::string) {
+) {
 
     if (do_overwrite_current) { is_main_continue = false; }
 
@@ -406,7 +406,7 @@ long int PipeLine::addJob(
 void PipeLine::runJob(
     RelionJob &_job, int &current_job, bool only_schedule, bool is_main_continue,
     bool is_scheduled, bool do_overwrite_current
-) throw (std::string) {
+) {
 
     // Remove run.out and run.err when overwriting a job
     if (do_overwrite_current) { is_main_continue = false; }
@@ -985,7 +985,7 @@ void PipeLine::getOutputNodesFromStarFile(int this_job) {
     }
 }
 
-void PipeLine::markAsFinishedJob(int this_job, bool is_failed) throw (std::string) {
+void PipeLine::markAsFinishedJob(int this_job, bool is_failed) {
 
     // Read in existing pipeline, in case some other window had changed it
     std::string lock_message = "markAsFinishedJob";
@@ -1072,7 +1072,7 @@ void PipeLine::markAsFinishedJob(int this_job, bool is_failed) throw (std::strin
 }
 
 // Set the alias for a job
-void PipeLine::setAliasJob(int this_job, std::string alias) throw (std::string) {
+void PipeLine::setAliasJob(int this_job, std::string alias) {
 
     Process &process = processList[this_job];
 
@@ -1160,7 +1160,7 @@ void PipeLine::setAliasJob(int this_job, std::string alias) throw (std::string) 
 
 }
 
-void PipeLine::makeFlowChart(long int current_job, bool do_display_pdf) throw (std::string) {
+void PipeLine::makeFlowChart(long int current_job, bool do_display_pdf) {
 
     if (current_job < 0)
     throw " You can only make flowcharts for existing jobs ... ";
@@ -1229,7 +1229,7 @@ void PipeLine::undeleteJob(FileName fn_undel) {
     write(DO_LOCK);
 }
 
-void PipeLine::cleanupJob(int this_job, bool do_harsh) throw (std::string) {
+void PipeLine::cleanupJob(int this_job, bool do_harsh) {
     const auto this_process = processList[this_job];
     std::cout << "Cleaning up " << this_process.name << std::endl;
     if (this_job < 0 || this_process.status != Process::FINISHED_SUCCESS) {
@@ -1423,7 +1423,7 @@ void PipeLine::cleanupJob(int this_job, bool do_harsh) throw (std::string) {
 }
 
 // Clean upintermediate files from all jobs in the pipeline
-void PipeLine::cleanupAllJobs(bool do_harsh) throw (std::string) {
+void PipeLine::cleanupAllJobs(bool do_harsh) {
     for (int myjob = 0; myjob < processList.size(); myjob++) {
         if (processList[myjob].status == Process::FINISHED_SUCCESS) {
             if (do_harsh && exists(processList[myjob].name + "NO_HARSH_CLEAN"))
@@ -1464,7 +1464,7 @@ void PipeLine::replaceFilesForImportExportOfScheduledJobs(
     }
 }
 
-void PipeLine::exportAllScheduledJobs(std::string mydir) throw (std::string) {
+void PipeLine::exportAllScheduledJobs(std::string mydir) {
     mydir.append("/");  // Make sure the directory name ends with a slash
     system(("mkdir -p ExportJobs/" + mydir).c_str());
 

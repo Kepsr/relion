@@ -359,7 +359,7 @@ class Experiment {
     void initialiseBodies(int _nr_bodies);
 
     // Get the image name for a given part_id
-    FileName getImageNameOnScratch(long int part_id, int img_id, bool is_ctf_image = false) throw (const char*);
+    FileName getImageNameOnScratch(long int part_id, int img_id, bool is_ctf_image = false);
 
     // For parallel executions, lock the scratch directory with a unique code, so we won't copy the same data many times to the same position
     // This determines the lockname and removes the lock if it exists

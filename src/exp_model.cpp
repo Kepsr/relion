@@ -377,7 +377,7 @@ void Experiment::initialiseBodies(int nr_bodies) {
     }
 }
 
-FileName Experiment::getImageNameOnScratch(long int part_id, int img_id, bool is_ctf_image) throw (const char*) {
+FileName Experiment::getImageNameOnScratch(long int part_id, int img_id, bool is_ctf_image) {
     const int optics_group = getOpticsGroup(part_id, img_id);
     const long int my_id = particles[part_id].images[img_id].optics_group_id;
 
