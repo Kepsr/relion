@@ -768,16 +768,12 @@ int AutoPicker::deviceInitialise() {
     int devCount;
     cudaGetDeviceCount(&devCount);
 
-    std::vector < std::vector < std::string > > allThreadIDs;
-    untangleDeviceIDs(gpu_ids, allThreadIDs);
+    const auto allThreadIDs = untangleDeviceIDs(gpu_ids);
 
     // Sequential initialisation of GPUs on all ranks
-    int dev_id;
-    if (!std::isdigit(*gpu_ids.begin())) {
-        dev_id = 0;
-    } else {
-        dev_id = textToInteger((allThreadIDs[0][0]).c_str());
-    }
+    const int dev_id = std::isdigit(*gpu_ids.begin()) ?
+        textToInteger(allThreadIDs[0][0].c_str()) :
+        0;
 
     if (verb > 0) {
         std::cout << " + Using GPU device " << dev_id << std::endl;

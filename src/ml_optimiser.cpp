@@ -1261,8 +1261,7 @@ void MlOptimiser::initialise() {
             std::cerr << "WARNING : at least one of your GPUs is not compatible with RELION (CUDA-capable and compute-capability >= 3.5)" << std::endl;
         }
 
-        std::vector <std::vector<std::string>> allThreadIDs;
-        untangleDeviceIDs(gpu_ids, allThreadIDs);
+        auto allThreadIDs = untangleDeviceIDs(gpu_ids);
 
         // Sequential initialisation of GPUs on all ranks
         bool fullAutomaticMapping = true;
@@ -1295,11 +1294,10 @@ void MlOptimiser::initialise() {
                 // textToInteger(allThreadIDs[0][allThreadIDs[0].size() * i / nr_threads].c_str());
             ) : textToInteger(allThreadIDs[0][i].c_str());  // not semiAutomatic => explicit
 
-
             std::cout << " Thread " << i << " mapped to device " << dev_id << std::endl;
 
-            //Only make a new bundle of not existing on device
-            int bundleId(-1);
+            // Only make a new bundle of not existing on device
+            int bundleId = -1;
 
             for (int j = 0; j < cudaDevices.size(); j++)
                 if (cudaDevices[j] == dev_id)

@@ -296,8 +296,8 @@ void CtffindRunner::initialise() {
     }
 
     if (do_use_gctf && fn_micrographs.size() > 0) {
-        untangleDeviceIDs(gpu_ids, allThreadIDs);
-        if (allThreadIDs[0].empty() || !std::isdigit(*gpu_ids.begin())) {
+        allThreadIDs = untangleDeviceIDs(gpu_ids);
+        if (allThreadIDs[0].empty() || !std::isdigit(gpu_ids[0])) {
             #ifdef CUDA
             if (verb > 0)
                 std::cout << "gpu-ids were not specified, so threads will automatically be mapped to devices (incrementally)."<< std::endl;

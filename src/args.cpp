@@ -49,7 +49,7 @@
 #include <algorithm>
 
 
-int find_option_or_param(int argc, char **argv, std::string option) {
+int find_option_or_param(int argc, char **argv, const std::string &option) {
     int found_at = -1;
     for (int i = 0; i < argc; i++) {
         // std::cout << i << " " << found_at << " " << argv[i] << " looking for " << option << std::endl;
@@ -64,55 +64,62 @@ int find_option_or_param(int argc, char **argv, std::string option) {
 
 // Get parameters from the command line ====================================
 std::string getParameter(
-    int argc, char **argv, const std::string param, const std::string option
+    int argc, char **argv, const std::string &param, const std::string &option
 ) {
     int found_at = find_option_or_param(argc, argv, param);
     if (0 < found_at && found_at < argc - 1) {
         return argv[found_at + 1];
     } else {
         if (option == "NULL")
-            REPORT_ERROR((std::string)"Argument " + param + " not found or invalid argument");
+            REPORT_ERROR((std::string) "Argument " + param + " not found or invalid argument");
 
-        return (std::string) option;
+        return option;
     }
 }
 
 // Check if a parameter was included the command line =============
-bool checkParameter(int argc, char **argv, std::string param) {
-    int i = 0;
-    for (; i < argc && strcmp(param.c_str(), argv[i]) != 0; ++i) {}
-    return i < argc;
+bool checkParameter(int argc, char **argv, const std::string &param) {
+    for (int i = 0; i < argc; ++i) {
+        if (strcmp(param.c_str(), argv[i]) == 0)
+            return true;
+    }
+    return false;
 }
 
 IOParser::IOParser() {
     clear();
 }
 
-IOParser::IOParser(const IOParser &in) {
-    copy(in);
-}
+IOParser::IOParser(const IOParser &other):
+    options(other.options),
+    usages(other.usages),
+    optionals(other.optionals),
+    defaultvalues(other.defaultvalues),
+    argc(other.argc),
+    argv(other.argv),
+    error_messages(other.error_messages),
+    warning_messages(other.warning_messages),
+    current_section(other.current_section),
+    section_names(other.section_names),
+    section_numbers(other.section_numbers) {}
 
-IOParser& IOParser::operator= (const IOParser &in) {
-    copy(in);
+IOParser& IOParser::operator = (IOParser other) {
+    swap(other);
     return *this;
 }
 
-IOParser::~IOParser() {
-    clear();
-}
-
-void IOParser::copy(const IOParser &in) {
-    options = in.options;
-    usages = in.usages;
-    optionals = in.optionals;
-    defaultvalues = in.defaultvalues;
-    argc = in.argc;
-    argv = in.argv;
-    error_messages = in.error_messages;
-    warning_messages = in.warning_messages;
-    current_section = in.current_section;
-    section_names = in.section_names;
-    section_numbers = in.section_numbers;
+void IOParser::swap(IOParser &other) {
+    std::swap(options,          other.options);
+    std::swap(usages,           other.usages);
+    std::swap(optionals,        other.optionals);
+    std::swap(defaultvalues,    other.defaultvalues);
+    std::swap(argc,             other.argc);
+    std::swap(argv,             other.argv);
+    std::swap(error_messages,   other.error_messages);
+    std::swap(warning_messages, other.warning_messages);
+    std::swap(current_section,  other.current_section);
+    std::swap(section_names,    other.section_names);
+    std::swap(section_numbers,  other.section_numbers);
 }
 
 void IOParser::clear() {
@@ -139,30 +146,26 @@ void IOParser::setCommandLine(int argc, char **argv) {
         exit(0);
     }
     // Dirty hack to get pipeline control for all programs...
-    pipeline_control_outputname = checkParameter(argc, argv, "--pipeline_control") ? 
+    pipeline_control_outputname = checkParameter(argc, argv, "--pipeline_control") ?
         getParameter(argc, argv, "--pipeline_control") : "";
 }
 
 void IOParser::addOption(
-    std::string option, std::string usage, std::string defaultvalue, 
+    const std::string &option, const std::string &usage, const std::string &defaultvalue,
     bool hidden
 ) {
     if (hidden) {
         hiddenOptions.push_back(option);
-    } else {
-        if (section_names.empty())
-            REPORT_ERROR("IOParser::addOption: ERROR First add a section to the parser, then the options!");
-        options.push_back(option);
-        usages.push_back(usage);
-        section_numbers.push_back(current_section);
-        if (defaultvalue == "NULL") {
-            optionals.push_back(false);
-            defaultvalues.push_back(" ");
-        } else {
-            optionals.push_back(true);
-            defaultvalues.push_back((std::string)defaultvalue);
-        }
+        return;
     }
+    if (section_names.empty())
+        REPORT_ERROR("IOParser::addOption: ERROR First add a section to the parser, then the options!");
+    options.push_back(option);
+    usages.push_back(usage);
+    section_numbers.push_back(current_section);
+    const bool isNULL = defaultvalue == "NULL";
+    optionals.push_back(!isNULL);
+    defaultvalues.push_back(isNULL ? " " : defaultvalue);
 }
 
 int IOParser::addSection(std::string name) {
@@ -177,18 +180,18 @@ void IOParser::setSection(int number) {
 }
 
 bool IOParser::optionExists(std::string option) {
-    return std::find(options.begin(), options.end(), option) != options.end() || 
+    return std::find(options.begin(), options.end(), option) != options.end() ||
            std::find(hiddenOptions.begin(), hiddenOptions.end(), option) != hiddenOptions.end();
 }
 
 std::string IOParser::getOption(
-    std::string option, std::string usage, std::string defaultvalue, bool hidden
+    const std::string &option, const std::string &usage, const std::string &defaultvalue, bool hidden
 ) {
     // If this option did not exist yet, add it to the list
     if (!optionExists(option))
         addOption(option, usage, defaultvalue, hidden);
 
-    int found_at = find_option_or_param(argc, argv, option);
+    const int found_at = find_option_or_param(argc, argv, option);
     if (0 < found_at && found_at < argc - 1) {
         return argv[found_at + 1];
     } else {
@@ -202,7 +205,7 @@ std::string IOParser::getOption(
 
 // Checks if a boolean parameter was included the command line =============
 bool IOParser::checkOption(
-    std::string option, std::string usage, std::string defaultvalue, bool hidden
+    const std::string &option, const std::string &usage, const std::string &defaultvalue, bool hidden
 ) {
     // If this option did not exist yet, add it to the list
     if (!optionExists(option))
@@ -259,7 +262,7 @@ bool IOParser::checkForErrors(int verb) {
 bool is_ok(IOParser parser, char **argv, int i) {
     // Valid options should start with "--"
     if (strncmp("--", argv[i], 2) == 0)
-        return parser.optionExists((std::string) argv[i]) || strncmp("--pipeline_control", argv[i], 18) == 0;
+        return parser.optionExists(std::string(argv[i])) || strncmp("--pipeline_control", argv[i], 18) == 0;
     if (strncmp("-", argv[i], 1) == 0) {
         // If argv[i] starts with one "-", it must be a number and argv[i - 1] must be a valid option.
         float testval;
@@ -333,36 +336,36 @@ ColourScheme IOParser::getColourScheme() {
         greyscale;
 }
 
-void untangleDeviceIDs(std::string &tangled, std::vector <std::vector<std::string>> &untangled) {
-    // Handle GPU (device) assignments for each rank, if speficied
-    size_t pos = 0;
-    std::string colon = ":";
-    std::vector<std::string> allRankIDs;
-    while ((pos = tangled.find(colon)) != std::string::npos) {
-        allRankIDs.push_back(tangled.substr(0, pos));
-        tangled.erase(0, pos + colon.length());
+inline void consume(std::string &src, std::vector<std::string> &dest, const std::string &delimiter) {
+    size_t pos;
+    while ((pos = src.find(delimiter)) != std::string::npos) {
+        dest.push_back(src.substr(0, pos));
+        src.erase(0, pos + delimiter.length());
     }
-    allRankIDs.push_back(tangled);
+    dest.push_back(src);
+}
 
-    untangled.resize(allRankIDs.size());
-    // Now handle the thread assignements in each rank
-    const std::string comma = ",";
-    for (int i = 0; i < allRankIDs.size(); i++) {
-        pos = 0;
-		// std::cout  << "in 2nd loop "<< allRankIDs[i] << std::endl;
-        while ((pos = allRankIDs[i].find(comma)) != std::string::npos) {
-            untangled[i].push_back(allRankIDs[i].substr(0, pos));
-            allRankIDs[i].erase(0, pos + comma.length());
-        }
-        untangled[i].push_back(allRankIDs[i]);
+std::vector<std::vector<std::string>> untangleDeviceIDs(std::string &tangled) {
+
+    // Handle GPU (device) assignments for each rank, if specified
+    std::vector<std::string> rankIDs;
+    consume(tangled, rankIDs, ":");
+
+    std::vector<std::vector<std::string>> untangled (rankIDs.size());
+    // Now handle the thread assignments in each rank
+    for (int i = 0; i < rankIDs.size(); i++) {
+        consume(rankIDs[i], untangled[i], ",");
     }
+
     #ifdef DEBUG
-        std::cout << "untangled.size() == " << untangled.size() << std::endl;
-        for (int irank = 0; irank < untangled.size(); irank++) {
-            std::cout << "untangled[" << irank << "]: ";
-            for (int ithread = 0; ithread < untangled[irank].size(); ithread++)
-                std::cout << untangled[irank][ithread] << " ";
-            std::cout << std::endl;
-        }
+    std::cout << "untangled.size() == " << untangled.size() << std::endl;
+    for (int i = 0; i < untangled.size(); i++) {
+        std::cout << "untangled[" << i << "]: ";
+        for (const auto &thread : untangled[i])
+            std::cout << thread << " ";
+        std::cout << std::endl;
+    }
     #endif
+
+    return untangled;
 }

@@ -200,7 +200,7 @@ Stats<T> computeStats(const MultidimArray<T> &arr) {
 
     // Make one pass through the array.
     for (auto xx : arr) {
-        double x = static_cast<double>(xx);
+        const double x = static_cast<double>(xx);
         sumx  += x;
         sumxx += x * x;
 

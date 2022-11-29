@@ -48,8 +48,7 @@ int AutoPickerMpi::deviceInitialise() {
     int devCount;
     cudaGetDeviceCount(&devCount);
 
-    std::vector < std::vector < std::string > > allThreadIDs;
-    untangleDeviceIDs(gpu_ids, allThreadIDs);
+    auto allThreadIDs = untangleDeviceIDs(gpu_ids);
 
     // Sequential initialisation of GPUs on all ranks
     int dev_id;

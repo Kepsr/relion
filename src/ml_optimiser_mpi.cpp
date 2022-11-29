@@ -231,8 +231,7 @@ void MlOptimiserMpi::initialise() {
             for (int i = 0; i < uniqueHosts.size(); i++) {
                 std::cout << " uniqueHost " << uniqueHosts[i] << " has " << ranksOnHost[i] << " ranks." << std::endl;
             }
-            std::vector < std::vector < std::string > > allThreadIDs;
-            untangleDeviceIDs(gpu_ids, allThreadIDs);
+            auto allThreadIDs = untangleDeviceIDs(gpu_ids);
 
             /*if (allThreadIDs.size()==1) // if devices are specified for exactly one rank, use it for all ranks
             {

@@ -32,9 +32,9 @@
 #include <src/time.h>
 #include "src/jaz/obs_model.h"
 
-class CtffindRunner
-{
-public:
+class CtffindRunner {
+
+	public:
 
 	// I/O Parser
 	IOParser parser;
@@ -150,10 +150,11 @@ public:
 
 	// Which GPU devices to use?
 	std::string gpu_ids;
-	std::vector < std::vector < std::string > > allThreadIDs;
+	std::vector<std::vector<std::string>> allThreadIDs;
 	int devCount;
 
-public:
+	public:
+
 	// Read command line arguments
 	void read(int argc, char **argv, int rank = 0);
 
