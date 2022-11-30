@@ -387,8 +387,8 @@ std::vector<d2Vector> FscHelper::fitBfactorsNM(
         BFactorFit bf(tauRel, weight, f, cutoff, Bw, Cw);
 
         std::vector<double> initial(2);
-       // initial[0] = -0.001;
-        //initial[1] = -10.0;
+        // initial[0] = -0.001;
+        // initial[1] = -10.0;
         initial[0] = -0.001 / Bw;
         initial[1] = -10.0 / Cw;
 

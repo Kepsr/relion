@@ -155,13 +155,13 @@ class IOParser {
     void clear();
 
     // Store pointer to command line
-    void setCommandLine(int _argc, char** _argv);
+    void setCommandLine(int argc, char** argv);
 
     // Check whether option exists in the stored options
-    bool optionExists(std::string option);
+    bool optionExists(const std::string &option);
 
     // Add a section to the parser, and set the current section to the newly created one, returns number of current section
-    int addSection(std::string name);
+    int addSection(const std::string &name);
 
     // Set the current section to this index
     void setSection(int number);
@@ -181,14 +181,11 @@ class IOParser {
         const std::string &defaultvalue = "NULL", bool hidden = false
     );
 
-    // Returns true if option was given and false if not, and adds option to the list if it did not yet exist
+    // Returns whether the option was given, and adds option to the list if it did not yet exist
     bool checkOption(
         const std::string &option, const std::string &usage,
         const std::string &defaultvalue = "false", bool hidden = false
     );
-
-    // Checks the whole command line and reports an error if it contains an undefined option
-    bool commandLineContainsUndefinedOption();
 
     // Write the stored command line to outstream
     void writeCommandLine(std::ostream &outstream);

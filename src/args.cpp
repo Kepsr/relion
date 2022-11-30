@@ -49,7 +49,7 @@
 #include <algorithm>
 
 
-int find_option_or_param(int argc, char **argv, const std::string &option) {
+int find_warn_multiple(int argc, char **argv, const std::string &option) {
     int found_at = -1;
     for (int i = 0; i < argc; i++) {
         // std::cout << i << " " << found_at << " " << argv[i] << " looking for " << option << std::endl;
@@ -66,15 +66,14 @@ int find_option_or_param(int argc, char **argv, const std::string &option) {
 std::string getParameter(
     int argc, char **argv, const std::string &param, const std::string &option
 ) {
-    int found_at = find_option_or_param(argc, argv, param);
-    if (0 < found_at && found_at < argc - 1) {
+    const int found_at = find_warn_multiple(argc, argv, param);
+    if (0 < found_at && found_at < argc - 1)
         return argv[found_at + 1];
-    } else {
-        if (option == "NULL")
-            REPORT_ERROR((std::string) "Argument " + param + " not found or invalid argument");
 
-        return option;
-    }
+    if (option == "NULL")
+        REPORT_ERROR((std::string) "Argument " + param + " not found or invalid argument");
+
+    return option;
 }
 
 // Check if a parameter was included the command line =============
@@ -86,9 +85,10 @@ bool checkParameter(int argc, char **argv, const std::string &param) {
     return false;
 }
 
-IOParser::IOParser() {
-    clear();
-}
+IOParser::IOParser(): argc(0), argv(nullptr),
+    options(), usages(), optionals(), defaultvalues(),
+    error_messages(), warning_messages(),
+    section_names(), section_numbers(), current_section(0) {}
 
 IOParser::IOParser(const IOParser &other):
     options(other.options),
@@ -154,10 +154,9 @@ void IOParser::addOption(
     const std::string &option, const std::string &usage, const std::string &defaultvalue,
     bool hidden
 ) {
-    if (hidden) {
-        hiddenOptions.push_back(option);
-        return;
-    }
+    if (hidden)
+        return hiddenOptions.push_back(option);
+
     if (section_names.empty())
         REPORT_ERROR("IOParser::addOption: ERROR First add a section to the parser, then the options!");
     options.push_back(option);
@@ -168,7 +167,7 @@ void IOParser::addOption(
     defaultvalues.push_back(isNULL ? " " : defaultvalue);
 }
 
-int IOParser::addSection(std::string name) {
+int IOParser::addSection(const std::string &name) {
     current_section = section_names.size();
     section_names.push_back(name);
     return current_section;
@@ -179,7 +178,7 @@ void IOParser::setSection(int number) {
     current_section = number;
 }
 
-bool IOParser::optionExists(std::string option) {
+bool IOParser::optionExists(const std::string &option) {
     return std::find(options.begin(), options.end(), option) != options.end() ||
            std::find(hiddenOptions.begin(), hiddenOptions.end(), option) != hiddenOptions.end();
 }
@@ -191,7 +190,7 @@ std::string IOParser::getOption(
     if (!optionExists(option))
         addOption(option, usage, defaultvalue, hidden);
 
-    const int found_at = find_option_or_param(argc, argv, option);
+    const int found_at = find_warn_multiple(argc, argv, option);
     if (0 < found_at && found_at < argc - 1) {
         return argv[found_at + 1];
     } else {

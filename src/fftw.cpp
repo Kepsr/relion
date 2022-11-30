@@ -148,17 +148,17 @@ void FourierTransformer::setReal(const MultidimArray<RFLOAT> &input, bool force_
     const int rank = get_array_rank(input);
     const int *const n = new_n(input, rank);
 
-    // Destroy both forward and backward plans if they already exist
+    // Destroy any existing plans
     destroyPlans();
 
     // Make new plans
     {
     ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_PLAN);)
     pthread_lock_guard guard (&fftw_plan_mutex);
-    fPlanForward  = FFTW_PLAN_DFT_R2C(rank, n, fReal->data,
-        (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE);
-    fPlanBackward = FFTW_PLAN_DFT_C2R(rank, n, (FFTW_COMPLEX*) fFourier.data,
-                          fReal->data, FFTW_ESTIMATE);
+    fPlanForward  = FFTW_PLAN_DFT_R2C(rank, n,
+        fReal->data, (FFTW_COMPLEX*) fFourier.data, FFTW_ESTIMATE);
+    fPlanBackward = FFTW_PLAN_DFT_C2R(rank, n,
+        (FFTW_COMPLEX*) fFourier.data, fReal->data, FFTW_ESTIMATE);
     }
 
     delete[] n;
@@ -276,9 +276,7 @@ void FourierTransformer::Transform(int sign) {
         case FFTW_BACKWARD:
         {
         ifdefTIMING_FFTW(TicToc tt (timer_fftw, TIMING_FFTW_EXECUTE);)
-        FFTW_EXECUTE_DFT_C2R(
-            fPlanBackward, (FFTW_COMPLEX*) fFourier.data, fReal->data
-        );
+        FFTW_EXECUTE_DFT_C2R(fPlanBackward, (FFTW_COMPLEX*) fFourier.data, fReal->data);
         }
         return;
 
@@ -658,10 +656,7 @@ void shiftImageInFourierTransform(
             RFLOAT x = i;
             Complex X = direct::elem(in, i);
             Complex Y = Complex::unit(2 * PI * (x * xshift));
-            direct::elem(out, i) = Complex(
-                X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
-                X.imag * Y.real + X.real * Y.imag   // (i conj X) dot Y
-            );
+            direct::elem(out, i) = X * Y;
         }
         return;
 
@@ -677,10 +672,7 @@ void shiftImageInFourierTransform(
             RFLOAT x = i, y = j;
             Complex X = direct::elem(in, i, j);
             Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
-            direct::elem(out, i, j) = Complex(
-                X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
-                X.imag * Y.real + X.real * Y.imag   // (i conj X) dot Y
-            );
+            direct::elem(out, i, j) = X * Y;
         }
         for (long int j = Ysize(in) - 1; j >= Xsize(in); j--) {
         RFLOAT y = j - Ysize(in);
@@ -688,10 +680,7 @@ void shiftImageInFourierTransform(
         RFLOAT x = i;
         Complex X = direct::elem(in, i, j);
         Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
-        direct::elem(out, i, j) = Complex(
-            X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
-            X.real * Y.imag + X.imag * Y.real   // X dot (i conj Y)
-        );
+        direct::elem(out, i, j) = X * Y;
         }
         }
         return;
@@ -712,10 +701,7 @@ void shiftImageInFourierTransform(
             RFLOAT x = i;
             Complex X = direct::elem(in, i, j, k);
             Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift + z * zshift));
-            direct::elem(out, i, j, k) = Complex(
-                X.real * Y.real - X.imag * Y.imag,  // X dot conj Y
-                X.real * Y.imag + X.imag * Y.real   // X dot (i conj Y)
-            );
+            direct::elem(out, i, j, k) = X * Y;
         }
         }
         }

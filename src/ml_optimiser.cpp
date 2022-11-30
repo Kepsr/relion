@@ -160,12 +160,7 @@ Complex *get_shifted_image(
                 )[iitrans].data;
             }
             for (long int n = 0; n < first_Fimg_shifted.size(); n++) {
-                Complex A = AB[n];
-                Complex X = first_Fimg_shifted[n];
-                Fimg_otfshift[n] = Complex(
-                    A.real * X.real - A.imag * X.imag,  // A dot conj X
-                    A.real * X.imag + A.imag * X.real   // A dot (i conj X)
-                );
+                Fimg_otfshift[n] = first_Fimg_shifted[n] * AB[n];
             }
         }
         return Fimg_otfshift.data;
@@ -176,7 +171,7 @@ Complex *get_shifted_image(
             ishift = img_id;
         #ifdef DEBUG_CHECKSIZES
         if (ishift >= exp_local_Fimgs_shifted.size()) {
-            std::cerr<< "ishift= "<<ishift<<" exp_local_Fimgs_shifted.size()= "<< exp_local_Fimgs_shifted.size() <<std::endl;
+            std::cerr << "ishift= " << ishift << " exp_local_Fimgs_shifted.size()= " << exp_local_Fimgs_shifted.size() << std::endl;
             std::cerr << " itrans= " << itrans << std::endl;
             std::cerr << " img_id= " << img_id << std::endl;
             std::cerr << " exp_nr_oversampled_trans= " << exp_nr_oversampled_trans << " exp_nr_trans= " << exp_nr_trans << " iover_trans= " << iover_trans << std::endl;
@@ -6822,27 +6817,19 @@ void MlOptimiser::storeWeightedSums(
                                                 xshift, yshift, zshift
                                             );
                                         } else {
-                                            Complex *AB = (
-                                                adaptive_oversampling == 0 ? global_fftshifts_ab_current :
+                                            Complex *AB = (adaptive_oversampling == 0 ?
+                                                global_fftshifts_ab_current :
                                                 global_fftshifts_ab2_current
                                             )[optics_group][iitrans].data;
-                                            for (long int n = 0; n < (exp_local_Fimgs_shifted[img_id][0]).size(); n++) {
-                                                Complex A = AB[n];
+                                            for (long int n = 0; n < exp_local_Fimgs_shifted[img_id][0].size(); n++) {
+                                                const Complex A = AB[n];
                                                 // Fimg_shift
-                                                Complex X = exp_local_Fimgs_shifted[img_id][0][n];
-                                                Fimg_otfshift[n] = Complex(
-                                                    A.real * X.real - A.imag * X.imag, // A dot conj X
-                                                    A.real * X.imag + A.imag * X.real  // A dot (i conj X)
-                                                );
+                                                Fimg_otfshift[n] = A * exp_local_Fimgs_shifted[img_id][0][n];
                                                 // Fimg_shift_nomask
-                                                Complex Y = exp_local_Fimgs_shifted_nomask[img_id][0][n];
-                                                Fimg_otfshift_nomask[n] = Complex(
-                                                    A.real * Y.real - A.imag * Y.imag,  // A dot conj Y
-                                                    A.real * Y.imag + A.imag * Y.real   // A dot (i conj Y)
-                                                );
+                                                Fimg_otfshift_nomask[n] = A * exp_local_Fimgs_shifted_nomask[img_id][0][n];
                                             }
                                         }
-                                        Fimg_shift = Fimg_otfshift.data;
+                                        Fimg_shift        = Fimg_otfshift.data;
                                         Fimg_shift_nomask = Fimg_otfshift_nomask.data;
                                     }
                                     #ifdef TIMING
@@ -6855,23 +6842,22 @@ void MlOptimiser::storeWeightedSums(
 
                                     // Store weighted sum of squared differences for sigma2_noise estimation
                                     // Suggestion Robert Sinkovitz: merge difference and scale steps to make better use of cache
-                                    for (long int n = 0; n < (Mresol_fine[optics_group]).size(); n++) {
-                                        int ires = Mresol_fine[optics_group][n];
+                                    auto &curr = Mresol_fine[optics_group];
+                                    for (long int n = 0; n < curr.size(); n++) {
+                                        int ires = curr[n];
                                         if (ires > -1) {
                                             // Use FT of masked image for noise estimation!
-                                            Complex A = Frefctf[n];
-                                            Complex X = Fimg_shift[n];
-                                            Complex diff = A - X;
-                                            RFLOAT wdiff2 = weight * (diff.real * diff.real + diff.imag * diff.imag);
+                                            const Complex A = Frefctf[n];
+                                            const Complex X = Fimg_shift[n];
+                                            const Complex diff = A - X;
+                                            const RFLOAT wdiff2 = weight * diff.norm();
                                             // group-wise sigma2_noise
                                             thr_wsum_sigma2_noise[img_id][ires] += wdiff2;
                                             // For norm_correction
                                             exp_wsum_norm_correction[img_id] += wdiff2;
                                             if (do_scale_correction && direct::elem(mymodel.data_vs_prior_class[exp_iclass], ires) > 3.0) {
-                                                RFLOAT AdotX = A.real * X.real + A.imag * X.imag;
-                                                exp_wsum_scale_correction_XA[img_id] += weight * AdotX;
-                                                RFLOAT AdotA = A.real * A.real + A.imag * A.imag;
-                                                exp_wsum_scale_correction_AA[img_id] += weight * AdotA;
+                                                exp_wsum_scale_correction_XA[img_id] += weight * dot(A, X);
+                                                exp_wsum_scale_correction_AA[img_id] += weight * A.norm();
                                             }
                                         }
                                     }
@@ -6968,7 +6954,6 @@ void MlOptimiser::storeWeightedSums(
                                     fnt = "Fref_body" + integerToString(ibody + 1, 1) + "_ihidden" + integerToString(ihidden_over) + ".spi";
                                     tt.write(fnt);
 
-
                                     std::cerr << " rot= " << rot << " tilt= " << tilt << " psi= " << psi << std::endl;
                                     std::cerr << " itrans= " << itrans << " iover_trans= " << iover_trans << std::endl;
                                     std::cerr << " ihidden_over= " << ihidden_over << " weight= " << weight << std::endl;
@@ -6995,7 +6980,6 @@ void MlOptimiser::storeWeightedSums(
                                             // now Fweight stores sum of all w
                                             // Note that CTF needs to be squared in Fweight, weightxinvsigma2 already contained one copy
                                             Fweight[n] += weightxinvsigma2 * ctf;
-
                                         }
                                     }
 
@@ -7195,10 +7179,11 @@ void MlOptimiser::storeWeightedSums(
         // Store weighted sums for scale_correction
         if (do_scale_correction) {
             // Divide XA by the old scale_correction and AA by the square of that, because was incorporated into Fctf
-            exp_wsum_scale_correction_XA[img_id] /= mymodel.scale_correction[group_id];
-            exp_wsum_scale_correction_AA [img_id]/= mymodel.scale_correction[group_id] * mymodel.scale_correction[group_id];
+            const auto scale = mymodel.scale_correction[group_id];
+            exp_wsum_scale_correction_XA[img_id] /= scale;
+            exp_wsum_scale_correction_AA[img_id] /= scale * scale;
 
-            thr_wsum_signal_product_spectra[img_id] += exp_wsum_scale_correction_XA[img_id];
+            thr_wsum_signal_product_spectra[img_id]  += exp_wsum_scale_correction_XA[img_id];
             thr_wsum_reference_power_spectra[img_id] += exp_wsum_scale_correction_AA[img_id];
         }
 
@@ -7361,7 +7346,9 @@ void MlOptimiser::monitorHiddenVariableChanges(long int my_first_part_id, long i
 
                 // Some orientational distance...
                 sum_changes_optimal_orientations += sampling.calculateAngularDistance(rot, tilt, psi, old_rot, old_tilt, old_psi);
-                sum_changes_optimal_offsets += (xoff - old_xoff) * (xoff - old_xoff) + (yoff - old_yoff) * (yoff - old_yoff) + (zoff - old_zoff) * (zoff - old_zoff);
+                sum_changes_optimal_offsets += (xoff - old_xoff) * (xoff - old_xoff)
+                                             + (yoff - old_yoff) * (yoff - old_yoff)
+                                             + (zoff - old_zoff) * (zoff - old_zoff);
                 if (iclass != old_iclass)
                     sum_changes_optimal_classes += 1.0;
                 sum_changes_count += 1.0;

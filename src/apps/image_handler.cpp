@@ -79,7 +79,7 @@ class image_handler_parameters {
     RFLOAT multiply_constant, divide_constant, add_constant, subtract_constant, threshold_above, threshold_below, angpix, requested_angpix, real_angpix, force_header_angpix, lowpass, highpass, logfilter, bfactor, shift_x, shift_y, shift_z, replace_nan, randomize_at, optimise_bfactor_subtract;
     // PNG options
     RFLOAT minval, maxval, sigma_contrast;
-    ColourScheme color_scheme; // There is a global variable called colour_scheme in displayer.h!
+    ColourScheme color_scheme;  // There is a global variable called colour_scheme in displayer.h!
 
     std::string directional;
     int verb;
@@ -107,87 +107,87 @@ class image_handler_parameters {
 
         parser.setCommandLine(argc, argv);
 
-        int general_section = parser.addSection("General options");
-        fn_in = parser.getOption("--i", "Input STAR file, image (.mrc) or movie/stack (.mrcs)");
+        const int general_section = parser.addSection("General options");
+        fn_in  = parser.getOption("--i", "Input STAR file, image (.mrc) or movie/stack (.mrcs)");
         fn_out = parser.getOption("--o", "Output name (for STAR-input: insert this string before each image's extension)", "");
 
-        int cst_section = parser.addSection("image-by-constant operations");
-        multiply_constant = textToFloat(parser.getOption("--multiply_constant", "Multiply the image(s) pixel values by this constant", "1"));
-        divide_constant = textToFloat(parser.getOption("--divide_constant", "Divide the image(s) pixel values by this constant", "1"));
-        add_constant = textToFloat(parser.getOption("--add_constant", "Add this constant to the image(s) pixel values", "0."));
-        subtract_constant = textToFloat(parser.getOption("--subtract_constant", "Subtract this constant from the image(s) pixel values", "0."));
-        threshold_above = textToFloat(parser.getOption("--threshold_above", "Set all values higher than this value to this value", "999."));
-        threshold_below = textToFloat(parser.getOption("--threshold_below", "Set all values lower than this value to this value", "-999."));
+        const int cst_section = parser.addSection("image-by-constant operations");
+        multiply_constant = textToFloat(parser.getOption("--multiply_constant", "Multiply the image(s) pixel values by this constant",   "1"));
+        divide_constant   = textToFloat(parser.getOption("--divide_constant",   "Divide the image(s) pixel values by this constant",     "1"));
+        add_constant      = textToFloat(parser.getOption("--add_constant",      "Add this constant to the image(s) pixel values",        "0"));
+        subtract_constant = textToFloat(parser.getOption("--subtract_constant", "Subtract this constant from the image(s) pixel values", "0"));
+        threshold_above   = textToFloat(parser.getOption("--threshold_above", "Set all values higher than this value to this value", "+999.0"));
+        threshold_below   = textToFloat(parser.getOption("--threshold_below", "Set all values lower than this value to this value",  "-999.0"));
 
-        int img_section = parser.addSection("image-by-image operations");
-        fn_mult = parser.getOption("--multiply", "Multiply input image(s) by the pixel values in this image", "");
-        fn_div = parser.getOption("--divide", "Divide input image(s) by the pixel values in this image", "");
-        fn_add = parser.getOption("--add", "Add the pixel values in this image to the input image(s) ", "");
-        fn_subtract = parser.getOption("--subtract", "Subtract the pixel values in this image to the input image(s) ", "");
-        fn_fsc = parser.getOption("--fsc", "Calculate FSC curve of the input image with this image", "");
-        do_power = parser.checkOption("--power", "Calculate power spectrum (|F|^2) of the input image");
-        fn_adjust_power = parser.getOption("--adjust_power", "Adjust the power spectrum of the input image to be the same as this image ", "");
-        fn_fourfilter = parser.getOption("--fourier_filter", "Multiply the Fourier transform of the input image(s) with this one image ", "");
+        const int img_section = parser.addSection("image-by-image operations");
+        fn_mult         = parser.getOption("--multiply", "Multiply input image(s) by the pixel values in this image",     "");
+        fn_div          = parser.getOption("--divide",   "Divide input image(s) by the pixel values in this image",       "");
+        fn_add          = parser.getOption("--add",      "Add the pixel values in this image to the input image(s)",      "");
+        fn_subtract     = parser.getOption("--subtract", "Subtract the pixel values in this image to the input image(s)", "");
+        fn_fsc          = parser.getOption("--fsc",      "Calculate FSC curve of the input image with this image", "");
+        do_power        = parser.checkOption("--power",  "Calculate power spectrum (|F|^2) of the input image");
+        fn_adjust_power = parser.getOption("--adjust_power",   "Adjust the power spectrum of the input image to be the same as this image", "");
+        fn_fourfilter   = parser.getOption("--fourier_filter", "Multiply the Fourier transform of the input image(s) with this one image",  "");
 
-        int subtract_section = parser.addSection("additional subtract options");
+        const int subtract_section = parser.addSection("additional subtract options");
         do_optimise_scale_subtract = parser.checkOption("--optimise_scale_subtract", "Optimise scale between maps before subtraction?");
         optimise_bfactor_subtract = textToFloat(parser.getOption("--optimise_bfactor_subtract", "Search range for relative B-factor for subtraction (in A^2)", "0."));
         fn_mask = parser.getOption("--mask_optimise_subtract", "Use only voxels in this mask to optimise scale for subtraction", "");
 
-        int four_section = parser.addSection("per-image operations");
+        const int four_section = parser.addSection("per-image operations");
         do_stats = parser.checkOption("--stats", "Calculate per-image statistics?");
         do_calc_com = parser.checkOption("--com", "Calculate center of mass?");
-        bfactor = textToFloat(parser.getOption("--bfactor", "Apply a B-factor (in A^2)", "0."));
-        lowpass = textToFloat(parser.getOption("--lowpass", "Low-pass filter frequency (in A)", "-1."));
+        bfactor  = textToFloat(parser.getOption("--bfactor", "Apply a B-factor (in A^2)", "0."));
+        lowpass  = textToFloat(parser.getOption("--lowpass", "Low-pass filter frequency (in A)", "-1."));
         highpass = textToFloat(parser.getOption("--highpass", "High-pass filter frequency (in A)", "-1."));
         directional = parser.getOption("--directional", "Directionality of low-pass filter frequency ('X', 'Y' or 'Z', default non-directional)", "");
-        logfilter = textToFloat(parser.getOption("--LoG", "Diameter for optimal response of Laplacian of Gaussian filter (in A)", "-1."));
-        angpix = textToFloat(parser.getOption("--angpix", "Pixel size (in A)", "-1"));
+        logfilter        = textToFloat(parser.getOption("--LoG", "Diameter for optimal response of Laplacian of Gaussian filter (in A)", "-1."));
+        angpix           = textToFloat(parser.getOption("--angpix", "Pixel size (in A)", "-1"));
         requested_angpix = textToFloat(parser.getOption("--rescale_angpix", "Scale input image(s) to this new pixel size (in A)", "-1."));
         real_angpix = -1;
         force_header_angpix = textToFloat(parser.getOption("--force_header_angpix", "Change the pixel size in the header (in A). Without --rescale_angpix, the image is not scaled.", "-1."));
-        new_box = textToInteger(parser.getOption("--new_box", "Resize the image(s) to this new box size (in pixel) ", "-1"));
+        new_box           = textToInteger(parser.getOption("--new_box", "Resize the image(s) to this new box size (in pixel) ", "-1"));
         filter_edge_width = textToInteger(parser.getOption("--filter_edge_width", "Width of the raised cosine on the low/high-pass filter edge (in resolution shells)", "2"));
         do_flipX = parser.checkOption("--flipX", "Flip (mirror) a 2D image or 3D map in the X-direction?");
         do_flipY = parser.checkOption("--flipY", "Flip (mirror) a 2D image or 3D map in the Y-direction?");
         do_flipZ = parser.checkOption("--flipZ", "Flip (mirror) a 3D map in the Z-direction?");
         do_invert_hand = parser.checkOption("--invert_hand", "Invert hand by flipping X? Similar to flipX, but preserves the symmetry origin. Edge pixels are wrapped around.");
-        do_shiftCOM = parser.checkOption("--shift_com", "Shift image(s) to their center-of-mass (only on positive pixel values)");
-        shift_x = textToFloat(parser.getOption("--shift_x", "Shift images this many pixels in the X-direction", "0."));
-        shift_y = textToFloat(parser.getOption("--shift_y", "Shift images this many pixels in the Y-direction", "0."));
-        shift_z = textToFloat(parser.getOption("--shift_z", "Shift images this many pixels in the Z-direction", "0."));
-        do_avg_ampl = parser.checkOption("--avg_ampl", "Calculate average amplitude spectrum for all images?");
-        do_avg_ampl2 = parser.checkOption("--avg_ampl2", "Calculate average amplitude spectrum for all images?");
+        do_shiftCOM    = parser.checkOption("--shift_com", "Shift image(s) to their center-of-mass (only on positive pixel values)");
+        shift_x = textToFloat(parser.getOption("--shift_x", "Shift images this many pixels in the X-direction", "0"));
+        shift_y = textToFloat(parser.getOption("--shift_y", "Shift images this many pixels in the Y-direction", "0"));
+        shift_z = textToFloat(parser.getOption("--shift_z", "Shift images this many pixels in the Z-direction", "0"));
+        do_avg_ampl      = parser.checkOption("--avg_ampl",      "Calculate average amplitude spectrum for all images?");
+        do_avg_ampl2     = parser.checkOption("--avg_ampl2",     "Calculate average amplitude spectrum for all images?");
         do_avg_ampl2_ali = parser.checkOption("--avg_ampl2_ali", "Calculate average amplitude spectrum for all aligned images?");
-        do_average = parser.checkOption("--average", "Calculate average of all images (without alignment)");
-        fn_correct_ampl = parser.getOption("--correct_avg_ampl", "Correct all images with this average amplitude spectrum", "");
-        minr_ampl_corr = textToInteger(parser.getOption("--minr_ampl_corr", "Minimum radius (in Fourier pixels) to apply average amplitudes", "0"));
-        do_remove_nan = parser.checkOption("--remove_nan", "Replace non-numerical values (NaN, inf, etc) in the image(s)");
-        replace_nan = textToFloat(parser.getOption("--replace_nan", "Replace non-numerical values (NaN, inf, etc) with this value", "0"));
-        randomize_at = textToFloat(parser.getOption("--phase_randomise", "Randomise phases beyond this resolution (in Angstroms)", "-1"));
+        do_average       = parser.checkOption("--average", "Calculate average of all images (without alignment)");
+        fn_correct_ampl  = parser.getOption("--correct_avg_ampl", "Correct all images with this average amplitude spectrum", "");
+        minr_ampl_corr   = textToInteger(parser.getOption("--minr_ampl_corr", "Minimum radius (in Fourier pixels) to apply average amplitudes", "0"));
+        do_remove_nan    = parser.checkOption("--remove_nan", "Replace non-numerical values (NaN, inf, etc) in the image(s)");
+        replace_nan      = textToFloat(parser.getOption("--replace_nan", "Replace non-numerical values (NaN, inf, etc) with this value", "0"));
+        randomize_at     = textToFloat(parser.getOption("--phase_randomise", "Randomise phases beyond this resolution (in Angstroms)", "-1"));
 
-        int three_d_section = parser.addSection("3D operations");
+        const int three_d_section = parser.addSection("3D operations");
         fn_sym = parser.getOption("--sym", "Symmetrise 3D map with this point group (e.g. D6)", "");
 
-        int preprocess_section = parser.addSection("2D-micrograph (or movie) operations");
-        do_flipXY = parser.checkOption("--flipXY", "Flip the image(s) in the XY direction?");
-        do_flipmXY = parser.checkOption("--flipmXY", "Flip the image(s) in the -XY direction?");
+        const int preprocess_section = parser.addSection("2D-micrograph (or movie) operations");
+        do_flipXY   = parser.checkOption("--flipXY",   "Flip the image(s) in the XY direction?");
+        do_flipmXY  = parser.checkOption("--flipmXY",  "Flip the image(s) in the -XY direction?");
         do_add_edge = parser.checkOption("--add_edge", "Add a barcode-like edge to the micrograph/movie frames?");
-        edge_x0 = textToInteger(parser.getOption("--edge_x0", "Pixel column to be used for the left edge", "0"));
-        edge_y0 = textToInteger(parser.getOption("--edge_y0", "Pixel row to be used for the top edge", "0"));
+        edge_x0 = textToInteger(parser.getOption("--edge_x0", "Pixel column to be used for the left edge",  "0"));
+        edge_y0 = textToInteger(parser.getOption("--edge_y0", "Pixel row to be used for the top edge",      "0"));
         edge_xF = textToInteger(parser.getOption("--edge_xF", "Pixel column to be used for the right edge", "4095"));
-        edge_yF = textToInteger(parser.getOption("--edge_yF", "Pixel row to be used for the bottom edge", "4095"));
+        edge_yF = textToInteger(parser.getOption("--edge_yF", "Pixel row to be used for the bottom edge",   "4095"));
 
-        int avg_section = parser.addSection("Movie-frame averaging options");
-        bin_avg = textToInteger(parser.getOption("--avg_bin", "Width (in frames) for binning average, i.e. of every so-many frames", "-1"));
-        avg_first = textToInteger(parser.getOption("--avg_first", "First frame to include in averaging", "-1"));
-        avg_last = textToInteger(parser.getOption("--avg_last", "Last frame to include in averaging", "-1"));
+        const int avg_section = parser.addSection("Movie-frame averaging options");
+        bin_avg   = textToInteger(parser.getOption("--avg_bin",   "Width (in frames) for binning average, i.e. of every so-many frames", "-1"));
+        avg_first = textToInteger(parser.getOption("--avg_first", "First frame to include in averaging",                                 "-1"));
+        avg_last  = textToInteger(parser.getOption("--avg_last",  "Last frame to include in averaging",                                  "-1"));
         do_average_all_frames = parser.checkOption("--average_all_movie_frames", "Average all movie frames of all movies in the input STAR file.");
 
-        int png_section = parser.addSection("PNG options");
+        const int png_section = parser.addSection("PNG options");
         minval = textToFloat(parser.getOption("--black", "Pixel value for black (default is auto-contrast)", "0"));
         maxval = textToFloat(parser.getOption("--white", "Pixel value for white (default is auto-contrast)", "0"));
-        sigma_contrast  = textToFloat(parser.getOption("--sigma_contrast", "Set white and black pixel values this many times the image stddev from the mean", "0"));
+        sigma_contrast = textToFloat(parser.getOption("--sigma_contrast", "Set white and black pixel values this many times the image stddev from the mean", "0"));
 
         color_scheme = parser.getColourScheme();
 
@@ -634,7 +634,7 @@ class image_handler_parameters {
             }
             if (fn_out.getExtension() != "mrcs")
                 std::cout << "NOTE: the input (--i) is a STAR file but the output (--o) does not have .mrcs extension. The output is treated as a suffix, not a path." << std::endl;
-            FileName fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, 0);
+            const FileName fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, 0);
             fn_img.decompose(slice_id, fn_stem);
             input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
         } else if (input_is_stack) {
@@ -671,7 +671,7 @@ class image_handler_parameters {
             if (i_img == 0) {
                 Image<RFLOAT> Ihead;
                 Ihead.read(fn_img, false);
-                Image<RFLOAT>::Dimensions dimensions = Ihead.getDimensions();
+                const auto dimensions = Ihead.getDimensions();
                 xdim = dimensions.x;
                 ydim = dimensions.y;
                 zdim = dimensions.z;
@@ -859,7 +859,7 @@ class image_handler_parameters {
 
 
         if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali || do_average || do_average_all_frames) {
-            avg_ampl /= (RFLOAT)i_img;
+            avg_ampl /= (RFLOAT) i_img;
             Iout() = avg_ampl;
             Iout.write(fn_out);
         }
@@ -868,7 +868,7 @@ class image_handler_parameters {
             progress_bar(MD.size());
 
         if (do_md_out && fn_in.getExtension() == "star") {
-            FileName fn_md_out = fn_in.insertBeforeExtension("_" + fn_out);
+            const FileName fn_md_out = fn_in.insertBeforeExtension("_" + fn_out);
 
             if (do_ignore_optics) {
                 MD.write(fn_md_out);
