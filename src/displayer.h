@@ -47,10 +47,9 @@
 #include <src/time.h>
 #include <src/args.h>
 
-
-#define GUI_BACKGROUND_COLOR (fl_rgb_color(240,240,240))
-#define GUI_INPUT_COLOR (fl_rgb_color(255,255,230))
-#define GUI_RUNBUTTON_COLOR (fl_rgb_color(238,130,238))
+const Fl_Color GUI_BACKGROUND_COLOR = fl_rgb_color(240, 240, 240);
+const Fl_Color GUI_INPUT_COLOR      = fl_rgb_color(255, 255, 230);
+const Fl_Color GUI_RUNBUTTON_COLOR  = fl_rgb_color(238, 130, 238);
 
 enum {
     DISPLAYER_NOT_SELECTED,
@@ -107,17 +106,16 @@ class DisplayBox: public Fl_Box {
     RFLOAT scale;
 
     // Constructor with an image and its metadata
-    DisplayBox(int X, int Y, int W, int H, const char *L=0) : Fl_Box(X,Y,W,H,L) { img_data = NULL; img_label = ""; MDimg.clear(); }
+    DisplayBox(int X, int Y, int W, int H, const char *L=0):
+        Fl_Box(X, Y, W, H, L), img_data(nullptr), img_label() { MDimg.clear(); }
 
     void setData(MultidimArray<RFLOAT> &img, MetaDataContainer *MDCin, int ipos, RFLOAT minval, RFLOAT maxval,
                  RFLOAT _scale, bool do_relion_scale = false);
 
     // Destructor
-    ~DisplayBox()
-    {
+    ~DisplayBox() {
         MDimg.clear();
-        if (img_data)
-            delete [] img_data;
+        delete[] img_data;
     };
 
     // Change selected status, redraw and return new status

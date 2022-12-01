@@ -618,33 +618,36 @@ RFLOAT getKullbackLeiblerDivergence(MultidimArray<Complex> &Fimg,
                                     int highshell = -1, int lowshell = -1);
 
 
-// Resize a map by windowing it's Fourier Transform
+// Resize a map by windowing its Fourier Transform
 void resizeMap(MultidimArray<RFLOAT> &img, int newsize);
 
-// Apply a B-factor to a map (given it's Fourier transform)
+// Apply a B-factor to a map in Fourier space
 void applyBFactorToMap(MultidimArray<Complex> &FT, int ori_size, RFLOAT bfactor, RFLOAT angpix);
 
-// Apply a B-factor to a map (given it's real-space array)
+// Apply a B-factor to a map in real space
 void applyBFactorToMap(MultidimArray<RFLOAT> &img, RFLOAT bfactor, RFLOAT angpix);
 
-// Apply a Laplacian-of-Gaussian filter to a map (given it's Fourier transform)
+// Apply a Laplacian-of-Gaussian filter to a map in Fourier space
 void LoGFilterMap(MultidimArray<Complex> &FT, int ori_size, RFLOAT sigma, RFLOAT angpix);
 
-// Apply a Laplacian-of-Gaussian filter to a map (given it's real-space array)
+// Apply a Laplacian-of-Gaussian filter to a map in real space
 void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix);
 
-// Low-pass filter a map (given it's Fourier transform)
-void lowPassFilterMap(MultidimArray<Complex> &FT, int ori_size,
-                      RFLOAT low_pass, RFLOAT angpix, int filter_edge_width = 2, bool do_highpass_instead = false);
+// Low-pass filter a map in Fourier space
+void lowPassFilterMap(MultidimArray<Complex> &FT, int size,
+                      RFLOAT low_pass, RFLOAT angpix, int filter_edge_width = 2);
 
-// Low-pass and high-pass filter a map (given it's real-space array)
+void highPassFilterMap(MultidimArray<Complex> &FT, int size,
+                      RFLOAT low_pass, RFLOAT angpix, int filter_edge_width = 2);
+
+// Low-pass and high-pass filter a map in real space
 void lowPassFilterMap(MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width = 2);
 void highPassFilterMap(MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width = 2);
 
-// Directional filter a map (given it's Fourier transform)
+// Directional filter a map in Fourier space
 void directionalFilterMap(MultidimArray<Complex> &FT, int ori_size,
-                          RFLOAT low_pass, RFLOAT angpix, std::string axis = "x", int filter_edge_width = 2);
-void directionalFilterMap(MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, std::string axis = "x", int filter_edge_width = 2);
+                          RFLOAT low_pass, RFLOAT angpix, int axis = 0, int filter_edge_width = 2);
+void directionalFilterMap(MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int axis = 0, int filter_edge_width = 2);
 
 /*
  *	Beamtilt x and y are given in mradians

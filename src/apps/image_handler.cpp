@@ -65,6 +65,48 @@ inline T maybe(T t, F f) {
     try { return f(); } catch (const char *errmsg) { return t; }
 }
 
+void rescale(
+    Image<RFLOAT> &img,
+    RFLOAT angpix, RFLOAT requested_angpix, RFLOAT real_angpix,
+    int &my_new_box_size
+) {
+    int oldxsize = Xsize(img());
+    int oldysize = Ysize(img());
+    int oldsize = oldxsize;
+    if (oldxsize != oldysize && img().getDim() == 2) {
+        oldsize = std::max(oldxsize, oldysize);
+        img() = img().setXmippOrigin().windowed(
+            Xmipp::init(oldsize), Xmipp::last(oldsize),
+            Xmipp::init(oldsize), Xmipp::last(oldsize)
+        );
+    }
+
+    int newsize = make_even(round(oldsize * (angpix / requested_angpix)));
+
+    real_angpix = oldsize * angpix / newsize;
+    if (fabs(real_angpix - requested_angpix) / requested_angpix > 0.001)
+        std::cerr << "WARNING: The requested pixel size (--rescale_angpix) is " << requested_angpix << " A/px. "
+        "However, because the box size will be trimmed to an even number "
+        "(" << newsize << " in this case), "
+        "the actual pixel size will be " << real_angpix << " A/px. "
+        "The actual pixel size will be written into the image header, "
+        "unless you use --force_header_angpix." << std::endl;
+
+    resizeMap(img(), newsize);
+    my_new_box_size = newsize;
+
+    if (oldxsize != oldysize && img().getDim() == 2) {
+        const int new_xdim = make_even(round(oldxsize * (angpix / real_angpix)));
+        const int new_ydim = make_even(round(oldysize * (angpix / real_angpix)));
+        img() = img().setXmippOrigin().windowed(
+            Xmipp::init(new_xdim), Xmipp::last(new_xdim), 
+            Xmipp::init(new_ydim), Xmipp::last(new_ydim)
+        );
+    }
+
+    // Also reset the sampling rate in the header
+    img.setSamplingRateInHeader(real_angpix);
+}
 
 class image_handler_parameters {
 
@@ -112,10 +154,10 @@ class image_handler_parameters {
         fn_out = parser.getOption("--o", "Output name (for STAR-input: insert this string before each image's extension)", "");
 
         const int cst_section = parser.addSection("image-by-constant operations");
-        multiply_constant = textToFloat(parser.getOption("--multiply_constant", "Multiply the image(s) pixel values by this constant",   "1"));
-        divide_constant   = textToFloat(parser.getOption("--divide_constant",   "Divide the image(s) pixel values by this constant",     "1"));
-        add_constant      = textToFloat(parser.getOption("--add_constant",      "Add this constant to the image(s) pixel values",        "0"));
-        subtract_constant = textToFloat(parser.getOption("--subtract_constant", "Subtract this constant from the image(s) pixel values", "0"));
+        multiply_constant = textToFloat(parser.getOption("--multiply_constant", "Multiply the image(s) pixel values by this constant",   "1.0"));
+        divide_constant   = textToFloat(parser.getOption("--divide_constant",   "Divide the image(s) pixel values by this constant",     "1.0"));
+        add_constant      = textToFloat(parser.getOption("--add_constant",      "Add this constant to the image(s) pixel values",        "0.0"));
+        subtract_constant = textToFloat(parser.getOption("--subtract_constant", "Subtract this constant from the image(s) pixel values", "0.0"));
         threshold_above   = textToFloat(parser.getOption("--threshold_above", "Set all values higher than this value to this value", "+999.0"));
         threshold_below   = textToFloat(parser.getOption("--threshold_below", "Set all values lower than this value to this value",  "-999.0"));
 
@@ -131,27 +173,29 @@ class image_handler_parameters {
 
         const int subtract_section = parser.addSection("additional subtract options");
         do_optimise_scale_subtract = parser.checkOption("--optimise_scale_subtract", "Optimise scale between maps before subtraction?");
-        optimise_bfactor_subtract = textToFloat(parser.getOption("--optimise_bfactor_subtract", "Search range for relative B-factor for subtraction (in A^2)", "0."));
+        optimise_bfactor_subtract = textToFloat(parser.getOption("--optimise_bfactor_subtract", "Search range for relative B-factor for subtraction (in A^2)", "0.0"));
         fn_mask = parser.getOption("--mask_optimise_subtract", "Use only voxels in this mask to optimise scale for subtraction", "");
 
         const int four_section = parser.addSection("per-image operations");
-        do_stats = parser.checkOption("--stats", "Calculate per-image statistics?");
+        do_stats    = parser.checkOption("--stats", "Calculate per-image statistics?");
         do_calc_com = parser.checkOption("--com", "Calculate center of mass?");
-        bfactor  = textToFloat(parser.getOption("--bfactor", "Apply a B-factor (in A^2)", "0."));
-        lowpass  = textToFloat(parser.getOption("--lowpass", "Low-pass filter frequency (in A)", "-1."));
-        highpass = textToFloat(parser.getOption("--highpass", "High-pass filter frequency (in A)", "-1."));
+        bfactor  = textToFloat(parser.getOption("--bfactor", "Apply a B-factor (in A^2)", "0.0"));
+        lowpass  = textToFloat(parser.getOption("--lowpass", "Low-pass filter frequency (in A)", "-1.0"));
+        highpass = textToFloat(parser.getOption("--highpass", "High-pass filter frequency (in A)", "-1.0"));
         directional = parser.getOption("--directional", "Directionality of low-pass filter frequency ('X', 'Y' or 'Z', default non-directional)", "");
-        logfilter        = textToFloat(parser.getOption("--LoG", "Diameter for optimal response of Laplacian of Gaussian filter (in A)", "-1."));
+        logfilter        = textToFloat(parser.getOption("--LoG", "Diameter for optimal response of Laplacian of Gaussian filter (in A)", "-1.0"));
         angpix           = textToFloat(parser.getOption("--angpix", "Pixel size (in A)", "-1"));
-        requested_angpix = textToFloat(parser.getOption("--rescale_angpix", "Scale input image(s) to this new pixel size (in A)", "-1."));
+        requested_angpix = textToFloat(parser.getOption("--rescale_angpix", "Scale input image(s) to this new pixel size (in A)", "-1.0"));
         real_angpix = -1;
-        force_header_angpix = textToFloat(parser.getOption("--force_header_angpix", "Change the pixel size in the header (in A). Without --rescale_angpix, the image is not scaled.", "-1."));
+        force_header_angpix = textToFloat(parser.getOption("--force_header_angpix", "Change the pixel size in the header (in A). "
+            "Without --rescale_angpix, the image is not scaled.", "-1.0"));
         new_box           = textToInteger(parser.getOption("--new_box", "Resize the image(s) to this new box size (in pixel) ", "-1"));
         filter_edge_width = textToInteger(parser.getOption("--filter_edge_width", "Width of the raised cosine on the low/high-pass filter edge (in resolution shells)", "2"));
         do_flipX = parser.checkOption("--flipX", "Flip (mirror) a 2D image or 3D map in the X-direction?");
         do_flipY = parser.checkOption("--flipY", "Flip (mirror) a 2D image or 3D map in the Y-direction?");
         do_flipZ = parser.checkOption("--flipZ", "Flip (mirror) a 3D map in the Z-direction?");
-        do_invert_hand = parser.checkOption("--invert_hand", "Invert hand by flipping X? Similar to flipX, but preserves the symmetry origin. Edge pixels are wrapped around.");
+        do_invert_hand = parser.checkOption("--invert_hand", "Invert hand by flipping X? Similar to flipX, but preserves the symmetry origin. "
+            "Edge pixels are wrapped around.");
         do_shiftCOM    = parser.checkOption("--shift_com", "Shift image(s) to their center-of-mass (only on positive pixel values)");
         shift_x = textToFloat(parser.getOption("--shift_x", "Shift images this many pixels in the X-direction", "0"));
         shift_y = textToFloat(parser.getOption("--shift_y", "Shift images this many pixels in the Y-direction", "0"));
@@ -323,7 +367,8 @@ class image_handler_parameters {
                             RFLOAT w = Imask()[n];
                             RFLOAT x = Iin()[n];
                             RFLOAT a = Isharp[n];
-                            diff2 += w * w * (x - scale_this_iter * a) * (x - scale_this_iter * a);
+                            RFLOAT b = x - scale_this_iter * a;
+                            diff2 += w * w * b * b;
                         }
                         if (diff2 < smallest_diff2) {
                             smallest_diff2 = diff2;
@@ -348,7 +393,7 @@ class image_handler_parameters {
                 // Looks like a job for expression templates
             }
         } else if (!fn_fsc.empty()) {
-            MultidimArray<RFLOAT> fsc = getFSC(Iout(), Iop());
+            const auto fsc = getFSC(Iout(), Iop());
             MetaDataTable MDfsc;
             MDfsc.name = "fsc";
             for (long int i = 0; i < Xsize(fsc); i++) {
@@ -366,7 +411,6 @@ class image_handler_parameters {
             MDpower.name = "power";
             const long int Nyquist = Xsize(Iout()) / 2 + 1;
             for (long int i = 0; i <= Nyquist; i++) {
-
                 MDpower.addObject();
                 const RFLOAT res = i > 0 ? Xsize(Iout()) * angpix / (RFLOAT) i : 999.0;
                 MDpower.setValue(EMDL::SPECTRAL_IDX, i, i);
@@ -434,9 +478,9 @@ class image_handler_parameters {
             if (directional.empty()) {
                 lowPassFilterMap(Iout(), lowpass, angpix, filter_edge_width);
             } else {
-                directionalFilterMap(
-                    Iout(), lowpass, angpix, directional, filter_edge_width
-                );
+                const int axis = directional.length() == 1 ?
+                    std::string("xyz").find(::tolower(directional[0])) : -1;
+                directionalFilterMap(Iout(), lowpass, angpix, axis, filter_edge_width);
             }
         }
 
@@ -494,59 +538,24 @@ class image_handler_parameters {
         }
 
         // Re-scale
-        if (requested_angpix > 0.0) {
-            int oldxsize = Xsize(Iout());
-            int oldysize = Ysize(Iout());
-            int oldsize = oldxsize;
-            if (oldxsize != oldysize && Iout().getDim() == 2) {
-                oldsize = std::max(oldxsize, oldysize);
-                Iout() = Iout().setXmippOrigin().windowed(
-                    Xmipp::init(oldsize), Xmipp::last(oldsize),
-                    Xmipp::init(oldsize), Xmipp::last(oldsize)
-                );
-            }
-
-            int newsize = make_even(round(oldsize * (angpix / requested_angpix)));
-
-            real_angpix = oldsize * angpix / newsize;
-            if (fabs(real_angpix - requested_angpix) / requested_angpix > 0.001)
-                std::cerr << "WARNING: The requested pixel size (--rescale_angpix) is " << requested_angpix << " A/px. "
-                "However, because the box size will be trimmed to an even number "
-                "(" << newsize << " in this case), "
-                "the actual pixel size will be " << real_angpix << " A/px. "
-                "The actual pixel size will be written into the image header, "
-                "unless you use --force_header_angpix." << std::endl;
-
-            resizeMap(Iout(), newsize);
-            my_new_box_size = newsize;
-
-            if (oldxsize != oldysize && Iout().getDim() == 2) {
-                int newxsize = make_even(round(oldxsize * (angpix / real_angpix)));
-                int newysize = make_even(round(oldysize * (angpix / real_angpix)));
-                Iout() = Iout().setXmippOrigin().windowed(
-                    Xmipp::init(newysize), Xmipp::last(newysize), 
-                    Xmipp::init(newysize), Xmipp::last(newysize)
-                );
-            }
-
-            // Also reset the sampling rate in the header
-            Iout.setSamplingRateInHeader(real_angpix);
-        }
+        if (requested_angpix > 0.0)
+            rescale(Iout, angpix, requested_angpix, real_angpix, my_new_box_size);
 
         // Re-window
         if (new_box > 0 && new_box != Xsize(Iout())) {
             Iout().setXmippOrigin();
-            if (Iout().getDim() == 2) {
+            switch (Iout().getDim()) {
+                case 2:
                 Iout() = Iout().windowed(
                     Xmipp::init(new_box), Xmipp::last(new_box),
                     Xmipp::init(new_box), Xmipp::last(new_box)
-                );
-            } else if (Iout().getDim() == 3) {
+                ); break;
+                case 3:
                 Iout() = Iout().windowed(
                     Xmipp::init(new_box), Xmipp::last(new_box),
                     Xmipp::init(new_box), Xmipp::last(new_box),
                     Xmipp::init(new_box), Xmipp::last(new_box)
-                );
+                ); break;
             }
             my_new_box_size = new_box;
         }
@@ -574,7 +583,8 @@ class image_handler_parameters {
 
         if (force_header_angpix > 0) {
             Iout.setSamplingRateInHeader(force_header_angpix);
-            std::cout << "As requested by --force_header_angpix, the pixel size in the image header is set to " << force_header_angpix << " A/px." << std::endl;
+            std::cout << "As requested by --force_header_angpix, "
+                << "the pixel size in the image header is set to " << force_header_angpix << " A/px." << std::endl;
         }
 
         // Write out the result
@@ -633,7 +643,8 @@ class image_handler_parameters {
                 MD.read(fn_in);
             }
             if (fn_out.getExtension() != "mrcs")
-                std::cout << "NOTE: the input (--i) is a STAR file but the output (--o) does not have .mrcs extension. The output is treated as a suffix, not a path." << std::endl;
+                std::cout << "NOTE: the input (--i) is a STAR file but the output (--o) does not have .mrcs extension. "
+                    << "The output is treated as a suffix, not a path." << std::endl;
             const FileName fn_img = MD.getValue<std::string>(EMDL::IMAGE_NAME, 0);
             fn_img.decompose(slice_id, fn_stem);
             input_is_stack = (fn_in.getExtension() == "mrcs" || fn_in.getExtension() == "tif" || fn_in.getExtension() == "tiff") && (slice_id == -1);
@@ -642,8 +653,7 @@ class image_handler_parameters {
                 MD.setValue(EMDL::IMAGE_NAME, fn_in, MD.addObject());
             } else {
                 // Read the header to get the number of images inside the stack and generate that many lines in the MD
-                Image<RFLOAT> tmp;
-                tmp.read(fn_in, false); // false means do not read image now, only header
+                auto tmp = Image<RFLOAT>::from_filename(fn_in, false);  // false means do not read image now, only header
                 for (int i = 1; i <= Nsize(tmp()); i++) {
                     const auto fn_tmp = FileName::compose(i, fn_in);
                     MD.setValue(EMDL::IMAGE_NAME, fn_tmp, MD.addObject());
@@ -669,8 +679,7 @@ class image_handler_parameters {
             Image<RFLOAT> Iin;
             // Initialise for the first image
             if (i_img == 0) {
-                Image<RFLOAT> Ihead;
-                Ihead.read(fn_img, false);
+                auto Ihead = Image<RFLOAT>::from_filename(fn_img, false);
                 const auto dimensions = Ihead.getDimensions();
                 xdim = dimensions.x;
                 ydim = dimensions.y;
@@ -678,7 +687,9 @@ class image_handler_parameters {
                 ndim = dimensions.n;
 
                 if (zdim > 1 && (do_add_edge || do_flipXY || do_flipmXY))
-                    REPORT_ERROR("ERROR: you cannot perform 2D operations like --add_edge, --flipXY or --flipmXY on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
+                    REPORT_ERROR("ERROR: you cannot perform 2D operations "
+                        "like --add_edge, --flipXY or --flipmXY on 3D maps. "
+                        "If you intended to operate on a movie, use .mrcs extensions for stacks!");
 
                 if (zdim > 1 && (bin_avg > 0 || avg_first >= 0 && avg_last >= 0))
                     REPORT_ERROR("ERROR: you cannot perform movie-averaging operations on 3D maps. If you intended to operate on a movie, use .mrcs extensions for stacks!");
@@ -752,7 +763,7 @@ class image_handler_parameters {
                     "minval = " << stats.min << " maxval = " << stats.max << "; "
                     "angpix = " << header_angpix << std::endl;
             } else if (do_calc_com) {
-                Matrix1D <RFLOAT> com(3);
+                Matrix1D <RFLOAT> com (3);
                 Iin.read(fn_img);
                 Iin().setXmippOrigin().centerOfMass(com);
                 std::cout << fn_img << " : center of mass (relative to XmippOrigin)"
@@ -802,7 +813,7 @@ class image_handler_parameters {
             } else if (bin_avg > 0 || avg_first >= 0 && avg_last >= 0) {
                 // movie-frame averaging operations
                 int avgndim = bin_avg > 0 ? ndim / bin_avg : 1;
-                Image<RFLOAT> Iavg(xdim, ydim, zdim, avgndim);
+                Image<RFLOAT> Iavg (xdim, ydim, zdim, avgndim);
 
                 if (ndim == 1)
                     REPORT_ERROR("ERROR: you are trying to perform movie-averaging options on a single image/volume");
@@ -856,7 +867,6 @@ class image_handler_parameters {
             if (verb > 0)
                 progress_bar(i_img / ndim);
         }
-
 
         if (do_avg_ampl || do_avg_ampl2 || do_avg_ampl2_ali || do_average || do_average_all_frames) {
             avg_ampl /= (RFLOAT) i_img;

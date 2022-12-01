@@ -2629,7 +2629,7 @@ void AutoPicker::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         Fmic = transformer.FourierTransform(Imic());
 
         if (highpass > 0.0) {
-            lowPassFilterMap(Fmic, micrograph_size, highpass, angpix, 2, true); // true means highpass instead of lowpass!
+            highPassFilterMap(Fmic, micrograph_size, highpass, angpix, 2);
             Imic() = transformer.inverseFourierTransform(Fmic); // also calculate inverse transform again for squared calculation below
         }
 
