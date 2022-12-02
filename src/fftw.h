@@ -99,19 +99,18 @@ typedef fftw_complex FFTW_COMPLEX;
 
 /** For all direct elements in the complex array in FFTW format.
  *
- * This macro is used to generate loops for the volume in an easy way. It
- * defines internal indexes 'k','i' and 'j' which ranges the volume using its
- * physical definition. It also defines 'kp', 'ip' and 'jp', which are the logical coordinates
- * It also works for 1D or 2D FFTW transforms
+ * This macro can be used to write loops over the indices of a Fourier-space volume.
+ * [ Xsize(FT) = Xsize(V) / 2 + 1 ] [ Uncentered DC component ]
+ * The indices i, j, k range the data "physically".
+ * The indices ip, jp, kp range the data "logically".
+ * It will also work for 1D and 2D FFTW transforms.
  *
  * @code
  * FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(V) {
- *	int r2 = jp*jp + ip*ip + kp*kp;
- *
- *	std::cout << "element at physical coords: "<< i<<" "<<j<<" "<<k<<" has value: " << direct::elem(m, i, j, k) << std::endl;
- *	std::cout << "its logical coords are: "<< ip<<" "<<jp<<" "<<kp<<std::endl;
- *	std::cout << "its distance from the origin = "<<sqrt(r2)<<std::endl;
- *
+ *     int r2 = ip * ip + jp * jp + kp * kp;
+ *     std::cout << "element at physical coords: " << i << " " << j << " " << k << " has value: " << direct::elem(m, i, j, k) << std::endl;
+ *     std::cout << "its logical coords are: " << ip << " " << jp << " " << kp << std::endl;
+ *     std::cout << "its distance from the origin = " << sqrt(r2) << std::endl;
  * }
  * @endcode
  */

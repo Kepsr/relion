@@ -915,117 +915,9 @@ void LoGFilterMap(MultidimArray<Complex> &FT, int ori_size, RFLOAT sigma, RFLOAT
 
 }
 
-void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
+void window_before(MultidimArray<RFLOAT> &img, int xdim, int ydim) {
     // Make this work for maps (or more likely 2D images) that have unequal X and Y dimensions
     img.setXmippOrigin();
-    int my_xsize = Xsize(img);
-    int my_ysize = Ysize(img);
-    int my_size = std::max(my_xsize, my_ysize);
-    if (my_xsize != my_ysize) {
-        if (img.getDim() == 2) {
-            int my_small_size = std::min(my_xsize, my_ysize);
-            const auto stats = computeStats(img);
-
-            img = img.windowed(
-                Xmipp::init(my_size), Xmipp::last(my_size),
-                Xmipp::init(my_size), Xmipp::last(my_size));
-            if (my_small_size == my_xsize) {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
-                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
-                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
-                }
-            } else {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
-                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
-                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
-                }
-            }
-        } else {
-            REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
-        }
-    }
-    FourierTransformer transformer;
-    MultidimArray<Complex> &FT = transformer.FourierTransform(img);
-    LoGFilterMap(FT, Xsize(img), sigma, angpix);
-    transformer.inverseFourierTransform();
-    img.setXmippOrigin();
-    if (my_xsize != my_ysize) {
-        if (img.getDim() == 2) {
-            img = img.windowed(
-                Xmipp::init(my_ysize), Xmipp::last(my_ysize),
-                Xmipp::init(my_xsize), Xmipp::last(my_xsize));
-        } else {
-            REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
-        }
-    }
-}
-
-void filter__hp(MultidimArray<Complex> &FT, int ori_size, RFLOAT edge_low, RFLOAT edge_high, RFLOAT edge_width) {
-    // Put a raised cosine from edge_low to edge_high
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const RFLOAT res = euclid(ip, jp, kp) / ori_size;  // get resolution in 1/pixel
-        if (res < edge_low) {
-            direct::elem(FT, i, j, k) = 0.0;
-        } else if (res <= edge_high) {
-            direct::elem(FT, i, j, k) *= 0.5 * (1.0 - cos(PI * (res - edge_low) / edge_width));
-        }
-    }
-}
-
-void filter__lp(MultidimArray<Complex> &FT, int ori_size, RFLOAT edge_low, RFLOAT edge_high, RFLOAT edge_width) {
-    // Put a raised cosine from edge_low to edge_high
-    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const RFLOAT res = euclid(ip, jp, kp) / ori_size;  // get resolution in 1/pixel
-        if (res > edge_high) {
-            direct::elem(FT, i, j, k) = 0.0;
-        } else if (res >= edge_low) {
-            direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
-        }
-    }
-}
-
-void lowPassFilterMap(
-    MultidimArray<Complex> &FT, int size,
-    RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
-) {
-
-    // Which resolution shell is the filter?
-    const int ires_filter = round((size * angpix) / low_pass);
-    const int filter_edge_halfwidth = filter_edge_width / 2;
-
-    // Soft-edge: from 1 shell less to one shell more:
-    const RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) size); // in 1/pix
-    const RFLOAT edge_high = std::min((double) Xsize(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) size); // in 1/pix
-    const RFLOAT edge_width = edge_high - edge_low;
-
-    // Put a raised cosine from edge_low to edge_high
-    filter__lp(FT, size, edge_low, edge_high, edge_width);
-}
-
-void highPassFilterMap(
-    MultidimArray<Complex> &FT, int size,
-    RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
-) {
-
-    // Which resolution shell is the filter?
-    const int ires_filter = round((size * angpix) / low_pass);
-    const int filter_edge_halfwidth = filter_edge_width / 2;
-
-    // Soft-edge: from 1 shell less to one shell more:
-    const RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) size); // in 1/pix
-    const RFLOAT edge_high = std::min((double) Xsize(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) size); // in 1/pix
-    const RFLOAT edge_width = edge_high - edge_low;
-
-    // Put a raised cosine from edge_low to edge_high
-    filter__hp(FT, size, edge_low, edge_high, edge_width);
-}
-
-void lowPassFilterMap(
-    MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
-) {
-    // Make this work for maps (or more likely 2D images) that have unequal X and Y dimensions
-    img.setXmippOrigin();
-    const int xdim = Xsize(img), ydim = Ysize(img);
     if (xdim != ydim) {
         if (img.getDim() != 2)
             REPORT_ERROR("lowPassFilterMap: filtering of non-cubic 3D maps is not implemented...");
@@ -1035,7 +927,7 @@ void lowPassFilterMap(
         img = img.windowed(
             Xmipp::init(maxdim), Xmipp::last(maxdim),
             Xmipp::init(maxdim), Xmipp::last(maxdim));
-        if (xdim <= ydim) {
+        if (xdim < ydim) {
             FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
                 if (i < Xmipp::init(mindim) || i > Xmipp::last(mindim))
                     img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
@@ -1047,40 +939,126 @@ void lowPassFilterMap(
             }
         }
     }
+}
 
-    FourierTransformer transformer;
-    MultidimArray<Complex> &FT = transformer.FourierTransform(img);
-    lowPassFilterMap(FT, Xsize(img), low_pass, angpix, filter_edge_width);
-    transformer.inverseFourierTransform();
-
+void window_after(MultidimArray<RFLOAT> &img, int xdim, int ydim) {
     img.setXmippOrigin();
     if (xdim != ydim) {
         if (img.getDim() != 2)
             REPORT_ERROR("lowPassFilterMap: filtering of non-cubic 3D maps is not implemented...");
-
         img = img.windowed(
             Xmipp::init(xdim), Xmipp::last(xdim),
             Xmipp::init(ydim), Xmipp::last(ydim));
     }
 }
 
+void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
+    const int xdim = Xsize(img), ydim = Ysize(img);
+    window_before(img, xdim, ydim);
+
+    FourierTransformer transformer;
+    MultidimArray<Complex> &FT = transformer.FourierTransform(img);
+    LoGFilterMap(FT, Xsize(img), sigma, angpix);
+    transformer.inverseFourierTransform();
+
+    window_after(img, xdim, ydim);
+}
+
+void filter__hp(MultidimArray<Complex> &FT, int ori_size, RFLOAT edge_low, RFLOAT edge_high, RFLOAT edge_width) {
+    // Put a raised cosine from edge_low to edge_high
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
+        const RFLOAT res = euclid(RFLOAT(ip), RFLOAT(jp), RFLOAT(kp)) / ori_size;  // get resolution in 1/pixel
+        if (res < edge_low) {
+            direct::elem(FT, i, j, k) = 0.0;
+        } else if (res <= edge_high) {
+            direct::elem(FT, i, j, k) *= 0.5 * (1.0 - cos(PI * (res - edge_low) / edge_width));
+        }
+    }
+}
+
+void filter__lp(MultidimArray<Complex> &FT, int ori_size, RFLOAT edge_low, RFLOAT edge_high, RFLOAT edge_width) {
+    // Put a raised cosine from edge_low to edge_high
+    FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
+        const RFLOAT res = euclid(RFLOAT(ip), RFLOAT(jp), RFLOAT(kp)) / ori_size;  // get resolution in 1/pixel
+        if (res > edge_high) {
+            direct::elem(FT, i, j, k) = 0.0;
+        } else if (res >= edge_low) {
+            direct::elem(FT, i, j, k) *= 0.5 * (1.0 + cos(PI * (res - edge_low) / edge_width));
+        }
+    }
+}
+
+void lowPassFilterMap(
+    MultidimArray<Complex> &FT, int ori_size,
+    RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
+) {
+    // Which resolution shell is the filter?
+    const RFLOAT fraction = angpix / low_pass;
+    const int ires_filter = round(ori_size * fraction);
+    const int filter_edge_halfwidth = filter_edge_width / 2;
+
+    // Soft-edge: from 1 shell less to one shell more:
+    const RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    const RFLOAT edge_high = std::min((double) Xsize(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    const RFLOAT edge_width = edge_high - edge_low;
+
+    // Put a raised cosine from edge_low to edge_high
+    filter__lp(FT, ori_size, edge_low, edge_high, edge_width);
+}
+
+void highPassFilterMap(
+    MultidimArray<Complex> &FT, int ori_size,
+    RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
+) {
+    // Which resolution shell is the filter?
+    const RFLOAT fraction = angpix / low_pass;
+    const int ires_filter = round(ori_size * fraction);
+    const int filter_edge_halfwidth = filter_edge_width / 2;
+
+    // Soft-edge: from 1 shell less to one shell more:
+    const RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    const RFLOAT edge_high = std::min((double) Xsize(FT), (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
+    const RFLOAT edge_width = edge_high - edge_low;
+
+    // Put a raised cosine from edge_low to edge_high
+    filter__hp(FT, ori_size, edge_low, edge_high, edge_width);
+}
+
+void lowPassFilterMap(
+    MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
+) {
+    const int xdim = Xsize(img), ydim = Ysize(img);
+    window_before(img, xdim, ydim);
+
+    FourierTransformer transformer;
+    auto &FT = transformer.FourierTransform(img);
+    lowPassFilterMap(FT, xdim, low_pass, angpix, filter_edge_width);
+    transformer.inverseFourierTransform();
+
+    window_after(img, xdim, ydim);
+}
+
 void highPassFilterMap(
     MultidimArray<RFLOAT> &img, RFLOAT low_pass, RFLOAT angpix, int filter_edge_width
 ) {
+    const int xdim = Xsize(img), ydim = Ysize(img);
+    // window_before(img, xdim, ydim);
+
     FourierTransformer transformer;
     auto &FT = transformer.FourierTransform(img);
-    highPassFilterMap(FT, Xsize(img), low_pass, angpix, filter_edge_width);
+    highPassFilterMap(FT, xdim, low_pass, angpix, filter_edge_width);
     transformer.inverseFourierTransform();
+
+    // window_after(img, xdim, ydim);
 }
 
 void directionalFilterMap(
     MultidimArray<Complex> &FT, int ori_size,
     RFLOAT low_pass, RFLOAT angpix, int axis, int filter_edge_width
 ) {
-
     // Which resolution shell is the filter?
-    int ires_filter = round(ori_size * angpix / low_pass);
-    int filter_edge_halfwidth = filter_edge_width / 2;
+    const int ires_filter = round(ori_size * angpix / low_pass);
+    const int filter_edge_halfwidth = filter_edge_width / 2;
 
     // Soft-edge: from 1 shell less to one shell more:
     const RFLOAT edge_low  = std::max(0.0,                (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
@@ -1099,8 +1077,7 @@ void directionalFilterMap(
         case 0:
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
             RFLOAT r2 = ip * ip;
-            /// XXX: sqrt(r2 / ori_size) or sqrt(r2) / ori_size ?
-            RFLOAT res = sqrt(r2 / (RFLOAT) ori_size); // get resolution in 1/pixel
+            RFLOAT res = sqrt(r2) / ori_size; // get resolution in 1/pixel
             filter(res, direct::elem(FT, i, j, k));
         } break;
         case 1:
@@ -1123,47 +1100,15 @@ void directionalFilterMap(
     RFLOAT low_pass, RFLOAT angpix,
     int axis, int filter_edge_width
 ) {
-    // Make this work for maps (or more likely 2D images) that have unequal X and Y dimensions
-    img.setXmippOrigin();
-    int my_xsize = Xsize(img);
-    int my_ysize = Ysize(img);
-    int my_size = std::max(my_xsize, my_ysize);
-    if (my_xsize != my_ysize) {
-        if (img.getDim() == 2) {
-            int my_small_size = std::min(my_xsize, my_ysize);
-            const auto stats = computeStats(img);
-            img = img.windowed(
-                Xmipp::init(my_size), Xmipp::last(my_size),
-                Xmipp::init(my_size), Xmipp::last(my_size));
-            if (my_small_size == my_xsize) {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
-                    if (i < Xmipp::init(my_small_size) || i > Xmipp::last(my_small_size))
-                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
-                }
-            } else {
-                FOR_ALL_ELEMENTS_IN_ARRAY2D(img, i, j) {
-                    if (j < Xmipp::init(my_small_size) || j > Xmipp::last(my_small_size))
-                        img.elem(i, j) = rnd_gaus(stats.avg, stats.stddev);
-                }
-            }
-        } else {
-            REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
-        }
-    }
+    const int xdim = Xsize(img), ydim = Ysize(img);
+    window_before(img, xdim, ydim);
+
     FourierTransformer transformer;
     auto &FT = transformer.FourierTransform(img);
-    directionalFilterMap(FT, Xsize(img), low_pass, angpix, axis, filter_edge_width);
+    directionalFilterMap(FT, xdim, low_pass, angpix, axis, filter_edge_width);
     transformer.inverseFourierTransform();
-    img.setXmippOrigin();
-    if (my_xsize != my_ysize) {
-        if (img.getDim() == 2) {
-            img = img.windowed(
-                Xmipp::init(my_ysize), Xmipp::last(my_ysize),
-                Xmipp::init(my_xsize), Xmipp::last(my_xsize));
-        } else {
-            REPORT_ERROR("lowPassFilterMap: filtering of non-cube maps is not implemented...");
-        }
-    }
+
+    window_after(img, xdim, ydim);
 }
 
 void applyBeamTilt(
@@ -1554,3 +1499,4 @@ void CenterFFT(MultidimArray<T> &v, int sign) {
 }
 
 template void CenterFFT(MultidimArray<double> &v, int sign);
+template void CenterFFT(MultidimArray<Complex> &v, int sign);
