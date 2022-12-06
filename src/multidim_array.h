@@ -596,7 +596,7 @@ class MultidimArray {
             return *this;
         }
 
-        // data can be nullptr even when xdim etc are not zero
+        // data can be nullptr even when dimensions are not zero
         // (This can happen for reading of images...)
         // In that case, initialize data to zeros.
         if (size() > 0 && !data) {
@@ -633,16 +633,16 @@ class MultidimArray {
         return *this;
     }
 
-    /** Resize according to a pattern.
+    /** Resize to match
      *
-     * This function resize the actual array to the same size and origin
-     * as the input pattern. If the actual array is larger than the pattern
-     * then the trailing values are lost, if it is smaller then 0's are
-     * added at the end
+     * This function resizes the array
+     * to match the size and origin of another.
+     * If the array starts off too large then it is truncated.
+     * If it starts off too small then 0's are added at the end
      *
      * @code
      * v2.resize(v1);
-     * // v2 has got now the same structure as v1
+     * // Now v2 has the same structure as v1
      * @endcode
      */
     template<typename U>
@@ -2378,66 +2378,6 @@ inline MultidimArray<T> operator * (T scalar, MultidimArray<T> rhs) {
 template <typename T>
 inline MultidimArray<T> operator / (T scalar, MultidimArray<T> rhs) {
     for (auto &x : rhs) x = scalar / x; return std::move(rhs);
-}
-
-template <typename T>
-void flipYAxis(MultidimArray<T> &array) {
-    const int ylim = array.ydim / 2, z = 0;
-    for (int n = 0; n < array.zdim; n++)
-    for (int y1 = 0; y1 < ylim; y1++) {
-        const int y2 = array.ydim - 1 - y1;
-        for (int x = 0; x < array.xdim; x++) {
-            /// TODO: memcpy or pointer arithmetic is probably faster
-            std::swap(
-                direct::elem(array, x, y1, z, n),
-                direct::elem(array, x, y2, z, n)
-            );
-        }
-    }
-}
-
-template <typename T>
-void flipX(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
-    out_array.resize(in_array);
-    for (long int k = 0; k < Zsize(in_array); k++)
-    for (long int j = 0; j < Ysize(in_array); j++)
-    for (long int i1 = 0; i1 < Xsize(in_array); i1++) {
-        long int i2 = Xsize(in_array) - 1 - i1;
-        direct::elem(out_array, i1, j, k) = direct::elem(in_array, i2, j, k);
-    }
-}
-
-template <typename T>
-void flipY(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
-    out_array.resize(in_array);
-    for (long int k = 0; k < Zsize(in_array); k++)
-    for (long int j1 = 0; j1 < Ysize(in_array); j1++) {
-        long int j2 = Ysize(in_array) - 1 - j1;
-    for (long int i = 0; i < Xsize(in_array); i++)
-        direct::elem(out_array, i, j1, k) = direct::elem(in_array, i, j2, k);
-    }
-}
-
-template <typename T>
-void flipZ(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
-    out_array.resize(in_array);
-    for (long int k1 = 0; k1 < Zsize(in_array); k1++) {
-        long int k2 = Zsize(in_array) - 1 - k1;
-    for (long int j = 0; j < Ysize(in_array); j++)
-    for (long int i = 0; i < Xsize(in_array); i++)
-        direct::elem(out_array, i, j, k1) = direct::elem(in_array, i, j, k2);
-    }
-}
-
-template <typename T>
-void invert_hand(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
-    out_array.resize(in_array);
-    for (long int k = 0; k < Zsize(in_array); k++)
-    for (long int j = 0; j < Ysize(in_array); j++)
-    for (long int i1 = 0; i1 < Xsize(in_array); i1++) {
-        long int i2 = Xsize(in_array) - i1;
-        direct::elem(out_array, i1, j, k) = direct::elem(in_array, i2, j, k);
-    }
 }
 
 #endif

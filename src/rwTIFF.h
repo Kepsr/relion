@@ -26,6 +26,7 @@
 #endif
 
 #include "src/image.h"
+#include "src/jaz/img_proc/image_op.h"
 
 inline DataType determine_datatype(uint16 bitsPerSample, uint16 sampleFormat, uint32 width, uint32 length) {
 
@@ -241,7 +242,7 @@ int Image<T>::readTIFF(
            IMOD, EMAN2, SerialEM and MotionCor2 flip the Y axis whenever they read or write a TIFF file.
            We follow this.
         */
-        flipYAxis(data);
+        ImageOp::flipYAxis(data);
 
     }
 

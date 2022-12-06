@@ -26,6 +26,7 @@
 #include <src/time.h>
 #include <src/symmetries.h>
 #include <src/jaz/obs_model.h>
+#include "src/jaz/img_proc/image_op.h"
 #ifdef HAVE_PNG
 #include <src/jaz/gravis/tImage.h>
 #endif
@@ -487,13 +488,14 @@ class image_handler_parameters {
         if (highpass > 0.0)
             highPassFilterMap(Iout(), highpass, angpix, filter_edge_width);
 
+        using ImageOp::flipX, ImageOp::flipY, ImageOp::flipZ, ImageOp::invert_hand;
         if (do_flipX) {
             flipX(Iin(), Iout());
         } else if (do_flipY) {
             flipY(Iin(), Iout());
         } else if (do_flipZ) {
-            if (Zsize(Iout()) < 2)
-                REPORT_ERROR("ERROR: this is not a 3D map, so cannot be flipped in Z");
+            if (Zsize(Iout()) <= 1)
+                REPORT_ERROR("ERROR: this map is not 3D, so flipping in Z makes little sense.");
             flipZ(Iin(), Iout());
         } else if (do_invert_hand) {
             invert_hand(Iin(), Iout());

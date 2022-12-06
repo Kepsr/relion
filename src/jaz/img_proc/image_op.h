@@ -46,11 +46,20 @@ namespace ImageOp {
     template<typename T1, typename T2>
     void linearCombination(const MultidimArray<T1> &src0, T1 src1, T2 a0, T2 a1, MultidimArray<T1> &dest);
 
-    template<typename T1>
-    void flipX(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+    template<typename T>
+    void flipX(const MultidimArray<T> &src, MultidimArray<T> &dest);
 
-    template<typename T1>
-    void flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+    template<typename T>
+    void flipY(const MultidimArray<T> &src, MultidimArray<T> &dest);
+
+    template<typename T>
+    void flipZ(const MultidimArray<T> &src, MultidimArray<T> &dest);
+
+    template <typename T>
+    void invert_hand(const MultidimArray<T> &src, MultidimArray<T> &dest);
+
+    template <typename T>
+    void flipYAxis(MultidimArray<T> &array);
 
     template<typename T1>
     void rotate90(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
@@ -117,26 +126,65 @@ void ImageOp::linearCombination(const MultidimArray<T1> &src0, T1 src1, T2 a0, T
 // flip 'left-to-right'
 // MotionCor2's FlipGain 2
 template<typename T1>
-void ImageOp::flipX(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
-    dest.reshape(src0);
-    for (long int n = 0; n < src0.ndim; n++)
-    for (long int z = 0; z < src0.zdim; z++)
-    for (long int y = 0; y < src0.ydim; y++)
-    for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, x, y, z, n) = direct::elem(src0, src0.xdim - 1 - x, y, z, n);
+void ImageOp::flipX(const MultidimArray<T1> &src, MultidimArray<T1> &dest) {
+    dest.reshape(src);
+    for (long int n = 0; n < src.ndim; n++)
+    for (long int z = 0; z < src.zdim; z++)
+    for (long int y = 0; y < src.ydim; y++)
+    for (long int x = 0; x < src.xdim; x++) {
+        direct::elem(dest, x, y, z, n) = direct::elem(src, src.xdim - 1 - x, y, z, n);
     }
 }
 
 // flip 'upside down'
 // MotionCor2's FlipGain 1
 template<typename T1>
-void ImageOp::flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
-    dest.reshape(src0);
-    for (long int n = 0; n < src0.ndim; n++)
-    for (long int z = 0; z < src0.zdim; z++)
-    for (long int y = 0; y < src0.ydim; y++)
-    for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, x, y, z, n) = direct::elem(src0, x, src0.ydim - 1 - y, z, n);
+void ImageOp::flipY(const MultidimArray<T1> &src, MultidimArray<T1> &dest) {
+    dest.reshape(src);
+    for (long int n = 0; n < src.ndim; n++)
+    for (long int z = 0; z < src.zdim; z++)
+    for (long int y = 0; y < src.ydim; y++)
+    for (long int x = 0; x < src.xdim; x++) {
+        direct::elem(dest, x, y, z, n) = direct::elem(src, x, src.ydim - 1 - y, z, n);
+    }
+}
+
+
+template <typename T>
+void ImageOp::flipZ(const MultidimArray<T> &src, MultidimArray<T> &dest) {
+    dest.reshape(src);
+    for (long int n = 0; n < src.ndim; n++)
+    for (long int z = 0; z < src.zdim; z++)
+    for (long int y = 0; y < src.ydim; y++)
+    for (long int x = 0; x < src.xdim; x++) {
+        direct::elem(dest, x, y, z, n) = direct::elem(src, x, y, src.zdim - 1 - z, n);
+    }
+}
+
+template <typename T>
+void ImageOp::invert_hand(const MultidimArray<T> &src, MultidimArray<T> &dest) {
+    dest.reshape(src);
+    for (long int k = 0; k < Zsize(src); k++)
+    for (long int j = 0; j < Ysize(src); j++)
+    for (long int i1 = 0; i1 < Xsize(src); i1++) {
+        long int i2 = Xsize(src) - i1;
+        direct::elem(dest, i1, j, k) = direct::elem(src, i2, j, k);
+    }
+}
+
+template <typename T>
+void ImageOp::flipYAxis(MultidimArray<T> &array) {
+    const int ylim = array.ydim / 2, z = 0;
+    for (int n = 0; n < array.zdim; n++)
+    for (int y1 = 0; y1 < ylim; y1++) {
+        const int y2 = array.ydim - 1 - y1;
+        for (int x = 0; x < array.xdim; x++) {
+            /// TODO: memcpy or pointer arithmetic is probably faster
+            std::swap(
+                direct::elem(array, x, y1, z, n),
+                direct::elem(array, x, y2, z, n)
+            );
+        }
     }
 }
 
