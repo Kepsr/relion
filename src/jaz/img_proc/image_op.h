@@ -23,119 +23,94 @@
 
 #include <src/image.h>
 
-class ImageOp {
-public:
+namespace ImageOp {
 
     template<typename T1, typename T2>
-    static void linearCombination(const Image<T1> &src0, const Image<T1> &src1, T2 a0, T2 a1, Image<T1> &dest);
+    void linearCombination(const Image<T1> &src0, const Image<T1> &src1, T2 a0, T2 a1, Image<T1> &dest);
 
     template<typename T1, typename T2, typename T3>
-    static void multiply(const Image<T1> &i0, const Image<T2>& i1, Image<T3>& dest);
+    void multiply(const Image<T1> &i0, const Image<T2>& i1, Image<T3>& dest);
 
     template<typename T1, typename T2>
-    static void multiplyBy(Image<T1> &dest, const Image<T2>& i1);
+    void multiplyBy(Image<T1> &dest, const Image<T2>& i1);
 
     template<typename T1, typename T2>
-    static void linearCombination(const Image<T1> &src0, T1 src1, T2 a0, T2 a1, Image<T1> &dest);
-
+    void linearCombination(const Image<T1> &src0, T1 src1, T2 a0, T2 a1, Image<T1> &dest);
 
     template<typename T1, typename T2>
-    static void linearCombination(const MultidimArray<T1> &src0, const MultidimArray<T1> &src1, T2 a0, T2 a1, MultidimArray<T1> &dest);
+    void linearCombination(const MultidimArray<T1> &src0, const MultidimArray<T1> &src1, T2 a0, T2 a1, MultidimArray<T1> &dest);
 
     template<typename T1, typename T2, typename T3>
-    static void multiply(const MultidimArray<T1> &i0, const MultidimArray<T2>& i1, MultidimArray<T3>& dest);
+    void multiply(const MultidimArray<T1> &i0, const MultidimArray<T2>& i1, MultidimArray<T3>& dest);
 
     template<typename T1, typename T2>
-    static void linearCombination(const MultidimArray<T1> &src0, T1 src1, T2 a0, T2 a1, MultidimArray<T1> &dest);
+    void linearCombination(const MultidimArray<T1> &src0, T1 src1, T2 a0, T2 a1, MultidimArray<T1> &dest);
 
     template<typename T1>
-    static void flipX(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+    void flipX(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
 
     template<typename T1>
-    static void flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+    void flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
 
     template<typename T1>
-    static void rotate90(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+    void rotate90(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
 
     template<typename T1>
-    static void rotate180(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+    void rotate180(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
 
     template<typename T1>
-    static void rotate270(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+    void rotate270(const MultidimArray<T1> &src0, MultidimArray<T1> &dest);
+
 };
 
 template<typename T1, typename T2>
 void ImageOp::linearCombination(const Image<T1> &src0, const Image<T1> &src1, T2 a0, T2 a1, Image<T1> &dest) {
-    for (long int n = 0; n < src0.data.ndim; n++)
-    for (long int z = 0; z < src0.data.zdim; z++)
-    for (long int y = 0; y < src0.data.ydim; y++)
-    for (long int x = 0; x < src0.data.xdim; x++) {
-        direct::elem(dest.data, y, x, z, n) = a0 * direct::elem(src0.data, y, x, z, n) + a1 * direct::elem(src1.data, y, x, z, n);
+    for (long int i = 0; i < src0.data.size(); i++) {
+        dest.data[i] = a0 * src0.data[i] + a1 * src1.data[i];
     }
 }
 
 template<typename T1, typename T2, typename T3>
 void ImageOp::multiply(const Image<T1> &i0, const Image<T2>& i1, Image<T3>& dest) {
     dest = Image<T3>(i0.data.xdim, i0.data.ydim, i0.data.zdim, i0.data.ndim);
-
-    for (long int n = 0; n < i0.data.ndim; n++)
-    for (long int z = 0; z < i0.data.zdim; z++)
-    for (long int y = 0; y < i0.data.ydim; y++)
-    for (long int x = 0; x < i0.data.xdim; x++) {
-        direct::elem(dest.data, y, x, z, n) = direct::elem(i0.data, y, x, z, n) * direct::elem(i1.data, y, x, z, n);
+    for (long int i = 0; i < i0.data.size(); i++) {
+        dest.data[i] = i0.data[i] * i1.data[i];
     }
 }
 
 template<typename T1, typename T2>
 void ImageOp::multiplyBy(Image<T1> &dest, const Image<T2>& i1) {
-    for (long int n = 0; n < dest.data.ndim; n++)
-    for (long int z = 0; z < dest.data.zdim; z++)
-    for (long int y = 0; y < dest.data.ydim; y++)
-    for (long int x = 0; x < dest.data.xdim; x++) {
-        direct::elem(dest.data, y, x, z, n) *= direct::elem(i1.data, y, x, z, n);
+    for (long int i = 0; i < dest.data.size(); i++) {
+        dest.data[i] *= i1.data[i];
     }
 }
 
 template<typename T1, typename T2>
 void ImageOp::linearCombination(const Image<T1> &src0, T1 src1, T2 a0, T2 a1, Image<T1> &dest) {
-    for (long int n = 0; n < src0.data.ndim; n++)
-    for (long int z = 0; z < src0.data.zdim; z++)
-    for (long int y = 0; y < src0.data.ydim; y++)
-    for (long int x = 0; x < src0.data.xdim; x++) {
-        direct::elem(dest.data, y, x, z, n) = a0 * direct::elem(src0.data, y, x, z, n) + a1 * src1;
+    for (long int i = 0; i < src0.data.size(); i++) {
+        dest.data[i] = a0 * src0.data[i] + a1 * src1;
     }
 }
 
-
 template<typename T1, typename T2>
 void ImageOp::linearCombination(const MultidimArray<T1> &src0, const MultidimArray<T1> &src1, T2 a0, T2 a1, MultidimArray<T1> &dest) {
-    for (long int n = 0; n < src0.ndim; n++)
-    for (long int z = 0; z < src0.zdim; z++)
-    for (long int y = 0; y < src0.ydim; y++)
-    for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, y, x, z, n) = a0 * direct::elem(src0, y, x, z, n) + a1 * direct::elem(src1, y, x, z, n);
+    for (long int i = 0; i < src0.size(); i++) {
+        dest[i] = a0 * src0[i] + a1 * src1[i];
     }
 }
 
 template<typename T1, typename T2, typename T3>
 void ImageOp::multiply(const MultidimArray<T1> &i0, const MultidimArray<T2>& i1, MultidimArray<T3>& dest) {
     dest = MultidimArray<T3>(i0.xdim, i0.ydim, i0.zdim, i0.ndim);
-
-    for (long int n = 0; n < i0.ndim; n++)
-    for (long int z = 0; z < i0.zdim; z++)
-    for (long int y = 0; y < i0.ydim; y++)
-    for (long int x = 0; x < i0.xdim; x++) {
-        direct::elem(dest, y, x, z, n) = direct::elem(i0, y, x, z, n) * direct::elem(i1, y, x, z, n);
+    for (long int i = 0; i < i0.size(); i++) {
+        dest[i] = i0[i] * i1[i];
     }
 }
 
 template<typename T1, typename T2>
 void ImageOp::linearCombination(const MultidimArray<T1> &src0, T1 src1, T2 a0, T2 a1, MultidimArray<T1> &dest) {
-    for (long int n = 0; n < src0.ndim; n++)
-    for (long int z = 0; z < src0.zdim; z++)
-    for (long int y = 0; y < src0.ydim; y++)
-    for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, y, x, z, n) = a0 * direct::elem(src0, y, x, z, n) + a1 * src1;
+    for (long int i = 0; i < src0.size(); i++) {
+        dest[i] = a0 * src0[i] + a1 * src1;
     }
 }
 
@@ -144,12 +119,11 @@ void ImageOp::linearCombination(const MultidimArray<T1> &src0, T1 src1, T2 a0, T
 template<typename T1>
 void ImageOp::flipX(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
     dest.reshape(src0);
-
     for (long int n = 0; n < src0.ndim; n++)
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, y, x, z, n) = direct::elem(src0,y, src0.xdim - 1 - x, z, n);
+        direct::elem(dest, x, y, z, n) = direct::elem(src0, src0.xdim - 1 - x, y, z, n);
     }
 }
 
@@ -158,12 +132,11 @@ void ImageOp::flipX(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
 template<typename T1>
 void ImageOp::flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
     dest.reshape(src0);
-
     for (long int n = 0; n < src0.ndim; n++)
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, y, x, z, n) = direct::elem(src0, src0.ydim - 1 - y, x, z, n);
+        direct::elem(dest, x, y, z, n) = direct::elem(src0, x, src0.ydim - 1 - y, z, n);
     }
 }
 
@@ -171,13 +144,12 @@ void ImageOp::flipY(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
 // In relion_display, this looks clock-wise.
 template<typename T1>
 void ImageOp::rotate90(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
-    dest.reshape(src0.ydim, src0.xdim, src0.zdim, src0.ndim);
-
+    dest.reshape(src0.xdim, src0.ydim, src0.zdim, src0.ndim);
     for (long int n = 0; n < src0.ndim; n++)
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, x, src0.ydim - 1 - y, z, n) = direct::elem(src0, y, x, z, n);
+        direct::elem(dest, x, src0.ydim - 1 - y, z, n) = direct::elem(src0, x, y, z, n);
     }
 }
 
@@ -185,12 +157,11 @@ void ImageOp::rotate90(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
 template<typename T1>
 void ImageOp::rotate180(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
     dest.reshape(src0);
-
     for (long int n = 0; n < src0.ndim; n++)
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, src0.ydim - 1 - y, src0.xdim - 1 - x, z, n) = direct::elem(src0, y, x, z, n);
+        direct::elem(dest, src0.xdim - 1 - x, src0.ydim - 1 - y, z, n) = direct::elem(src0, x, y, z, n);
     }
 }
 
@@ -198,12 +169,11 @@ void ImageOp::rotate180(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) 
 template<typename T1>
 void ImageOp::rotate270(const MultidimArray<T1> &src0, MultidimArray<T1> &dest) {
     dest.reshape(src0.ydim, src0.xdim, src0.zdim, src0.ndim);
-
     for (long int n = 0; n < src0.ndim; n++)
     for (long int z = 0; z < src0.zdim; z++)
     for (long int y = 0; y < src0.ydim; y++)
     for (long int x = 0; x < src0.xdim; x++) {
-        direct::elem(dest, src0.xdim - 1 - x, y, z, n) = direct::elem(src0, y, x, z, n);
+        direct::elem(dest, src0.xdim - 1 - x, y, z, n) = direct::elem(src0, x, y, z, n);
     }
 }
 
