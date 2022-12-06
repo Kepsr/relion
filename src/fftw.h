@@ -243,8 +243,8 @@ class FourierTransformer {
     /** Compute the Fourier transform of a MultidimArray, 2D and 3D.
      */
     template <typename T>
-    MultidimArray<tComplex<T>> &FourierTransform(const MultidimArray<T> &v, bool force_new_plans = false) {
-        setReal(v, force_new_plans);
+    MultidimArray<tComplex<T>> &FourierTransform(const MultidimArray<T> &v) {
+        setReal(v);
         Transform(FFTW_FORWARD);
         return fFourier;
     }
@@ -254,10 +254,11 @@ class FourierTransformer {
         created. */
     void FourierTransform();
 
-    /** Inforce Hermitian symmetry.
-        If the Fourier transform risks of losing Hermitian symmetry,
-        use this function to renforce it. */
-    void enforceHermitianSymmetry();
+    /** Enforce Hermitian symmetry.
+        If the Fourier transform risks losing Hermitian symmetry,
+        use this function to restore it. */
+    void enforceHermitianSymmetry(MultidimArray<Complex> &array);
+    /// WARNING: Unused
 
     /** Compute the inverse Fourier transform.
         The result is stored in the same real data that was passed for
@@ -316,10 +317,10 @@ class FourierTransformer {
 
     public:
 
-    /* Pointer to the array of RFLOATs with which the plan was computed */
+    /* Pointer to the real array with which the plan was computed */
     RFLOAT *dataPtr;
 
-    /* Pointer to the array of complex<RFLOAT> with which the plan was computed */
+    /* Pointer to the complex array with which the plan was computed */
     Complex *complexDataPtr;
 
     /* Initialise all pointers to NULL */
@@ -344,22 +345,28 @@ class FourierTransformer {
     void Transform(int sign);
 
     /** Get the Multidimarray that is being used as input. */
-    const MultidimArray<RFLOAT> &getReal() const;
-    const MultidimArray<Complex> &getComplex() const;
+    const MultidimArray<RFLOAT> &getReal() const { return *fReal; }
+    const MultidimArray<Complex> &getComplex() const { return *fComplex; }
 
     /** Set a Multidimarray for input.
         The data of img will be the one of fReal. In forward
         transforms it is not modified, but in backward transforms,
         the result will be stored in img. This means that the size
         of img cannot change between calls. */
-    void setReal(const MultidimArray<RFLOAT> &img, bool force_new_plans = false);
+    void setReal(const MultidimArray<RFLOAT> &img);
 
     /** Set a Multidimarray for input.
         The data of img will be the one of fComplex. In forward
         transforms it is not modified, but in backward transforms,
         the result will be stored in img. This means that the size
         of img cannot change between calls. */
-    void setReal(const MultidimArray<Complex> &img, bool force_new_plans = false);
+    void setReal(const MultidimArray<Complex> &img);
+
+    // Call FFTW_PLAN_DFT_R2C and FFTW_PLAN_DFT_C2R
+    void computePlans(const MultidimArray<RFLOAT> &input);
+
+    // Call FFTW_PLAN_DFT
+    void computePlans(const MultidimArray<Complex> &input);
 
     /** Set a Multidimarray for the Fourier transform.
         The values of the input array are copied in the internal array.
@@ -378,14 +385,11 @@ void randomizePhasesBeyond(MultidimArray<Complex> &FT, int index);
 
 template <typename T>
 MultidimArray<T>& CenterFFTbySign(MultidimArray<T> &v) {
-    // This technique does not work when the sizes of dimensions of iFFT(v) are odd.
+    // This technique does not work when the dimensions of iFFT(v) are of odd size.
     // Unfortunately, this cannot be checked within this function...
     // Forward and backward shifts are equivalent.
-
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
-    // NOTE: != has higher precedence than & in C as pointed out in GitHub issue #637.
-    // So (k ^ i ^ j) & 1 != 0 is not good (fortunately in this case the behaviour happened to be the same)
-        if (((i ^ j ^ k) & 1) != 0) // if ODD
+        if ((i ^ j ^ k) & 1)  // If the least significant bit of i ^ j ^ k is 1 (i.e. if i + j + k is odd)
             direct::elem(v, i, j, k) *= -1;
     }
     return v;
@@ -571,16 +575,19 @@ void shiftImageInFourierTransformWithTabSincos(MultidimArray<Complex> &in, Multi
                                                TabSine& tabsin, TabCosine& tabcos,
                                                RFLOAT xshift, RFLOAT yshift, RFLOAT zshift = 0.);
 
-#define POWER_SPECTRUM 0
-#define AMPLITUDE_SPECTRUM 1
+static RFLOAT amplitude(Complex x) { return abs(x); }
+
+static RFLOAT power(Complex x) { return norm(x); }
+
 #define AMPLITUDE_MAP 0
 #define PHASE_MAP 1
 
-/** Get the amplitude or power_class spectrum of the map in Fourier space.
+/** Get the amplitude or power spectrum of the map in Fourier space.
  * @ingroup FourierOperations
     i.e. the radial average of the (squared) amplitudes of all Fourier components
 */
-MultidimArray<RFLOAT> getSpectrum(const MultidimArray<RFLOAT> &Min, int spectrum_type=POWER_SPECTRUM);
+MultidimArray<RFLOAT> getSpectrum(const MultidimArray<RFLOAT> &Min,
+                                  RFLOAT(*spectrum_type)(Complex) = power);
 
 /** Divide the input map in Fourier-space by the spectrum provided.
  *  @ingroup FourierOperations
@@ -598,7 +605,7 @@ void multiplyBySpectrum(MultidimArray<RFLOAT> &Min, const MultidimArray<RFLOAT> 
 */
 MultidimArray<RFLOAT> whitenSpectrum(
     const MultidimArray<RFLOAT> &Min,
-    int spectrum_type=AMPLITUDE_SPECTRUM, bool leave_origin_intact=false
+    RFLOAT(*spectrum_type)(Complex) = amplitude, bool leave_origin_intact=false
 );
 
 /** Adapts Min to have the same spectrum as spectrum_ref
@@ -607,7 +614,7 @@ MultidimArray<RFLOAT> whitenSpectrum(
 */
 MultidimArray<RFLOAT> adaptSpectrum(
     const MultidimArray<RFLOAT> &Min, const MultidimArray<RFLOAT> &spectrum_ref,
-    int spectrum_type=AMPLITUDE_SPECTRUM, bool leave_origin_intact=false
+    RFLOAT(*spectrum_type)(Complex) = amplitude, bool leave_origin_intact=false
 );
 
 /** Kullback-Leibler divergence */

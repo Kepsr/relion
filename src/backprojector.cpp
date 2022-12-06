@@ -1613,10 +1613,10 @@ void BackProjector::enforceHermitianSymmetry() {
     // Make sure all points are only included once.
     for (int iz = Zinit(data); iz <= Zlast(data); iz++)
     for (int iy = iz >= 0;     iy <= Ylast(data); iy++) {
-        Complex fsum = data.elem(0, iy, iz) + conj(data.elem(0, -iy, -iz));
+        Complex fsum = data.elem(0, +iy, +iz) + conj(data.elem(0, -iy, -iz));
         data.elem(0, +iy, +iz) =      fsum;
         data.elem(0, -iy, -iz) = conj(fsum);
-        RFLOAT sum = weight.elem(0, iy, iz) + weight.elem(0, -iy, -iz);
+        RFLOAT sum = weight.elem(0, +iy, +iz) + weight.elem(0, -iy, -iz);
         weight.elem(0, +iy, +iz) = sum;
         weight.elem(0, -iy, -iz) = sum;
     }

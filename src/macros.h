@@ -153,11 +153,11 @@ inline int sgn_nozero(T val) {
 
 // Euclidean distance in 2D
 template <typename T>
-inline T euclid(T a, T b) { return sqrt(a * a + b * b); }
+inline T euclid(T a, T b) { return sqrt(RFLOAT(a * a + b * b)); }
 
 // Euclidean distance in 3D
 template <typename T>
-inline T euclid(T a, T b, T c) { return sqrt(a * a + b * b + c * c); }
+inline T euclid(T a, T b, T c) { return sqrt(RFLOAT(a * a + b * b + c * c)); }
 
 // Squared Euclidean distance in 2D
 template <typename T>
@@ -166,56 +166,6 @@ inline T euclidsq(T a, T b) { return a * a + b * b; }
 // Squared Euclidean distance in 3D
 template <typename T>
 inline T euclidsq(T a, T b, T c) { return a * a + b * b + c * c; }
-
-/** Round to next integer
- *
- * Valid for any kind of numbers (int, short, float, etc). The result is of type
- * integer.
- *
- * @code
- * a = ROUND(-0.8); // a = -1
- * a = ROUND(-0.2); // a = 0
- * a = ROUND(0.2); // a = 0
- * a = ROUND(0.8); // a = 1
- * @endcode
- */
-#ifndef ROUND
-#define ROUND(x) ((x) > 0 ? (int) ((x) + 0.5) : (int) ((x) - 0.5))
-#endif
-
-/** Round up
- *
- * Valid for any numeric type (int, short, float, etc).
- * Return an int.
- *
- * @code
- * a = CEIL(-0.8); // a = 0
- * a = CEIL(-0.2); // a = 0
- * a = CEIL(0.2); // a = 1
- * a = CEIL(0.8); // a = 1
- * @endcode
- */
-#define CEIL(x) ((x) == (int) (x) ? (int) (x) : ((x) > 0 ? (int) ((x) + 1) : (int) (x)))
-
-/** Round down
- *
- * Valid for any numeric type (int, short, float, etc).
- * Return an int.
- *
- * @code
- * a = FLOOR(-0.8); // a = -1
- * a = FLOOR(-0.2); // a = -1
- * a = FLOOR(0.2); // a = 0
- * a = FLOOR(0.8); // a = 0
- * @endcode
- */
-#define FLOOR(x) ((x) == (int) (x) ? (int) (x) : ((x) > 0 ? (int) (x) : (int) ((x) - 1)))
-
-/** Return the fractional part of a value
- *
- * The fractional part of 3.7 is 0.7 and of -3.7 is -0.7.
- */
-#define FRACTION(x) ((x) - (int) (x))
 
 /** Clip in a saturation fashion
  *
@@ -319,42 +269,6 @@ inline RFLOAT radians(RFLOAT theta) { return theta * PI / 180.0; }
  */
 inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
 
-/** cos(theta), where theta is in degrees
- *
- * @code
- * if (COSD(90) == 0)
- *     std::cout << "This is in degrees!\n";
- * @endcode
- */
-#define COSD(theta) cos(radians(theta))
-
-/** acos(x) in degrees
- *
- * @code
- * if (ACOSD(0.5) == 60)
- *     std::cout << "This is in degrees!\n";
- * @endcode
- */
-#define ACOSD(x) degrees(acos(x))
-
-/** sin(theta), where theta is in degrees
- *
- * @code
- * if (SIND(90) == 1)
- *     std::cout << "This is in degrees!\n";
- * @endcode
- */
-#define SIND(theta) sin(radians(theta))
-
-/** acos(x) in degrees
- *
- * @code
- * if (ASIND(0.5) == 30.0)
- *     std::cout << "This is in degrees!\n";
- * @endcode
- */
-#define ASIND(theta) degrees(asin(theta))
-
 /** SINC function
  *
  * The sinc function is defined as sin(PI * x) / (PI * x).
@@ -365,20 +279,20 @@ inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
 
     /** Sincos function
      *
-     *  Wrappper to make sincos(x, &sinval, &cosval) work for all compilers.
+     *  Wrappper to make sincos(x, &sinx, &cosx) work for all compilers.
      */
     #define SINCOS(x, s, c) sincos(x, s, c)
 
     /** Sincosf function
      *
-     *  Wrappper to make sincosf(x,&sinval,&cosval) work for all compilers.
+     *  Wrappper to make sincosf(x, &sinx, &cosx) work for all compilers.
      */
     #define SINCOSF(x, s, c) sincosf(x, s, c)
 
 #elif defined HAVE___SINCOS
     // Use __sincos and __sincosf instead (primarily clang)
 
-        #define SINCOS(x, s, c) __sincos(x, s, c)
+        #define SINCOS (x, s, c) __sincos (x, s, c)
         #define SINCOSF(x, s, c) __sincosf(x, s, c)
 
 #else
@@ -437,15 +351,17 @@ namespace Xmipp {
 
     // The first index of an Xmipp volume/image/array of size 'size'.
     inline long int init(int size) {
-        return -(long int) ((float) size / 2.0);
+        return -(size / 2);
     }
 
     // The last index of an Xmipp volume/image/array of size 'size'.
     inline long int last(int size) {
-        return size + init(size) - 1;
+        return size - (size / 2) - 1;
+        // n / 2 + n % 2 - 1
     }
 
-    // lt and gt are more stringent than ordinary > and <.
+    // lt and gt are more stringent than ordinary > and <,
+    // to allow for a more relaxed definition of equality.
     // lt(x, y) can be false even if x < y is true
     // and gt(x, y) can be false even if x > y is true
     // This is to ignore insignificant differences caused by machine error.

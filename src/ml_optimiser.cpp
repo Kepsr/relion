@@ -2217,8 +2217,6 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             // When doing SGD, only take the first sgd_ini_subset_size*mymodel.nr_classes images to calculate the initial reconstruction
             if (fn_ref == "None" && !(do_sgd && part_id < sgd_ini_subset_size * mymodel.nr_classes)) {
 
-                MultidimArray<RFLOAT> Fctf, Fweight;
-
                 // Make sure MPI and sequential behave exactly the same
                 init_random_generator(random_seed + part_id);
                 // Randomize the initial orientations for initial reference generation at this step....
@@ -2244,6 +2242,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 //A *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
                 // Construct initial references from random subsets
                 MultidimArray<Complex> Fimg = windowFourierTransform(Faux, wsum_model.current_size);
+                MultidimArray<RFLOAT> Fctf;
                 Fctf.resize(CenterFFTbySign(Fimg));
                 Fctf = 1.0;
 
@@ -2273,7 +2272,6 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                 break;
         }
     }
-
 
     // Clean up the fftw object completely
     // This is something that needs to be done manually, as among multiple threads only one of them may actually do this
@@ -2315,7 +2313,7 @@ void MlOptimiser::setSigmaNoiseEstimatesAndSetAverageImage(MultidimArray<RFLOAT>
     // Calculate sigma2_noise estimates as average of power class spectra, and subtract power spectrum of the average image from that
     if (do_calculate_initial_sigma_noise) {
         // Calculate power spectrum of the average image
-        auto spect = getSpectrum(Mavg, POWER_SPECTRUM) / 2.0;  // because of 2-dimensionality of the complex plane
+        auto spect = getSpectrum(Mavg, power) / 2.0;  // because of 2-dimensionality of the complex plane
         spect.resize(mymodel.sigma2_noise[0]);
 
         // Set noise spectra, once for each group

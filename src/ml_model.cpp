@@ -1126,7 +1126,7 @@ void MlModel::initialiseDataVersusPrior(bool fix_tau) {
         tau2_class[iclass].resize(ori_size / 2 + 1);
 
         // Get the power spectrum of the reference
-        const auto spectrum = getSpectrum(Iref[iclass], POWER_SPECTRUM) * normfft / 2.0;
+        const auto spectrum = getSpectrum(Iref[iclass], power) * normfft / 2.0;
         // Factor two because of two-dimensionality of the complex plane
         // (just like sigma2_noise estimates, the power spectra should be divided by 2)
 

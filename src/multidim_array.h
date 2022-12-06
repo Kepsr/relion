@@ -2396,4 +2396,55 @@ void flipYAxis(MultidimArray<T> &array) {
     }
 }
 
+// The origin of in_array had better be (0, 0, 0)
+template <typename T>
+void flipX(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
+    std::cout << in_array.xinit << ' ' << in_array.yinit << ' ' << in_array.zinit << std::endl;
+    std::cout << out_array.xinit << ' ' << out_array.yinit << ' ' << out_array.zinit << std::endl;
+    for (long int k = 0; k < Zsize(in_array); k++)
+    for (long int j = 0; j < Ysize(in_array); j++)
+    for (long int i1 = 0; i1 < Xsize(in_array); i1++) {
+        long int i2 = Xsize(in_array) - 1 - i1;
+        direct::elem(out_array, i1, j, k) = in_array.elem(i2, j, k);
+    }
+}
+
+// The origin of in_array had better be (0, 0, 0)
+template <typename T>
+void flipY(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
+    std::cout << in_array.xinit << ' ' << in_array.yinit << ' ' << in_array.zinit << std::endl;
+    std::cout << out_array.xinit << ' ' << out_array.yinit << ' ' << out_array.zinit << std::endl;
+    for (long int k = 0; k < Zsize(in_array); k++)
+    for (long int j1 = 0; j1 < Ysize(in_array); j1++) {
+        long int j2 = Ysize(in_array) - 1 - j1;
+    for (long int i = 0; i < Xsize(in_array); i++)
+        direct::elem(out_array, i, j1, k) = in_array.elem(i, j2, k);
+    }
+}
+
+// The origin of in_array had better be (0, 0, 0)
+template <typename T>
+void flipZ(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
+    std::cout << in_array.xinit << ' ' << in_array.yinit << ' ' << in_array.zinit << std::endl;
+    std::cout << out_array.xinit << ' ' << out_array.yinit << ' ' << out_array.zinit << std::endl;
+    for (long int k1 = 0; k1 < Zsize(in_array); k1++) {
+        long int k2 = Zsize(in_array) - 1 - k1;
+    for (long int j = 0; j < Ysize(in_array); j++)
+    for (long int i = 0; i < Xsize(in_array); i++)
+        direct::elem(out_array, i, j, k1) = in_array.elem(i, j, k2);
+    }
+}
+
+// The origin of in_array had better be (0, 0, 0)
+template <typename T>
+void invert_hand(const MultidimArray<T> &in_array, MultidimArray<T> &out_array) {
+    for (long int k = 0; k < Zsize(in_array); k++)
+    for (long int j = 0; j < Ysize(in_array); j++)
+    for (long int i1 = 0; i1 < Xsize(in_array); i1++) {
+        long int i2 = (Xsize(in_array) - i1) % Xsize(in_array);
+        // (x - i) % x = x - i if 0 <= i <= x
+        direct::elem(out_array, i1, j, k) = in_array.elem(i2, j, k);
+    }
+}
+
 #endif

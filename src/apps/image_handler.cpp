@@ -406,7 +406,7 @@ class image_handler_parameters {
             }
             MDfsc.write(std::cout);
         } else if (do_power) {
-            const auto spectrum = getSpectrum(Iout(), POWER_SPECTRUM);
+            const auto spectrum = getSpectrum(Iout(), power);
             MetaDataTable MDpower;
             MDpower.name = "power";
             const long int Nyquist = Xsize(Iout()) / 2 + 1;
@@ -420,8 +420,8 @@ class image_handler_parameters {
             }
             MDpower.write(std::cout);
         } else if (!fn_adjust_power.empty()) {
-            const auto spectrum = getSpectrum(Iop(), AMPLITUDE_SPECTRUM);
-            Iout() = adaptSpectrum(Iin(), spectrum, AMPLITUDE_SPECTRUM);
+            const auto spectrum = getSpectrum(Iop(), amplitude);
+            Iout() = adaptSpectrum(Iin(), spectrum, amplitude);
         } else if (!fn_cosDPhi.empty()) {
 
             FourierTransformer transformer;
@@ -488,37 +488,15 @@ class image_handler_parameters {
             highPassFilterMap(Iout(), highpass, angpix, filter_edge_width);
 
         if (do_flipX) {
-            // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
-            // This gives: 5, 4, 3, 2, 1, 0
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) = Iin().elem(Xsize(Iin()) - 1 - i, j, k);
-            }
+            flipX(Iin(), Iout());
         } else if (do_flipY) {
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) = Iin().elem(i, Ysize(Iin()) - 1 - j, k);
-            }
+            flipY(Iin(), Iout());
         } else if (do_flipZ) {
             if (Zsize(Iout()) < 2)
                 REPORT_ERROR("ERROR: this is not a 3D map, so cannot be flipped in Z");
-
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                direct::elem(Iout(), i, j, k) = Iin().elem(i, j, Zsize(Iin()) - 1 - k);
-            }
+            flipZ(Iin(), Iout());
         } else if (do_invert_hand) {
-            // For input:  0, 1, 2, 3, 4, 5 (Xsize = 6)
-            // This gives: 0, 5, 4, 3, 2, 1
-            for (long int k = 0; k < Zsize(Iin()); k++)
-            for (long int j = 0; j < Ysize(Iin()); j++)
-            for (long int i = 0; i < Xsize(Iin()); i++) {
-                long int ii = (Xsize(Iin()) - i) % Xsize(Iin());
-                direct::elem(Iout(), i, j, k) = Iin().elem(ii, j, k);
-            }
+            invert_hand(Iin(), Iout());
         }
 
         // Shifting
