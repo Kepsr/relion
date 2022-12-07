@@ -56,9 +56,6 @@ namespace ImageOp {
     void flipZ(const MultidimArray<T> &src, MultidimArray<T> &dest);
 
     template <typename T>
-    void invert_hand(const MultidimArray<T> &src, MultidimArray<T> &dest);
-
-    template <typename T>
     void flipYAxis(MultidimArray<T> &array);
 
     template<typename T1>
@@ -162,18 +159,7 @@ void ImageOp::flipZ(const MultidimArray<T> &src, MultidimArray<T> &dest) {
 }
 
 template <typename T>
-void ImageOp::invert_hand(const MultidimArray<T> &src, MultidimArray<T> &dest) {
-    dest.reshape(src);
-    for (long int k = 0; k < Zsize(src); k++)
-    for (long int j = 0; j < Ysize(src); j++)
-    for (long int i1 = 0; i1 < Xsize(src); i1++) {
-        long int i2 = Xsize(src) - i1;
-        direct::elem(dest, i1, j, k) = direct::elem(src, i2, j, k);
-    }
-}
-
-template <typename T>
-void ImageOp::flipYAxis(MultidimArray<T> &array) {
+void ImageOp::flipY(MultidimArray<T> &array) {
     const int ylim = array.ydim / 2, z = 0;
     for (int n = 0; n < array.zdim; n++)
     for (int y1 = 0; y1 < ylim; y1++) {

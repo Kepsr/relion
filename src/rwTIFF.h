@@ -242,7 +242,7 @@ int Image<T>::readTIFF(
            IMOD, EMAN2, SerialEM and MotionCor2 flip the Y axis whenever they read or write a TIFF file.
            We follow this.
         */
-        ImageOp::flipYAxis(data);
+        ImageOp::flipY(data);
 
     }
 

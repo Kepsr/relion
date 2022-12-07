@@ -488,8 +488,8 @@ class image_handler_parameters {
         if (highpass > 0.0)
             highPassFilterMap(Iout(), highpass, angpix, filter_edge_width);
 
-        using ImageOp::flipX, ImageOp::flipY, ImageOp::flipZ, ImageOp::invert_hand;
-        if (do_flipX) {
+        using ImageOp::flipX, ImageOp::flipY, ImageOp::flipZ;
+        if (do_flipX || do_invert_hand) {
             flipX(Iin(), Iout());
         } else if (do_flipY) {
             flipY(Iin(), Iout());
@@ -497,8 +497,6 @@ class image_handler_parameters {
             if (Zsize(Iout()) <= 1)
                 REPORT_ERROR("ERROR: this map is not 3D, so flipping in Z makes little sense.");
             flipZ(Iin(), Iout());
-        } else if (do_invert_hand) {
-            invert_hand(Iin(), Iout());
         }
 
         // Shifting
