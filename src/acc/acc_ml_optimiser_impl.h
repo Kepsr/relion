@@ -825,8 +825,8 @@ void getFourierTransformsAndCtfs(
                 }
 
                 // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
-                baseMLO->mydata.obsModel.demodulatePhase(optics_group, Fsum_obody, true); // true means do_modulate_instead
-                baseMLO->mydata.obsModel.divideByMtf    (optics_group, Fsum_obody, true); // true means do_multiply_instead
+                baseMLO->mydata.obsModel.modulatePhase(optics_group, Fsum_obody);
+                baseMLO->mydata.obsModel.multiplyByMtf(optics_group, Fsum_obody);
 
             }
 

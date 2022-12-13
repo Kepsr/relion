@@ -501,8 +501,13 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
             intact_ctf_first_peak, true
         );
 
-        obsModel.demodulatePhase(mdt, p, F2D);  // Uses angpix internally!
-        obsModel.divideByMtf    (mdt, p, F2D);
+        if (p) {
+            obsModel.modulatePhase(mdt, F2D);  // Uses angpix internally!
+            obsModel.multiplyByMtf(mdt, F2D);
+        } else {
+            obsModel.demodulatePhase(mdt, F2D);  // Uses angpix internally!
+            obsModel.divideByMtf    (mdt, F2D);
+        }
 
         // Ewald-sphere curvature correction
         if (do_ewald) {

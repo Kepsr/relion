@@ -1487,7 +1487,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
     skip_fitting:
     if (!do_dose_weighting || save_noDW) {
-        Iref().initZeros(Iframes[0]());
+        Iref().reshape(Iframes[0]());
+        Iref().initZeros();
 
         {
         ifdefTIMING(TicToc tt (MCtimer, TIMING_REAL_SPACE_INTERPOLATION);)
@@ -1545,7 +1546,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
 
         }
 
-        Iref().initZeros(Iframes[0]());
+        Iref().reshape(Iframes[0]());
+        Iref().initZeros();
         {
         ifdefTIMING(TicToc tt (MCtimer, TIMING_REAL_SPACE_INTERPOLATION);)
         logfile << "Summing frames after dose weighting: ";

@@ -387,7 +387,7 @@ class MultidimArray {
      */
     void coreInit() {
         xdim = ydim = zdim = ndim = 0;
-        xinit = yinit = zinit = 0;
+        setOrigin();
         data = nullptr;
         allocator = relion_aligned_mallocator();
     }
@@ -460,9 +460,7 @@ class MultidimArray {
         ydim = other.ydim;
         zdim = other.zdim;
         ndim = other.ndim;
-        xinit = other.xinit;
-        yinit = other.yinit;
-        zinit = other.zinit;
+        setOrigin(other.xinit, other.yinit, other.zinit);
     }
 
     /** Shrink to fit
@@ -518,10 +516,7 @@ class MultidimArray {
     template<typename U>
     void reshape(const MultidimArray<U> &other) {
         reshape(other.xdim, other.ydim, other.zdim, other.ndim);
-
-        xinit = other.xinit;
-        yinit = other.yinit;
-        zinit = other.zinit;
+        setOrigin(other.xinit, other.yinit, other.zinit);
     }
 
     /** Resize to a given size
@@ -605,7 +600,7 @@ class MultidimArray {
         }
 
         // Ask for memory
-        T *new_data;
+        T *new_data = nullptr;
 
         try {
             new_data = (T*) allocator.allocate(new_size * sizeof(T));
@@ -648,20 +643,14 @@ class MultidimArray {
     template<typename U>
     void resize(const MultidimArray<U> &other) {
         resize(other.xdim, other.ydim, other.zdim, other.ndim);
-        xinit = other.xinit;
-        yinit = other.yinit;
-        zinit = other.zinit;
+        setOrigin(other.xinit, other.yinit, other.zinit);
     }
 
-    /** Return the array's X/Y/Z/N dimensions.
-     *
-     * Could also be considered the "size" of the array.
-     * For vectors and matrices, the higher order dimensions will be 1:
+    /** Return the array's dimensions in X/Y/Z/N,
+     * in other words, its shape.
+     * It is wise to have the widest dimension first.
+     * Redundant dimensions have width 1:
      * (x, 1, 1, 1) or (x, y, 1, 1).
-     *
-     * @code
-     * dimensions = V.getDimensions();
-     * @endcode
      */
     std::array<uindex_t, 4> getDimensions() const {
         return { xdim, ydim, zdim, ndim };
@@ -671,7 +660,13 @@ class MultidimArray {
         return { xinit, yinit, zinit };
     }
 
-    /** The dimension of an array.
+    void setOrigin(index_t xinit = 0, index_t yinit = 0, index_t zinit = 0) {
+        this->xinit = xinit;
+        this->yinit = yinit;
+        this->zinit = zinit;
+    }
+
+    /** The dimensionality of an array.
      *
      * The number of indices needed to select an element.
      *
@@ -731,9 +726,7 @@ class MultidimArray {
         T init_value = 0, long n = 0
     ) const {
         MultidimArray<T> result (xF - x0 + 1, yF - y0 + 1, zF - z0 + 1);
-        result.xinit = x0;
-        result.yinit = y0;
-        result.zinit = z0;
+        result.setOrigin(x0, y0, z0);
         for (index_t k = z0; k <= zF; k++)
         for (index_t j = y0; j <= yF; j++)
         for (index_t i = x0; i <= xF; i++) {
@@ -766,8 +759,7 @@ class MultidimArray {
         T init_value = 0, long n = 0
     ) const {
         MultidimArray<T> result (xF - x0 + 1, yF - y0 + 1);
-        result.xinit = x0;
-        result.yinit = y0;
+        result.setOrigin(x0, y0);
         FOR_ALL_ELEMENTS_IN_ARRAY2D(result, i, j) {
             result.elem(i, j) = inside(i, j) ? elem(i, j, 0, n) : init_value;
         }
@@ -792,7 +784,7 @@ class MultidimArray {
         index_t x0, index_t xF, T init_value = 0, long n = 0
     ) const {
         MultidimArray<T> result (xF - x0 + 1);
-        result.xinit = x0;
+        result.setOrigin(x0);
         for (index_t i = x0; i <= xF; i++) {
             result.elem(i) = inside(i) ? elem(i, 0, 0, n) : init_value;
         }
@@ -1079,9 +1071,7 @@ class MultidimArray {
             direct::elem(M, i, j) = direct::elem(*this, i, j, k, n);
         }
 
-        M.xinit = firstX();
-        M.yinit = firstY();
-        M.zinit = firstZ();
+        M.setOrigin(firstX(), firstY(), firstZ());
     }
 
     /** Set a single 1,2 or 3D image in a multi-image array
@@ -1130,7 +1120,7 @@ class MultidimArray {
 
             case 'Z':
             if (!inZbounds(k, (*this)))
-                REPORT_ERROR(std::string(__func__) + ": Multidim subscript (k) out of range");
+                REPORT_ERROR(std::string(__func__) + ": Multidim index out of range");
 
             k -= firstZ();
             M.resize(xdim, ydim);
@@ -1138,13 +1128,12 @@ class MultidimArray {
             for (index_t i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, j, i, k, n);
             }
-            M.xinit = firstX();
-            M.yinit = firstY();
+            M.setOrigin(firstX(), firstY());
             break;
 
             case 'Y':
             if (!inYbounds(k, (*this)))
-                REPORT_ERROR(std::string(__func__) + ": Multidim subscript (i) out of range");
+                REPORT_ERROR(std::string(__func__) + ": Multidim index out of range");
 
             k -= firstY();
             M.resize(xdim, zdim);
@@ -1152,13 +1141,12 @@ class MultidimArray {
             for (index_t i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, k, j, i, n);
             }
-            M.xinit = firstX();
-            M.yinit = firstZ();
+            M.setOrigin(firstX(), firstY());
             break;
 
             case 'X':
             if (!inXbounds(k, (*this)))
-                REPORT_ERROR(std::string(__func__) + ": Multidim subscript (j) out of range");
+                REPORT_ERROR(std::string(__func__) + ": Multidim index out of range");
 
             k -= firstX();
             M.resize(ydim, zdim);
@@ -1166,8 +1154,7 @@ class MultidimArray {
             for (index_t i = 0; i < Xsize(M); i++) {
                 direct::elem(M, i, j) = direct::elem(*this, j, k, i, n);
             }
-            M.xinit = firstY();
-            M.yinit = firstZ();
+            M.setOrigin(firstY(), firstZ());
             break;
 
             default:
@@ -1295,94 +1282,34 @@ class MultidimArray {
             elem(i, j) = v.elem(j);
     }
 
-    /** 3D Logical to physical index translation.
-     *
-     * Return the physical position of a logical one.
-     *
-     * @code
-     * m.toPhysical(k_log, i_log, j_log, k_phys, i_phys, j_phys);
-     * @endcode
-     */
-    void toPhysical(
-        index_t  k_log,  index_t  i_log,  index_t  j_log,
-        index_t &k_phys, index_t &i_phys, index_t &j_phys
-    ) const {
-        k_phys = k_log - firstZ();
-        i_phys = i_log - firstY();
-        j_phys = j_log - firstX();
+    // Logical to physical index translation (3D)
+    std::array<long int, 3> toPhysical(index_t i, index_t j, index_t k) const {
+        return {i - firstX(), j - firstY(), k - firstZ()};
     }
 
-    /** 3D Physical to logical index translation.
-     *
-     * Return the logical position of a physical one.
-     *
-     * @code
-     * m.toLogical(i_phys, j_phys, i_log, j_log);
-     * @endcode
-     */
-    void toLogical(
-        index_t  k_phys, index_t  i_phys, index_t  j_phys,
-        index_t &k_log,  index_t &i_log,  index_t &j_log
-    ) const {
-        k_log = k_phys + firstZ();
-        i_log = i_phys + firstY();
-        j_log = j_phys + firstX();
+    // Logical to physical index translation (2D)
+    std::array<long int, 2> toPhysical(index_t i, index_t j) const {
+        return {i - firstX(), j - firstY()};
     }
 
-    /** 2D Logical to physical index translation
-     *
-     * Return the physical position of a logical one.
-     *
-     * @code
-     * m.toPhysical(i_log, j_log, i_phys, j_phys);
-     * @endcode
-     */
-    void toPhysical(
-        index_t  i_log,  index_t  j_log,
-        index_t &i_phys, index_t &j_phys
-    ) const {
-        i_phys = i_log - firstY();
-        j_phys = j_log - firstX();
+    // Logical to physical index translation (1D)
+    std::array<long int, 1> toPhysical(index_t i) const {
+        return {i - firstX()};
     }
 
-    /** 2D Physical to logical index translation
-     *
-     * Return the logical position of a physical one.
-     *
-     * @code
-     * m.toLogical(i_phys, j_phys, i_log, j_log);
-     * @endcode
-     */
-    void toLogical(
-        index_t  i_phys, index_t j_phys,
-        index_t &i_log,  index_t &j_log
-    ) const {
-        i_log = i_phys + firstY();
-        j_log = j_phys + firstX();
+    // Physical to logical index translation (3D)
+    std::array<long int, 3> toLogical(index_t i, index_t j, index_t k) const {
+        return {i + firstX(), j + firstY(), k + firstZ()};
     }
 
-    /** 1D Logical to physical index translation
-     *
-     * Return the physical position of a logical one.
-     *
-     * @code
-     * v.toPhysical(i_log, i_phys);
-     * @endcode
-     */
-    void toPhysical(index_t i_log, index_t &i_phys) const {
-        i_phys = i_log - firstX();
+    // Physical to logical index translation (2D)
+    std::array<long int, 2> toLogical(index_t i, index_t j) const {
+        return {i + firstX(), j + firstY()};
     }
 
-    /** 1D Physical to logical index translation.
-     *
-     * Return the logical position of a physical one.
-     *
-     * @code
-     * v.toLogical(i_phys, i_log);
-     * @endcode
-     */
-    void toLogical(index_t i_phys, index_t &i_log) const {
-        i_log = i_phys + firstX();
+    // Physical to logical index translation (1D)
+    std::array<long int, 1> toLogical(index_t i) const {
+        return {i + firstX()};
     }
 
     //@}
@@ -1428,21 +1355,6 @@ class MultidimArray {
     MultidimArray<T>& operator = (T scalar) {
         for (auto &x : *this) { x = scalar; }
         return *this;
-    }
-
-    /** Initialize to zeros following a pattern.
-     *
-     * All values are set to 0, and the origin and size of the pattern are
-     * adopted.
-     *
-     * @code
-     * v2.initZeros(v1);
-     * @endcode
-     */
-    template <typename U>
-    void initZeros(const MultidimArray<U> &other) {
-        reshape(other);
-        memset(data, 0, size() * sizeof(T));
     }
 
     /** Initialize to zeros with current size.
@@ -1622,26 +1534,24 @@ class MultidimArray {
 
     /** Computes the center of mass of the nth slice
      */
-    void centerOfMass(Matrix1D<RFLOAT> &center, void *mask = nullptr, long int n = 0) {
-            center.initZeros(3);
-            MultidimArray<int> *imask = (MultidimArray<int>*) mask;
+    void centerOfMass(Matrix1D<RFLOAT> &CoM, MultidimArray<int> *mask = nullptr, long int n = 0) {
 
+            CoM.initZeros(3);
             RFLOAT mass = 0;
             FOR_ALL_ELEMENTS_IN_ARRAY3D(*this, i, j, k) {
-                if ((!imask || imask->elem(i, j, k, n)) && elem(i, j, k) > 0) {
-                XX(center) += i * elem(i, j, k, n);
-                YY(center) += j * elem(i, j, k, n);
-                ZZ(center) += k * elem(i, j, k, n);
+                if ((!mask || mask->elem(i, j, k, n)) && elem(i, j, k) > 0) {
+                XX(CoM) += i * elem(i, j, k, n);
+                YY(CoM) += j * elem(i, j, k, n);
+                ZZ(CoM) += k * elem(i, j, k, n);
 
                 mass += elem(i, j, k, n);
             }
         }
 
-        if (mass != 0) { center /= mass; }
+        if (mass != 0) { CoM /= mass; }
 
-        // Resize center to the correct dimensionality
-        int dim = getDim();
-        if (dim == 1 || dim == 2) { center.resize(dim); }
+        // Resize CoM to the correct dimensionality
+        CoM.resize(getDim());
 
     }
 
@@ -1655,18 +1565,17 @@ class MultidimArray {
     // TODO: check this function!
     void sorted_index(MultidimArray<long> &idx) const {
         checkDimension(1);
-        // Set up a vector of pairs
-        std::vector<std::pair<T, long int>> vp;
-        vp.reserve(xdim);
+        std::vector<std::pair<T, long int>> pairs;
+        pairs.reserve(xdim);
         for (long int n = 0; n < size(); n++) {
-            vp.emplace_back((*this)[n], n);
+            pairs.emplace_back((*this)[n], n);
         }
-        // Sort on the first elements of the pairs
-        std::sort(vp.begin(), vp.end());
+        // Sort the pairs (order determined by first element)
+        std::sort(pairs.begin(), pairs.end());
         idx.resize(xdim);
-        // Fill the output array with the second elements of the sorted vp
+        // Fill the output array with the second elements of the sorted pairs
         for (long int n = 0; n < idx.size(); n++) {
-            idx[n] = vp[n].second;
+            idx[n] = pairs[n].second;
         }
     }
 

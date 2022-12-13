@@ -100,7 +100,7 @@ Matrix1D<RFLOAT> Euler::angles2direction(RFLOAT alpha, RFLOAT beta) {
     RFLOAT sina = sin(alpha);
     RFLOAT sinb = sin(beta);
 
-    return VECTOR_R3(cosa * sinb, sina * sinb, cosb);
+    return vectorR3(cosa * sinb, sina * sinb, cosb);
 }
 
 /* Euler direction2angles ------------------------------- */

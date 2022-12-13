@@ -393,67 +393,74 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
     return out;
 }
 
-void ObservationModel::divideByMtf(
+template <typename Operator>
+void ObservationModel::operateByMtf(
     int opticsGroup, MultidimArray<Complex> &obsImage,
-    bool do_multiply_instead, bool do_correct_average_mtf
+    bool do_correct_average_mtf, Operator assign  // e.g. Complex::operator *=
 ) {
-
     const int sh = obsImage.xdim, s = obsImage.ydim;
     // If there is only a single MTF and we are correcting for the average, then do nothing...
     if (do_correct_average_mtf && !hasMultipleMtfs) return;
 
     if (fnMtfs.size() > opticsGroup) {
-        const Image<RFLOAT> &mtf = getMtfImage(opticsGroup, s);
-        const Image<RFLOAT> &avgmtf = getAverageMtfImage(s);
+        const auto &mtf    = getMtfImage(opticsGroup, s);
+        const auto &avgmtf = getAverageMtfImage(s);
 
-        if (do_multiply_instead) {
-            if (do_correct_average_mtf) {
-                for (int y = 0; y < s;  y++)
-                for (int x = 0; x < sh; x++) {
-                    obsImage.elem(y, x) *= mtf(y, x) / avgmtf(y, x);
-                }
-            } else {
-                for (int y = 0; y < s;  y++)
-                for (int x = 0; x < sh; x++) {
-                    obsImage.elem(y, x) *= mtf(y, x);
-                }
+        if (do_correct_average_mtf) {
+            for (int y = 0; y < s;  y++)
+            for (int x = 0; x < sh; x++) {
+                assign(obsImage.elem(y, x), mtf(y, x) / avgmtf(y, x));
             }
         } else {
-            if (do_correct_average_mtf) {
-                for (int y = 0; y < s;  y++)
-                for (int x = 0; x < sh; x++) {
-                    obsImage.elem(y, x) *= avgmtf(y, x) / mtf(y, x);
-                }
-            } else {
-                for (int y = 0; y < s;  y++)
-                for (int x = 0; x < sh; x++) {
-                    obsImage.elem(y, x) /= mtf(y, x);
-                }
+            for (int y = 0; y < s;  y++)
+            for (int x = 0; x < sh; x++) {
+                assign(obsImage.elem(y, x), mtf(y, x));
             }
         }
     }
 }
 
-void ObservationModel::demodulatePhase(
-    int opticsGroup, MultidimArray<Complex> &obsImage,
-    bool do_modulate_instead
+void ObservationModel::multiplyByMtf(
+    int opticsGroup, MultidimArray<Complex> &obsImage, bool do_correct_average_mtf
+) {
+    operateByMtf(opticsGroup, obsImage, do_correct_average_mtf,
+        [] (Complex &x, Complex y) { x *= y; });
+}
+
+void ObservationModel::divideByMtf(
+    int opticsGroup, MultidimArray<Complex> &obsImage, bool do_correct_average_mtf
+) {
+    operateByMtf(opticsGroup, obsImage, do_correct_average_mtf,
+        [] (Complex &x, Complex y) { x /= y; });
+}
+
+template <typename F>
+void ObservationModel::operatePhase(
+    int opticsGroup, MultidimArray<Complex> &obsImage, F f  // e.g. Complex::conj
 ) {
     if (
         opticsGroup >= oddZernikeCoeffs.size() ||
-        oddZernikeCoeffs[opticsGroup].size() <= 0
+        oddZernikeCoeffs[opticsGroup].empty()
     ) return;
 
-    const int sh = obsImage.xdim, s = obsImage.ydim;
+    const Image<Complex> &corr = getPhaseCorrection(opticsGroup, obsImage.ydim);
 
-    const Image<Complex> &corr = getPhaseCorrection(opticsGroup, s);
-
-    auto f = do_modulate_instead ? [] (Complex x) { return x; }
-                                 : [] (Complex x) { return x.conj(); };
-
-    for (int y = 0; y < s;  y++)
-    for (int x = 0; x < sh; x++) {
-        obsImage.elem(x, y) *= f(corr(x, y));
+    // Precondition: obsImage and corr are 2D
+    for (long int i = 0; i < obsImage.size(); i++) {
+        obsImage[i] *= f(corr.data[i]);
     }
+}
+
+void ObservationModel::modulatePhase(
+    int opticsGroup, MultidimArray<Complex> &obsImage
+) {
+    operatePhase(opticsGroup, obsImage, [] (Complex x) { return x; });
+};
+
+void ObservationModel::demodulatePhase(
+    int opticsGroup, MultidimArray<Complex> &obsImage
+) {
+    operatePhase(opticsGroup, obsImage, [] (Complex x) { return x.conj(); });
 }
 
 double ObservationModel::angToPix(double a, int s, int opticsGroup) const {

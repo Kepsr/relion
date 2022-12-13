@@ -5173,8 +5173,8 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                 }
 
                 // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
-                mydata.obsModel.demodulatePhase(optics_group, Fsum_obody, true); // true means do_modulate_instead
-                mydata.obsModel.divideByMtf    (optics_group, Fsum_obody, true); // true means do_multiply_instead
+                mydata.obsModel.modulatePhase(optics_group, Fsum_obody);
+                mydata.obsModel.multiplyByMtf(optics_group, Fsum_obody);
             }
 
             // Subtract the other-body FT from the current image FT

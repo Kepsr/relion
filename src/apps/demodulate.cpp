@@ -51,8 +51,7 @@ int main(int argc, char *argv[]) {
 
     for (MetaDataTable &mdt : mdts) {
 
-        std::vector<Image<Complex>> obs;
-        obs = StackHelper::loadStackFS(mdt, "", nr_omp_threads, false);
+        std::vector<Image<Complex>> obs = StackHelper::loadStackFS(mdt, "", nr_omp_threads, false);
 
         std::string fullName = mdt.getValue<std::string>(EMDL::IMAGE_NAME, 0);
         std::string name = fullName.substr(fullName.find("@") + 1);
@@ -60,7 +59,11 @@ int main(int argc, char *argv[]) {
         const int pc = mdt.size();
         for (int p = 0; p < pc; p++) {
             int opticsGroup = mdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
-            obsModel.demodulatePhase(opticsGroup, obs[p].data, p);
+            if (p) {
+                obsModel.modulatePhase(opticsGroup, obs[p].data);
+            } else {
+                obsModel.demodulatePhase(opticsGroup, obs[p].data);
+            }
         }
 
         std::vector<Image<RFLOAT>> demodulated = StackHelper::inverseFourierTransform(obs);
@@ -83,7 +86,6 @@ int main(int argc, char *argv[]) {
     }
 
     MetaDataTable mdt1;
-
     for (const MetaDataTable &mdt: mdts) {
         mdt1.append(mdt);
     }
@@ -119,7 +121,7 @@ int main(int argc, char *argv[]) {
         obsModel.opticsMdt.deactivateLabel(EMDL::IMAGE_BEAMTILT_Y);
         obsModel.opticsMdt.deactivateLabel(EMDL::IMAGE_ODD_ZERNIKE_COEFFS);
 
-        obsModel.opticsMdt.write(outPath+"demodulated_particles_optics.star");
+        obsModel.opticsMdt.write(outPath + "demodulated_particles_optics.star");
     }
 
     mdt1.write(outPath + "demodulated_particles.star");

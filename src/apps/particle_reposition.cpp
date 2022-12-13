@@ -116,20 +116,16 @@ class particle_reposition_parameters {
 
             FourierTransformer transformer;
             MetaDataTable MDcoord;
-            Image<RFLOAT> Imic_in, Imic_out;
             // Read in the first micrograph
-            Imic_in.read(fn_mic);
+            auto Imic_in = Image<RFLOAT>::from_filename(fn_mic);
             Imic_in().setXmippOrigin();
-            Imic_out().initZeros(Imic_in());
-            MultidimArray<RFLOAT> Imic_sum = MultidimArray<RFLOAT>::zeros(Imic_in());
+            Image<RFLOAT> Imic_out (MultidimArray<RFLOAT>::zeros(Imic_in()));
+            auto Imic_sum = MultidimArray<RFLOAT>::zeros(Imic_in());
             Imic_sum.setXmippOrigin();
             // Get mean and stddev of the input micrograph
-            // The min and max are not used
-            const auto stats = computeStats(Imic_in());
-            RFLOAT mean_mic = stats.avg;
-            RFLOAT stddev_mic = stats.stddev;
+            const auto micrograph_stats = computeStats(Imic_in());
 
-            int optics_group_mic = DFi.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
+            const int optics_group_mic = DFi.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i);
             RFLOAT mic_pixel_size = -1.0;
             for (int j = 0; j < obsModelMics.opticsMdt.size(); j++) {
                 const int my_optics_group = obsModelMics.opticsMdt.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, j);
@@ -165,14 +161,9 @@ class particle_reposition_parameters {
                     found_one = true;
 
                     // Prepare transformer
-                    MultidimArray<RFLOAT> Mref;
-                    if (optimiser.mymodel.data_dim == 3) {
-                        Mref.resize(my_image_size, my_image_size, my_image_size);
-                    } else {
-                        Mref.resize(my_image_size, my_image_size);
-                    }
+                    MultidimArray<RFLOAT> Mref (my_image_size, my_image_size,
+                        optimiser.mymodel.data_dim == 3 ? my_image_size : 1);
 
-                    RFLOAT rot, tilt, psi, xcoord = 0.0, ycoord = 0.0, zcoord = 0.0;
                     Matrix2D<RFLOAT> A;
                     Matrix1D<RFLOAT> offsets(3);
 
@@ -180,16 +171,17 @@ class particle_reposition_parameters {
                     MDcoord.setObject(optimiser.mydata.MDimg.getObject(ori_img_id), i);
                     MDcoord.setValue(EMDL::MICROGRAPH_NAME, fn_mic_out, i);
 
-                    xcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_X,            ori_img_id);
-                    ycoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y,            ori_img_id);
-                    rot         = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
-                    tilt        = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
-                    psi         = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
+                    RFLOAT xcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_X,            ori_img_id);
+                    RFLOAT ycoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y,            ori_img_id);
+                    RFLOAT zcoord = 0.0;
+                    RFLOAT rot         = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
+                    RFLOAT tilt        = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
+                    RFLOAT psi         = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
                     XX(offsets) = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, ori_img_id);
                     YY(offsets) = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, ori_img_id);
                     if (optimiser.mymodel.data_dim == 3) {
                     ZZ(offsets) = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, ori_img_id);
-                    zcoord      = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z,            ori_img_id);
+                    zcoord = optimiser.mydata.MDimg.getValue<RFLOAT>(EMDL::IMAGE_COORD_Z,            ori_img_id);
                     } else {
                     ZZ(offsets) = zcoord = 0.0;
                     }
@@ -229,7 +221,8 @@ class particle_reposition_parameters {
                             if (Xsize(Ictf()) == Ysize(Ictf())) {
                                 Ictf().setXmippOrigin();
                                 FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fctf) {
-                                    // Use negative kp,ip and jp indices, because the origin in the ctf_img lies half a pixel to the right of the actual center....
+                                    // Use negative ip, jp, kp indices
+                                    // because the origin in the ctf_img lies half a pixel to the right of the actual center.
                                     direct::elem(Fctf, i, j, k) = Ictf().elem(-ip, -jp, -kp);
                                 }
                             } else if (Xsize(Ictf()) == Ysize(Ictf()) / 2 + 1) {
@@ -249,22 +242,20 @@ class particle_reposition_parameters {
                             );
                         }
 
-                        if (optimiser.mydata.obsModel.getCtfPremultiplied(optics_group)) {
-                            Fref *= Fctf * Fctf;  // Expression templates
-                        } else {
-                            Fref *= Fctf;
-                        }
+                        Fref *= optimiser.mydata.obsModel.getCtfPremultiplied(optics_group) ?
+                            Fctf * Fctf :  // Expression templates
+                            Fctf;
 
                         // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
-                        optimiser.mydata.obsModel.demodulatePhase(optics_group, Fref, true);  // true means do_modulate_instead
-                        optimiser.mydata.obsModel.divideByMtf    (optics_group, Fref, true);  // true means do_multiply_instead
+                        optimiser.mydata.obsModel.modulatePhase(optics_group, Fref);
+                        optimiser.mydata.obsModel.multiplyByMtf(optics_group, Fref);
 
                     }
 
                     if (optimiser.do_scale_correction) {
-                        int group_id = optimiser.mydata.getGroupId(part_id, 0);
-                        RFLOAT myscale = optimiser.mymodel.scale_correction[group_id];
-                        for (auto &x : Fref) { x *= myscale; }
+                        const int group_id = optimiser.mydata.getGroupId(part_id, 0);
+                        const RFLOAT scale = optimiser.mymodel.scale_correction[group_id];
+                        Fref *= scale;
                     }
 
                     // Take inverse transform
@@ -279,9 +270,7 @@ class particle_reposition_parameters {
                         Mpart_mic.setXmippOrigin();
                     }
 
-                    // Image<RFLOAT> It;
-                    // It()=Mpart_mic;
-                    // It.write("It.spi");
+                    // Image<RFLOAT>(Mpart_mic).write("It.spi");
                     // exit(1);
 
                     // To keep raw micrograph and reference projections on the same scale, need to re-obtain
@@ -291,7 +280,7 @@ class particle_reposition_parameters {
                     if (norm_radius > 0) {
                         Image<RFLOAT> Ipart;
                         Ipart().resize(Mpart_mic);
-                        Ipart() = mean_mic; // set areas outside the micrograph to average of micrograph (just like in preprocessing)
+                        Ipart() = micrograph_stats.avg; // set areas outside the micrograph to average of micrograph (just like in preprocessing)
                         Imic_in().xinit = -round(xcoord);
                         Imic_in().yinit = -round(ycoord);
                         Imic_in().zinit = -round(zcoord);
@@ -366,8 +355,8 @@ class particle_reposition_parameters {
                         Imic_out()[n] = Imic_in()[n] - Imic_out()[n];
                     } else if (micrograph_background > 0.0) {
                         // normalize Imic_in on the fly
-                        Imic_in()[n] -= mean_mic;
-                        Imic_in()[n] /= stddev_mic;
+                        Imic_in()[n] -= micrograph_stats.avg;
+                        Imic_in()[n] /= micrograph_stats.stddev;
                         // And add a precentage to Imic_out
                         Imic_out()[n] *= 1.0 - micrograph_background;
                         Imic_out()[n] += micrograph_background * Imic_in()[n];
@@ -400,7 +389,6 @@ class particle_reposition_parameters {
         if (!fn_out.empty()) fn_star_out = fn_star_out.insertBeforeExtension("_" + fn_out);
         std::cout << "Writing out star file with the new micrographs: " << fn_star_out << std::endl;
         obsModelMics.save(MDmics_out, fn_star_out, "micrographs");
-
         std::cout << " Done!" << std::endl;
     }
 };

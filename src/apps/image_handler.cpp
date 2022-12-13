@@ -480,7 +480,7 @@ class image_handler_parameters {
                 lowPassFilterMap(Iout(), lowpass, angpix, filter_edge_width);
             } else {
                 const int axis = directional.length() == 1 ?
-                    std::string("xyz").find(::tolower(directional[0])) : -1;
+                    std::string("xyz").find(tolower(directional[0])) : -1;
                 directionalFilterMap(Iout(), lowpass, angpix, axis, filter_edge_width);
             }
         }
@@ -488,15 +488,14 @@ class image_handler_parameters {
         if (highpass > 0.0)
             highPassFilterMap(Iout(), highpass, angpix, filter_edge_width);
 
-        using ImageOp::flipX, ImageOp::flipY, ImageOp::flipZ;
         if (do_flipX || do_invert_hand) {
-            flipX(Iin(), Iout());
+            ImageOp::flipX(Iin(), Iout());
         } else if (do_flipY) {
-            flipY(Iin(), Iout());
+            ImageOp::flipY(Iin(), Iout());
         } else if (do_flipZ) {
             if (Zsize(Iout()) <= 1)
                 REPORT_ERROR("ERROR: this map is not 3D, so flipping in Z makes little sense.");
-            flipZ(Iin(), Iout());
+            ImageOp::flipZ(Iin(), Iout());
         }
 
         // Shifting

@@ -995,10 +995,11 @@ void duplicateLocalSymmetry(
             Ysize(mask()) <= 1 || Xsize(mask()) <= 1
         ) REPORT_ERROR("ERROR: input mask is not 3D!");
 
-        out_map.initZeros(mask());
+        out_map.reshape(mask());
     } else {
-        out_map.initZeros(ori_map);
+        out_map.reshape(ori_map);
     }
+    out_map.initZeros();
 
     // Loop over all masks
     for (int imask = 0; imask < fn_masks.size(); imask++) {
@@ -1078,8 +1079,10 @@ void applyLocalSymmetry(
     if (fn_masks.size() != ops.size())
         REPORT_ERROR("ERROR: number of masks and operator lists do not match!");
 
-    sym_map.initZeros(ori_map);
-    w.initZeros(ori_map);
+    sym_map.reshape(ori_map);
+    sym_map.initZeros();
+    w.reshape(ori_map);
+    w.initZeros();
     vol1.clear();
     vol2.clear(); // Use vol2 only as the output from 'applyGeometry()'
 
@@ -1240,11 +1243,11 @@ void getMinCropSize(
 ) {
     RFLOAT val = 0.0, dist2 = 0.0, dist2_max = 0.0;
     RFLOAT xori = 0.0, yori = 0.0, zori = 0.0;
-    Matrix1D<RFLOAT> new_center;
 
     mindim = -1;
-    center.initZeros(3);
+    Matrix1D<RFLOAT> new_center;
     new_center.initZeros(3);
+    center.initZeros(3);
 
     if (Nsize(vol) != 1 || Zsize(vol) <= 1 || Ysize(vol) <= 1 || Xsize(vol) <= 1)
         REPORT_ERROR("ERROR: input mask is not 3D!");
@@ -1674,7 +1677,8 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     z_angpix = img.header.getValue<RFLOAT>(EMDL::IMAGE_SAMPLINGRATE_Z, i);
 
     // Initialise vol_rec
-    vol_rec.initZeros(img());
+    vol_rec.reshape(img());
+    vol_rec.initZeros();
     //vol_rec.setXmippOrigin();
 
     // Count voxels with positive values
@@ -1842,7 +1846,8 @@ void separateMasksKMeans(
 #endif
 
     // ????
-    vol_rec.initZeros(img());
+    vol_rec.reshape(img());
+    vol_rec.initZeros();
     vol_rec.setXmippOrigin();
 
     // Randomly select K centroids
@@ -1963,7 +1968,8 @@ void separateMasksKMeans(
     for (int icen = 0; icen < K; icen++)
     {
         fn_out = fn_in.withoutExtension() + "_sub" + integerToString(icen + 1, 3, '0') + ".mrc";
-        img_out().initZeros(img());
+        img_out().reshape(img());
+        img_out().initZeros();
         img_out().setXmippOrigin();
 
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_rec, i, j, k)
@@ -2326,8 +2332,8 @@ void local_symmetry_parameters::run() {
 
                 // Master gets sampling points
                 com1_float.initZeros(3);
-                com1_int.initZeros(3);
-                com1_diff.initZeros(3);
+                com1_int  .initZeros(3);
+                com1_diff .initZeros(3);
 
                 Localsym_decomposeOperator(op_list[imask][iop], aa, bb, gg, dx, dy, dz, cc);
 

@@ -325,9 +325,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
         A3D *= obsModel.scaleDifference(opticsGroup, output_boxsize, angpix);
     }
 
-    // Translations (either through phase-shifts or in real space
-    Matrix1D<RFLOAT> trans = Matrix1D<RFLOAT>::zeros(data_dim);
-    std::array<EMDL::EMDLabel, 3> origin_labels {
+    // Translations (either through phase-shifts or in real space)
+    Matrix1D<RFLOAT> trans {0, 0, 0};
+    const std::array<EMDL::EMDLabel, 3> origin_labels {
         EMDL::ORIENT_ORIGIN_X_ANGSTROM,
         EMDL::ORIENT_ORIGIN_Y_ANGSTROM,
         EMDL::ORIENT_ORIGIN_Z_ANGSTROM
@@ -448,8 +448,13 @@ void Reconstructor::backprojectOneParticle(long int p) {
             int opticsGroup;
             if (!do_ignore_optics) {
                 opticsGroup = DF.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, p) - 1;
-                obsModel.demodulatePhase(opticsGroup, F2D, p);
-                obsModel.divideByMtf    (opticsGroup, F2D, p);
+                if (p) {
+                    obsModel.modulatePhase(opticsGroup, F2D);
+                    obsModel.multiplyByMtf(opticsGroup, F2D);
+                } else {
+                    obsModel.demodulatePhase(opticsGroup, F2D);
+                    obsModel.divideByMtf    (opticsGroup, F2D);
+                }
             }
 
             // Ewald-sphere curvature correction

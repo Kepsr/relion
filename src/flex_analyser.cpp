@@ -318,8 +318,10 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
     Image<RFLOAT> img;
     MultidimArray<RFLOAT> sumw;
     if (do_3dmodels) {
-        img().initZeros(model.Iref[0]);
-        sumw.initZeros(model.Iref[0]);
+        img().reshape(model.Iref[0]);
+        sumw.reshape(model.Iref[0]);
+        img().initZeros();
+        sumw.initZeros();
     }
 
     datarow.clear();
@@ -343,7 +345,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
         // Aresi is the residual orientation for this ibody
         Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
         // Only apply the residual orientation now!!!
-        Matrix2D<RFLOAT> Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
+        Matrix2D<RFLOAT> Abody = model.orient_bodies[ibody].transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
 
         // Now we have to get back from the 2D refined body_offset to some 3D translation of the body (with one direction undefined)
         // We will need the original projection direction, Aori for that!!
@@ -536,9 +538,8 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
                 //std::cerr << "j= "<<j<< " orients[j]= " << orients[j]<< " === "<<avg<< "  * " <<eigenvectors[k][j] << "  + " << means[j] << std::endl;
             }
 
-            Image<RFLOAT> img;
-            img().initZeros(model.Iref[0]);
-            MultidimArray<RFLOAT> sumw = MultidimArray<RFLOAT>::zeros(model.Iref[0]);
+            Image<RFLOAT> img (MultidimArray<RFLOAT>::zeros(model.Iref[0]));
+            auto sumw = MultidimArray<RFLOAT>::zeros(model.Iref[0]);
             for (int ibody = 0; ibody < model.nr_bodies; ibody++) {
 
                 MultidimArray<RFLOAT> Mbody, Mmask;

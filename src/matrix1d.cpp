@@ -44,32 +44,9 @@
 
 #include "src/matrix1d.h"
 
-Matrix1D<RFLOAT> vectorR2(RFLOAT x, RFLOAT y) {
-    Matrix1D<RFLOAT> result(2);
-    result[0] = x;
-    result[1] = y;
-    return result;
-}
-
-Matrix1D<RFLOAT> vectorR3(RFLOAT x, RFLOAT y, RFLOAT z) {
-    Matrix1D<RFLOAT> result(3);
-    result[0] = x;
-    result[1] = y;
-    result[2] = z;
-    return result;
-}
-
 // This function only makes sense after all code has been modified with 'sed' to allow single-precision runs
 #ifdef RELION_SINGLE_PRECISION
 Matrix1D<float> vectorR3(double xx, double yy, double zz) {
 	return vectorR3((float) xx, (float) yy, (float) zz);
 }
 #endif
-
-Matrix1D<int> vectorR3(int x, int y, int z) {
-    Matrix1D<int> result(3);
-    result[0] = x;
-    result[1] = y;
-    result[2] = z;
-    return result;
-}

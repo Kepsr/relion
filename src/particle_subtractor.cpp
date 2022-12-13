@@ -117,7 +117,8 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
             REPORT_ERROR("ERROR: the keep_inside mask has values outside the range [0,1]");
         }
     } else {
-        Imask().initZeros(opt.mymodel.Iref[0]);
+        Imask().reshape(opt.mymodel.Iref[0]);
+        Imask().initZeros();
     }
 
     if (do_ssnr) {
@@ -624,10 +625,8 @@ void ParticleSubtractor::subtractOneParticle(
         }
 
         // Also do phase modulation, for beam tilt correction and other asymmetric aberrations
-        opt.mydata.obsModel.demodulatePhase(optics_group, Fsubtrahend, true); 
-        // true means do_modulate_instead
-        opt.mydata.obsModel.divideByMtf(optics_group, Fsubtrahend, true); 
-        // true means do_multiply_instead
+        opt.mydata.obsModel.modulatePhase(optics_group, Fsubtrahend);
+        opt.mydata.obsModel.multiplyByMtf(optics_group, Fsubtrahend);
     }
 
     if (opt.do_scale_correction) {

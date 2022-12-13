@@ -1364,7 +1364,7 @@ void transformCartesianAndHelicalCoords(
     if (dim != 2 && dim != 3)
         REPORT_ERROR("helix.cpp::transformCartesianAndHelicalCoords(): Vector of input coordinates should have 2 or 3 values!");
 
-    Matrix1D<RFLOAT> aux = VECTOR_R3(XX(in), YY(in), dim == 3 ? ZZ(in) : 0.0);
+    Matrix1D<RFLOAT> aux = vectorR3(XX(in), YY(in), dim == 3 ? ZZ(in) : 0.0);
 
     if (dim == 2)
         rot_deg = tilt_deg = 0.0;
@@ -1395,7 +1395,7 @@ void transformCartesianAndHelicalCoords(
     if (dim != 2 && dim != 3)
         REPORT_ERROR("helix.cpp::transformCartesianAndHelicalCoords(): Vector of input coordinates should have 2 or 3 values!");
 
-    Matrix1D<RFLOAT> in = VECTOR_R3(x, y, z);
+    Matrix1D<RFLOAT> in = vectorR3(x, y, z);
     Matrix1D<RFLOAT> out(dim);
     transformCartesianAndHelicalCoords(in, out, rot_deg, tilt_deg, psi_deg, direction);
 

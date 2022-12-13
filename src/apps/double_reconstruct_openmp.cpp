@@ -37,7 +37,6 @@
 #include <src/jaz/ctf/delocalisation_helper.h>
 #include "src/jaz/ctf_helper.h"
 
-
 class reconstruct_parameters {
 
     public:
@@ -418,8 +417,13 @@ class reconstruct_parameters {
                             );
                         }
 
-                        obsModel.demodulatePhase(table, p, F2D);
-                        obsModel.divideByMtf    (table, p, F2D);
+                        if (p) {
+                            obsModel.modulatePhase(table, F2D);
+                            obsModel.multiplyByMtf(table, F2D);
+                        } else {
+                            obsModel.demodulatePhase(table, F2D);
+                            obsModel.divideByMtf    (table, F2D);
+                        }
 
                         MultidimArray<Complex> F2DP, F2DQ;
                         if (do_ewald) {

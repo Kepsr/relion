@@ -162,8 +162,7 @@ void solve(
     result.resize(b.vdim);
 
     // Xmipp interface that calls to svdksb of numerical recipes
-    Matrix1D<RFLOAT> bd;
-    typeCast(b, bd);
+    Matrix1D<RFLOAT> bd (b);
     svbksb(u, w, v, bd, result);
 }
 
