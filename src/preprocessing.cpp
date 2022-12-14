@@ -1072,8 +1072,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                 }
             } else if (abs(rescale_fndata - 1.0) > 1e-6 || do_recenter) {
                 // re-scale or re-center (irrelevant if do_reset_offsets)
-                Matrix1D<RFLOAT> my_projected_center(3);
-                my_projected_center.initZeros();
+                Matrix1D<RFLOAT> my_projected_center {0, 0, 0};
 
                 xoff = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i);
                 yoff = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i);
@@ -1086,19 +1085,15 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     fabs(recenter_y) > 0.0 ||
                     fabs(recenter_z) > 0.0
                 )) {
-                    rot  = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ROT, i);
+                    rot  = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ROT,  i);
                     tilt = MDresult.getValue<RFLOAT>(EMDL::ORIENT_TILT, i);
-                    psi  = MDresult.getValue<RFLOAT>(EMDL::ORIENT_PSI, i);
+                    psi  = MDresult.getValue<RFLOAT>(EMDL::ORIENT_PSI,  i);
 
                     // Project the center-coordinates
-                    Matrix1D<RFLOAT> my_center(3);
-                    Matrix2D<RFLOAT> A3D;
-                    XX(my_center) = recenter_x; // in run_data's pixels
-                    YY(my_center) = recenter_y;
-                    ZZ(my_center) = recenter_z;
+                    Matrix1D<RFLOAT> my_center {recenter_x, recenter_y, recenter_z};  // in run_data's pixels
                     if (ref_angpix > 0)
-                        my_center = my_center * (ref_angpix / particle_angpix);
-                    A3D = Euler::angles2matrix(rot, tilt, psi);
+                        my_center *= ref_angpix / particle_angpix;
+                    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
                     my_projected_center = A3D * my_center;
                 }
 

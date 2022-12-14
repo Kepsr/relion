@@ -104,7 +104,7 @@ int SymList::read_sym_file(FileName fn_sym) {
     __L.resize(4 * true_symNo, 4);
     __R.resize(4 * true_symNo, 4);
     __chain_length.resize(true_symNo);
-    __chain_length.initConstant(1);
+    std::fill(__chain_length.begin(), __chain_length.end(), 1);
 
     // Read symmetry parameters
     int i = 0;

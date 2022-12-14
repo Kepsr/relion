@@ -542,18 +542,16 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
             auto sumw = MultidimArray<RFLOAT>::zeros(model.Iref[0]);
             for (int ibody = 0; ibody < model.nr_bodies; ibody++) {
 
-                MultidimArray<RFLOAT> Mbody, Mmask;
-                Matrix1D<RFLOAT> body_offset_3d(3);
-                RFLOAT body_rot, body_tilt, body_psi;
-                body_rot            = orients[ibody * 6 + 0] / norm_pca[ibody * 4 + 0];
-                body_tilt           = orients[ibody * 6 + 1] / norm_pca[ibody * 4 + 1];
-                body_psi            = orients[ibody * 6 + 2] / norm_pca[ibody * 4 + 2];
-                XX(body_offset_3d)  = orients[ibody * 6 + 3] / norm_pca[ibody * 4 + 3];
-                YY(body_offset_3d)  = orients[ibody * 6 + 4] / norm_pca[ibody * 4 + 3];
-                ZZ(body_offset_3d)  = orients[ibody * 6 + 5] / norm_pca[ibody * 4 + 3];
-                //std::cerr << " norm_pca[ibody*4+0]= " << norm_pca[ibody*4+0] << " norm_pca[ibody*4+1]= " << norm_pca[ibody*4+1] << " norm_pca[ibody*4+2]= " << norm_pca[ibody*4+2] << " norm_pca[ibody*4+3]= " << norm_pca[ibody*4+3] << std::endl;
-                //std::cerr << " body_rot= " << body_rot << " body_tilt= " << body_tilt << " body_psi= " << body_psi << std::endl;
-                //std::cerr << " XX(body_offset_3d)= " << XX(body_offset_3d) << " YY(body_offset_3d)= " << YY(body_offset_3d) << " ZZ(body_offset_3d)= " << ZZ(body_offset_3d) << std::endl;
+                RFLOAT body_rot  = orients[ibody * 6 + 0] / norm_pca[ibody * 4 + 0];
+                RFLOAT body_tilt = orients[ibody * 6 + 1] / norm_pca[ibody * 4 + 1];
+                RFLOAT body_psi  = orients[ibody * 6 + 2] / norm_pca[ibody * 4 + 2];
+                Matrix1D<RFLOAT> body_offset_3d {
+                    orients[ibody * 6 + 3] / norm_pca[ibody * 4 + 3],
+                    orients[ibody * 6 + 4] / norm_pca[ibody * 4 + 3],
+                    orients[ibody * 6 + 5] / norm_pca[ibody * 4 + 3]};
+                // std::cerr << " norm_pca[ibody*4+0]= " << norm_pca[ibody*4+0] << " norm_pca[ibody*4+1]= " << norm_pca[ibody*4+1] << " norm_pca[ibody*4+2]= " << norm_pca[ibody*4+2] << " norm_pca[ibody*4+3]= " << norm_pca[ibody*4+3] << std::endl;
+                // std::cerr << " body_rot= " << body_rot << " body_tilt= " << body_tilt << " body_psi= " << body_psi << std::endl;
+                // std::cerr << " XX(body_offset_3d)= " << XX(body_offset_3d) << " YY(body_offset_3d)= " << YY(body_offset_3d) << " ZZ(body_offset_3d)= " << ZZ(body_offset_3d) << std::endl;
 
                 // Aresi is the residual orientation for this ibody
                 Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
@@ -567,8 +565,8 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
                 Abody.at(2, 3) = ZZ(body_offset_3d);
                 Abody.at(3, 3) = 1.0;
 
-                Mbody = applyGeometry(model.Iref[ibody], Abody, IS_NOT_INV, DONT_WRAP);
-                Mmask = applyGeometry(model.masks_bodies[ibody], Abody, IS_NOT_INV, DONT_WRAP);
+                MultidimArray<RFLOAT> Mbody = applyGeometry(model.Iref[ibody], Abody, IS_NOT_INV, DONT_WRAP);
+                MultidimArray<RFLOAT> Mmask = applyGeometry(model.masks_bodies[ibody], Abody, IS_NOT_INV, DONT_WRAP);
 
                 img() += Mbody * Mmask;
                 sumw  += Mmask;

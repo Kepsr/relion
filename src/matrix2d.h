@@ -222,20 +222,6 @@ class Matrix2D {
 
     /// @name Initialise Matrix2D values
     //@{
-    /** Same value in all components.
-    *
-    * @warning Dead code
-    * The constant must be of a type compatible with the array type, ie,
-    * you cannot  assign a RFLOAT to an integer array without a casting.
-    * It is not an error if the array is empty, then nothing is done.
-    *
-    * @code
-    * v.initConstant(3.14);
-    * @endcode
-    */
-    void initConstant(T val) {
-        for (int j = 0; j < mdim; j++) { mdata[j] = val; }
-    }
 
     /** Initialise to zeros with current size.
     *
@@ -373,11 +359,12 @@ class Matrix2D {
         if (!op1.isCol())
             REPORT_ERROR("Vector is not a column");
 
-        Matrix1D<T> result = Matrix1D<T>::zeros(mdimy);
-
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < op1.size(); j++)
-        result[i] += (*this)(i, j) * op1[j];
+        Matrix1D<T> result (mdimy);
+        for (int i = 0; i < result.size(); i++) {
+            result[i] = 0;
+            for (int j = 0; j < op1.size(); j++)
+                result[i] += (*this)(i, j) * op1[j];
+        }
 
         result.setCol();
         return result;
@@ -873,10 +860,12 @@ Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
     if (!isRow())
         REPORT_ERROR("Vector is not a row");
 
-    Matrix1D<T> result = Matrix1D<T>::zeros(M.mdimx);
-    for (int j = 0; j < M.mdimx; j++)
-    for (int i = 0; i < M.mdimy; i++)
-    result[j] += (*this)[i] * M.at(i, j);
+    Matrix1D<T> result (M.mdimx);
+    for (int j = 0; j < M.mdimx; j++) {
+        result[j] = 0;
+        for (int i = 0; i < M.mdimy; i++)
+            result[j] += (*this)[i] * M.at(i, j);
+    }
 
     result.setRow();
     return result;
@@ -893,7 +882,7 @@ void ludcmp(const Matrix2D<T> &A, Matrix2D<T> &LU, Matrix1D<int> &indx, T &d) {
     indx.resize(A.mdimx);
     ludcmp(
         LU.adaptForNumericalRecipes2(), A.mdimx,
-        indx.adaptForNumericalRecipes(), &d
+        indx.data() - 1, &d
     );
 }
 
@@ -902,7 +891,7 @@ template<typename T>
 void lubksb(const Matrix2D<T> &LU, Matrix1D<int> &indx, Matrix1D<T> &b) {
     lubksb(
         LU.adaptForNumericalRecipes2(), indx.size(),
-        indx.adaptForNumericalRecipes(), b.adaptForNumericalRecipes()
+        indx.data() - 1, b.data() - 1
     );
 }
 
@@ -922,11 +911,12 @@ void svdcmp(
     typeCast(a, u);
 
     // Set size of matrices
-    w.initZeros(u.mdimx);
+    w.resize(u.mdimx);
+    std::fill(w.begin(), w.end(), 0);
     v.initZeros(u.mdimx, u.mdimx);
 
     // Call the numerical recipes routine
-    svdcmp(u.mdata, u.mdimy, u.mdimx, w.vdata, v.mdata);
+    svdcmp(u.mdata, u.mdimy, u.mdimx, w.data(), v.mdata);
 }
 
 // Solve a system of linear equations (Ax = b) by SVD

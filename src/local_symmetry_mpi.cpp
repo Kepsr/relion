@@ -262,9 +262,12 @@ void local_symmetry_parameters_mpi::run() {
             if (node->isLeader()) {
                 std::cout << std::endl;
 
-                com1_float.initZeros(3);
-                com1_int.initZeros(3);
-                com1_diff.initZeros(3);
+                com1_float.resize(3);
+                std::fill(com1_float.begin(), com1_float.end(), 0);
+                com1_int.resize(3);
+                std::fill(com1_int.begin(), com1_int.end(), 0);
+                com1_diff.resize(3);
+                std::fill(com1_diff.begin(), com1_diff.end(), 0);
 
                 Localsym_decomposeOperator(op_list[imask][iop], aa, bb, gg, dx, dy, dz, cc);
 
@@ -398,7 +401,8 @@ void local_symmetry_parameters_mpi::run() {
             // All nodes unpack sampling points
             op_samplings_batch.clear();
             for (long int j = 0; j < Ysize(op_samplings_batch_packed); j++) {
-                op.initZeros(NR_LOCALSYM_PARAMETERS);
+                op.resize(NR_LOCALSYM_PARAMETERS);
+                std::fill(op.begin(), op.end(), 0);
                 for (long int i = 0; i < Xsize(op_samplings_batch_packed); i++) {
                     op[i] = direct::elem(op_samplings_batch_packed, i, j);
                 }

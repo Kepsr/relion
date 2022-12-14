@@ -46,6 +46,7 @@
 #define MATRIX1D_H_
 
 #include <numeric>
+#include <cstring>  // memcpy, memset
 #include "src/funcs.h"
 
 extern int bestPrecision(float F, int _width);
@@ -84,7 +85,7 @@ class Matrix1D;
  * @endcode
  */
 template <typename T>
-inline T& XX(const Matrix1D<T> &v) { return v[0]; }
+inline T& XX(Matrix1D<T> &v) { return v[0]; }
 
 /** Access to Y component
  * @code
@@ -93,7 +94,7 @@ inline T& XX(const Matrix1D<T> &v) { return v[0]; }
  * @endcode
  */
 template <typename T>
-inline T& YY(const Matrix1D<T> &v) { return v[1]; }
+inline T& YY(Matrix1D<T> &v) { return v[1]; }
 
 /** Access to Z component
  * @code
@@ -102,13 +103,11 @@ inline T& YY(const Matrix1D<T> &v) { return v[1]; }
  * @endcode
  */
 template <typename T>
-inline T& ZZ(const Matrix1D<T> &v) { return v[2]; }
+inline T& ZZ(Matrix1D<T> &v) { return v[2]; }
 
 /** Matrix1D class.*/
 template<typename T>
 class Matrix1D {
-
-    public:
 
     /// The array itself
     T *vdata;
@@ -116,70 +115,40 @@ class Matrix1D {
     /// Number of elements
     int vdim;
 
-    /// false: column vector (default)
-    /// true: row vector
-    bool row;
+    /// Whether row vector or column vector
+    enum class Mode: bool { row, column } mode;
+
+    public:
 
     /// @name Constructors
     //@{
-    /** Empty constructor
-     *
-     * The empty constructor creates a vector with no memory associated,
-     * origin=0, size=0, no statistics, ... You can choose between a column
-     * vector (by default), or a row one.
-     *
-     * @code
-     * Matrix1D<RFLOAT> v1;
-     * Matrix1D<RFLOAT> v1(true);
-     * // both are examples of empty column vectors
-     *
-     * Matrix1D<int> v1(false);
-     * // empty row vector
-     * @endcode
-     */
-    Matrix1D(bool column = true): vdim(0), vdata(nullptr), row(!column) {}
 
-    Matrix1D(std::initializer_list<T> list): Matrix1D((int) list.size()) {
-        auto it = list.begin();
-        for (int i = 0; i < size(); i++) {
-            (*this)[i] = *(it + i);
-        }
-    }
-
-    /** Dimension constructor
+    /** Default / dimension constructor
      *
-     * The dimension constructor creates a vector with memory associated (but
-     * not assigned to anything, could be full of garbage) origin=0, size=the
-     * given one. You can choose between a column vector (by default), or a row
-     * one.
-     *
-     * @code
-     * Matrix1D<RFLOAT> v1(6);
-     * Matrix1D<RFLOAT> v1(6, 'y');
-     * // both are examples of column vectors of dimensions 6
-     *
-     * Matrix1D<int> v1('n');
-     * // empty row vector
-     * @endcode
+     * Construct a vector of the given size.
+     * You can choose between a column (default) or a row vector.
+     * The data will be zeroed out.
+     * Default construction will produce an empty column vector.
      */
-    Matrix1D(int dim, bool column = true): Matrix1D(column) {
+    Matrix1D(int dim = 0, Mode mode = Mode::column): vdim(0), vdata(nullptr), mode(mode) {
         resize(dim);
     }
 
     /** Copy constructor
      */
-    Matrix1D(const Matrix1D<T> &other): Matrix1D() {
-        *this = other;
+    Matrix1D(const Matrix1D<T> &other): Matrix1D(other.size(), other.mode) {
+        std::copy(other.begin(), other.end(), begin());
     }
 
-    /** Conversion from one type to another
-     * e.g. from Matrix1D<int> to Matrix1D<RFLOAT>
-     * Each element is static_cast from U to T.
+    /** Type-casting copy constructor
      */
     template<typename U>
-    Matrix1D(const Matrix1D<U> &other): Matrix1D(other.size()) {
-        for (int i = 0; i < other.size(); i++)
-            (*this)[i] = static_cast<T>(other[i]);
+    Matrix1D(const Matrix1D<U> &other): Matrix1D(other.size(), other.mode) {
+        std::copy(other.begin(), other.end(), begin());
+    }
+
+    Matrix1D(std::initializer_list<T> list): Matrix1D(list.size()) {
+        std::copy(list.begin(), list.end(), begin());
     }
 
     /** Destructor
@@ -188,12 +157,12 @@ class Matrix1D {
 
     /** Assignment
      */
-    Matrix1D<T>& operator = (const Matrix1D<T> &other) {
+    template <typename U>
+    Matrix1D<T>& operator = (const Matrix1D<U> &other) {
         if (this != &other) {
             resize(other.size());
-            for (int i = 0; i < size(); i++)
-                (*this)[i] = other[i];
-            row = other.row;
+            std::copy(other.begin(), other.end(), begin());
+            mode = other.mode;
         }
         return *this;
     }
@@ -209,16 +178,13 @@ class Matrix1D {
 
     ///@name Size and shape of Matrix1D
     //@{
+
     /** Resize to a given size
      *
      * Resize the array to the given size.
      * When the size decreases, the data get truncated.
      * When the size increases, the data get zero-padded.
-     * An exception is thrown if there is no memory.
-     *
-     * @code
-     * V1.resize(3, 3, 2);
-     * @endcode
+     * Might throw a std::bad_alloc.
      */
     inline void resize(int new_vdim) {
 
@@ -237,13 +203,9 @@ class Matrix1D {
         }
 
         // Copy old data
-        for (int i = 0; i < std::min(size(), new_vdim); i++) {
-            new_vdata[i] = vdata[i];
-        }
+        memcpy(new_vdata, vdata, sizeof(T) * std::min(vdim, new_vdim));
         // Zero-pad if necessary
-        for (int i = size(); i < new_vdim; i++) {
-            new_vdata[i] = 0;
-        }
+        memset(new_vdata + vdim, 0, sizeof(T) * std::max(0, new_vdim - vdim));
 
         // Delete old data
         clear();
@@ -257,234 +219,122 @@ class Matrix1D {
      */
     inline int size() const { return vdim; }
 
+    inline T* data() { return vdata; }
+
     /** Is this a row vector?
-     *
-     * @code
-     * if (v.isRow())
-     *     std::cout << "v is a row vector\n";
-     * @endcode
      */
-    inline int isRow() const { return row; }
+    inline int isRow() const { return mode == Mode::row; }
 
     /** Is this a column vector?
-     *
-     * @code
-     * if (v.isCol())
-     *     std::cout << "v is a column vector\n";
-     * @endcode
      */
-    inline int isCol() const { return !row; }
+    inline int isCol() const { return mode == Mode::column; }
 
     /** Make the vector a row vector
      */
-    void setRow() { row = true; }
+    inline void setRow() { mode = Mode::row; }
 
     /** Make the vector a column vector
      */
-    void setCol() { row = false; }
-    //@}
-
-    /// @name Initialization of Matrix1D values
-    //@{
-    /** Same value in all components.
-     * @warning Used only once in symmetries.cpp
-     *
-     * The constant must be of a type compatible with the array type, ie,
-     * you cannot assign a RFLOAT to an integer array without a casting.
-     * It is not an error if the array is empty, then nothing is done.
-     *
-     * @code
-     * v.initConstant(3.14);
-     * @endcode
-     */
-    void initConstant(T x) {
-        for (auto &y : *this) { y = x; }
-    }
-
-    /** Initialize to zeros with current size.
-     *
-     * All values are set to 0. The current size and origin are kept. 
-     * If the array is empty, nothing is done.
-     *
-     * @code
-     * v.initZeros();
-     * @endcode
-     */
-    inline void initZeros() { memset(vdata, 0, size() * sizeof(T)); }
-
-    /** Initialize to zeros with a given size.
-     */
-    void initZeros(int new_vdim) {
-        resize(new_vdim);
-        initZeros();
-    }
-
-    /** Initialize to zeros following a pattern.
-     *
-     * All values are set to 0, and the origin and size of the pattern are
-     * adopted.
-     *
-     * @code
-     * v2.initZeros(v1);
-     * @endcode
-     */
-    template <typename T1>
-    void initZeros(const Matrix1D<T1> &op) {
-        resize(op);
-        initZeros();
-    }
-
-    // Constructor
-    static Matrix1D<T> zeros(int n) {
-        Matrix1D<T> v (n);
-        v.initZeros();
-        return v;
-    }
+    inline void setCol() { mode = Mode::column; }
     //@}
 
     /// @name Matrix1D operators
     //@{
-    Matrix1D<T> operator * (T x) const {
-        Matrix1D<T> tmp(*this);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] * x; }
-        return tmp;
+
+    Matrix1D<T> operator + (T rhs) const {
+        return Matrix1D<T>(*this) += rhs;
     }
 
-    Matrix1D<T> operator / (T x) const {
-        Matrix1D<T> tmp(*this);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] / x; }
-        return tmp;
+    Matrix1D<T> operator - (T rhs) const {
+        return Matrix1D<T>(*this) -= rhs;
     }
 
-    Matrix1D<T> operator + (T x) const {
-        Matrix1D<T> tmp(*this);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] + x; }
-        return tmp;
+    Matrix1D<T> operator * (T rhs) const {
+        return Matrix1D<T>(*this) *= rhs;
     }
 
-    Matrix1D<T> operator - (T x) const {
-        Matrix1D<T> tmp(*this);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] - x; }
-        return tmp;
+    Matrix1D<T> operator / (T rhs) const {
+        return Matrix1D<T>(*this) /= rhs;
     }
 
-    friend Matrix1D<T> operator * (T x, const Matrix1D<T> &m) {
-        Matrix1D<T> tmp(m);
-        for (int i = 0; i < m.size(); i++) { tmp[i] = x * m[i]; }
-        return tmp;
+    friend Matrix1D<T> operator + (T lhs, Matrix1D<T> rhs) {
+        for (auto& x: rhs) { x = lhs + x; }
+        return rhs;
     }
 
-    friend Matrix1D<T> operator / (T x, const Matrix1D<T> &m) {
-        Matrix1D<T> tmp(m);
-        for (int i = 0; i < m.size(); i++) { tmp[i] = x / m[i]; }
-        return tmp;
+    friend Matrix1D<T> operator - (T lhs, Matrix1D<T> rhs) {
+        for (auto& x: rhs) { x = lhs - x; }
+        return rhs;
     }
 
-    friend Matrix1D<T> operator + (T x, const Matrix1D<T> &m) {
-        Matrix1D<T> tmp(m);
-        for (int i = 0; i < m.size(); i++) { tmp[i] = x + m[i]; }
-        return tmp;
+    friend Matrix1D<T> operator * (T lhs, Matrix1D<T> rhs) {
+        for (auto& x: rhs) { x = lhs * x; }
+        return rhs;
     }
 
-    /** Vector summation
-     *
-     * @code
-     * A += B;
-     * @endcode
-     */
-    void operator += (const Matrix1D<T> &op1) const {
-        if (size() != op1.size()) 
-            REPORT_ERROR("Not same sizes in vector summation");
-
-        for (int i = 0; i < size(); i++) { (*this)[i] += op1[i]; }
+    friend Matrix1D<T> operator / (T lhs, Matrix1D<T> rhs) {
+        for (auto& x: rhs) { x = lhs / x; }
+        return rhs;
     }
 
-    friend Matrix1D<T> operator - (T op1, const Matrix1D<T> &op2) {
-        Matrix1D<T> tmp(op2);
-        for (int i = 0; i < op2.size(); i++) { tmp[i] = op1 - op2[i]; }
-        return tmp;
-    }
+    Matrix1D<T>& operator += (T rhs) { for (auto& x: *this) { x += rhs; } return *this; }
 
-    void operator *= (T x) { for (int i = 0; i < size(); i++) { (*this)[i] *= x; } }
+    Matrix1D<T>& operator -= (T rhs) { for (auto& x: *this) { x -= rhs; } return *this; }
 
-    void operator /= (T x) { for (int i = 0; i < size(); i++) { (*this)[i] /= x; } }
+    Matrix1D<T>& operator *= (T rhs) { for (auto& x: *this) { x *= rhs; } return *this; }
 
-    void operator += (T x) { for (int i = 0; i < size(); i++) { (*this)[i] += x; } }
-
-    void operator -= (T x) { for (int i = 0; i < size(); i++) { (*this)[i] -= x; } }
-
-    /** v3 = v1 * v2.
-     */
-    Matrix1D<T> operator * (const Matrix1D<T> &other) const {
-        if (size() != other.size())
-            REPORT_ERROR("Not same sizes in vector multiplication");
-
-        Matrix1D<T> tmp(other);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] * other[i]; }
-        return tmp;
-    }
-
-    Matrix1D<T> operator / (const Matrix1D<T> &other) const {
-        if (size() != other.size())
-            REPORT_ERROR("Not same sizes in vector division");
-
-        Matrix1D<T> tmp(other);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] / other[i]; }
-        return tmp;
-    }
+    Matrix1D<T>& operator /= (T rhs) { for (auto& x: *this) { x /= rhs; } return *this; }
 
     Matrix1D<T> operator + (const Matrix1D<T> &other) const {
-        if (size() != other.size())
-            REPORT_ERROR("Not same sizes in vector summation");
-
-        Matrix1D<T> tmp(other);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] + other[i]; }
-        return tmp;
+        return Matrix1D<T>(*this) += other;
     }
 
     Matrix1D<T> operator - (const Matrix1D<T> &other) const {
-        if (size() != other.size())
-            REPORT_ERROR("Not same sizes in vector subtraction");
-
-        Matrix1D<T> tmp(other);
-        for (int i = 0; i < size(); i++) { tmp[i] = (*this)[i] - other[i]; }
-        return tmp;
+        return Matrix1D<T>(*this) -= other;
     }
 
-    void operator *= (const Matrix1D<T> &other) {
-        if (size() != other.size())
-            REPORT_ERROR("Not same sizes in vector multiplication");
-
-        for (int i = 0; i < size(); i++) { (*this)[i] *= other[i]; }
+    Matrix1D<T> operator * (const Matrix1D<T> &other) const {
+        return Matrix1D<T>(*this) *= other;
     }
 
-    void operator /= (const Matrix1D<T> &other) {
-        if (size() != other.size())
-            REPORT_ERROR("Not same sizes in vector division");
-
-        for (int i = 0; i < size(); i++) { (*this)[i] /= other[i]; }
+    Matrix1D<T> operator / (const Matrix1D<T> &other) const {
+        return Matrix1D<T>(*this) /= other;
     }
 
-    void operator += (const Matrix1D<T> &other) {
+    Matrix1D<T>& operator += (const Matrix1D<T> &other) {
         if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector summation");
-
         for (int i = 0; i < size(); i++) { (*this)[i] += other[i]; }
+        return *this;
     }
 
-    void operator -= (const Matrix1D<T> &other) {
+    Matrix1D<T>& operator -= (const Matrix1D<T> &other) {
         if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector subtraction");
-
         for (int i = 0; i < size(); i++) { (*this)[i] -= other[i]; }
+        return *this;
+    }
+
+    Matrix1D<T>& operator *= (const Matrix1D<T> &other) {
+        if (size() != other.size())
+            REPORT_ERROR("Not same sizes in vector multiplication");
+        for (int i = 0; i < size(); i++) { (*this)[i] *= other[i]; }
+        return *this;
+    }
+
+    Matrix1D<T>& operator /= (const Matrix1D<T> &other) {
+        if (size() != other.size())
+            REPORT_ERROR("Not same sizes in vector division");
+        for (int i = 0; i < size(); i++) { (*this)[i] /= other[i]; }
+        return *this;
     }
 
     /** Negation
      */
     Matrix1D<T> operator - () const {
-        Matrix1D<T> tmp(*this);
-        for (int i = 0; i < size(); i++) { tmp[i] = -(*this)[i]; }
-        return tmp;
+        Matrix1D<T> copy (*this);
+        for (auto& x: copy) { x = -x; }
+        return copy;
     }
 
     /** Vector by matrix
@@ -509,24 +359,15 @@ class Matrix1D {
      * val = v(-2);
      * @endcode
      */
-    T& operator () (int i) const { return vdata[i]; }
+          T& operator () (int i)       { return vdata[i]; }
+    const T& operator () (int i) const { return vdata[i]; }
 
-    T& operator [] (int i) const { return vdata[i]; }
+          T& operator [] (int i)       { return vdata[i]; }
+    const T& operator [] (int i) const { return vdata[i]; }
     //@}
 
     /// @name Utilities for Matrix1D
     //@{
-
-    /** Produce a vector suitable for working with Numerical Recipes
-     *
-     * This function must be used only as a preparation for routines which need
-     * that the first physical index is 1 and not 0 as it usually is in C. In
-     * fact the vector provided for Numerical recipes is exactly this same one
-     * but with the indices changed.
-     *
-     * This function is not ported to Python.
-     */
-    T* adaptForNumericalRecipes() const { return vdata - 1; }
 
     /** Index for the maximum element.
      *
@@ -535,13 +376,7 @@ class Matrix1D {
      */
     int maxIndex() const {
         if (size() == 0) return -1;
-
-        int imax = 0;
-        T maxval = *begin();
-        for (int i = 0; i < size(); i++) {
-            if ((*this)[i] > maxval) { imax = i; }
-        }
-        return imax;
+        return std::max_element(begin(), end()) - begin();
     }
 
     /** Index for the minimum element.
@@ -551,27 +386,21 @@ class Matrix1D {
      */
     int minIndex() const {
         if (size() == 0) return -1;
-
-        int imin = 0;
-        T minval = *begin();
-        for (int i = 0; i < size(); i++) {
-            if ((*this)[i] < minval) { imin = i; }
-        }
-        return imin;
+        return std::min_element(begin(), end()) - begin();
     }
 
     /** Algebraic transpose of vector
      */
-    Matrix1D<T> transpose() const { 
+    Matrix1D<T> transpose() const {
         auto t (*this);
-        t.row = !row;
+        t.mode = static_cast<Mode>(!static_cast<bool>(mode));
         return t;
     }
 
     struct iterator {
 
         /**
-         * This struct allows us to concisely loop over vectors 
+         * This struct allows us to concisely loop over vectors
          * with a range-based for.
          * @code
          * for (auto &x : v) {
@@ -579,10 +408,16 @@ class Matrix1D {
          * }
          * @endcode
          * The struct is meant to mimic a forward iterator.
-         * It is essentially a wrapper around a pointer, 
+         * It is essentially a wrapper around a pointer,
          * which can be made to traverse the heap-allocated memory
          * belonging to our Matrix1D<>.
          */
+
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = T;
+        using pointer           = T*;
+        using reference         = T&;
 
         T *ptr;
 
@@ -590,7 +425,7 @@ class Matrix1D {
 
         iterator& operator ++ () { ptr++; return *this; }
 
-        iterator operator ++ (int) { iterator ret = *this; ++(*this); return ret; }
+        iterator operator ++ (int) { iterator copy (*this); ++ptr; return copy; }
 
         bool operator == (iterator other) const { return ptr == other.ptr; }
 
@@ -598,18 +433,16 @@ class Matrix1D {
 
         T& operator * () { return *ptr; }
 
+        T* operator -> () { return ptr; }
+
     };
 
-    iterator begin() const { return iterator(&(*this)[0]); }
-    iterator end() const { return iterator(&(*this)[size()]); }
+          iterator begin()       { return vdata; }
+    const iterator begin() const { return vdata; }
+          iterator end()       { return vdata + vdim; }
+    const iterator end() const { return vdata + vdim; }
 
     /** Sum of vector values.
-     *
-     * This function returns the sum of all internal values.
-     *
-     * @code
-     * RFLOAT sum = m.sum();
-     * @endcode
      */
     RFLOAT sum() const {
         return std::accumulate(begin(), end(), 0);
@@ -618,8 +451,6 @@ class Matrix1D {
     inline RFLOAT mean() const { return sum() / (RFLOAT) size(); }
 
     /** Sum of squared vector values.
-     *
-     * This function returns the sum of all internal values to the second power.
      */
     RFLOAT sum2() const {
         return std::accumulate(begin(), end(), 0, [] (T acc, T x) { return acc + x * x; });
@@ -629,10 +460,6 @@ class Matrix1D {
      *
      * This modulus is defined as the square root of the sum of the squared
      * components. Euclidean norm of the vector.
-     *
-     * @code
-     * RFLOAT mod = v.modulus();
-     * @endcode
      */
     RFLOAT modulus() const { return sqrt(sum2()); }
 
@@ -645,26 +472,13 @@ class Matrix1D {
         return atan2((RFLOAT) (*this)[1], (RFLOAT) (*this)[0]);
     }
 
-    RFLOAT max() const {
-        RFLOAT x = abs(*begin());  // Why abs?
-        for (const auto &y : *this) { x = std::max(x, y); }
-        return x;
-    }
-
     // Normalise vector
     void normalise() {
-        RFLOAT m = modulus();
+        const RFLOAT m = modulus();
         if (abs(m) > Xmipp::epsilon) {
             *this *= (T) (1.0 / m);
         } else {
-            initZeros();  // Why?
-        }
-    }
-
-    // Reverse data
-    void reverse() {
-        for (int i = 0; 2 * i <= size() - 1; i++) {
-            std::swap((*this)[i], (*this)[size() - 1 - i]);
+            std::fill(begin(), end(), 0);
         }
     }
 
@@ -678,7 +492,7 @@ class Matrix1D {
     Matrix1D<RFLOAT> numericalDerivative() {
         Matrix1D<RFLOAT> result = zeros(size());
         for (int i = 2; i <= this->xdim - 1 - 2; i++)
-            result[i] = (- (*this)[i + 2] + 8 * (*this)[i + 1] 
+            result[i] = (- (*this)[i + 2] + 8 * (*this)[i + 1]
                          + (*this)[i - 2] - 8 * (*this)[i - 1]) / 12;
         return result;
     }

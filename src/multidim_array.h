@@ -883,11 +883,11 @@ class MultidimArray {
 
         switch (rsize) {
             case 1:
-            return outside(XX(r));
+            return outside(r[0]);
             case 2:
-            return outside(XX(r), YY(r));
+            return outside(r[0], r[1]);
             case 3:
-            return outside(XX(r), YY(r), ZZ(r));
+            return outside(r[0], r[1], r[2]);
             default:
             REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
         }
@@ -948,13 +948,13 @@ class MultidimArray {
         switch (xdim) {
 
             case 2:
-            return (XX(v) == firstX() || XX(v) == lastX()) &&
-                   (YY(v) == firstY() || YY(v) == lastY());
+            return (v[0] == firstX() || v[0] == lastX()) &&
+                   (v[1] == firstY() || v[1] == lastY());
 
             case 3:
-            return (XX(v) == firstX() || XX(v) == lastX()) &&
-                   (YY(v) == firstY() || YY(v) == lastY()) &&
-                   (ZZ(v) == firstZ() || ZZ(v) == lastZ());
+            return (v[0] == firstX() || v[0] == lastX()) &&
+                   (v[1] == firstY() || v[1] == lastY()) &&
+                   (v[2] == firstZ() || v[2] == lastZ());
 
             default:
             REPORT_ERROR(std::string(__func__) + ": index vector has too many components");
@@ -987,11 +987,11 @@ class MultidimArray {
     T& operator()(const Matrix1D<index_t> &v) {
         switch (v.size()) {
             case 1:
-            return elem(XX(v));
+            return elem(v[0]);
             case 2:
-            return elem(XX(v), YY(v));
+            return elem(v[0], v[1]);
             case 3:
-            return elem(XX(v), YY(v), ZZ(v));
+            return elem(v[0], v[1], v[2]);
             default:
             REPORT_ERROR("Matrix dimensions must be 1, 2, or 3");
         }
@@ -1536,7 +1536,8 @@ class MultidimArray {
      */
     void centerOfMass(Matrix1D<RFLOAT> &CoM, MultidimArray<int> *mask = nullptr, long int n = 0) {
 
-            CoM.initZeros(3);
+            CoM.resize(3);
+            std::fill(CoM.begin(), CoM.end(), 0);
             RFLOAT mass = 0;
             FOR_ALL_ELEMENTS_IN_ARRAY3D(*this, i, j, k) {
                 if ((!mask || mask->elem(i, j, k, n)) && elem(i, j, k) > 0) {

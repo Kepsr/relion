@@ -83,8 +83,10 @@ void ThirdOrderPolynomialModel::read(std::ifstream &fh, std::string block_name) 
 
     const int NUM_COEFFS = NUM_COEFFS_PER_DIM * 2;
 
-    coeffX.resize(NUM_COEFFS_PER_DIM); coeffX.initZeros();
-    coeffY.resize(NUM_COEFFS_PER_DIM); coeffY.initZeros();
+    coeffX.resize(NUM_COEFFS_PER_DIM);
+    std::fill(coeffX.begin(), coeffX.end(), 0);
+    coeffY.resize(NUM_COEFFS_PER_DIM);
+    std::fill(coeffY.begin(), coeffY.end(), 0);
 
     for (long int i : MD) {
 

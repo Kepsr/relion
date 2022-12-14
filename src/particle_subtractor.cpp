@@ -137,7 +137,7 @@ void ParticleSubtractor::initialise(int _rank, int _size) {
     ) {
         do_center = true;
     } else {
-        new_center.initZeros();
+        std::fill(new_center.begin(), new_center.end(), 0);
         do_center = false;
     }
 

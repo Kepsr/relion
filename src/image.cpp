@@ -116,11 +116,7 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
             REPORT_ERROR("image.cpp::calculateBackgroundAvgStddev(): 2D or 3D image is required!");
         if (dim == 2) { tilt_deg = 0.0; }
 
-        Matrix1D<RFLOAT> coords;
-        // Init coords
-        coords.clear();
-        coords.resize(3);
-        coords.initZeros();
+        Matrix1D<RFLOAT> coords {0, 0, 0};
 
         // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
         Matrix2D<RFLOAT> A = Euler::angles2matrix(0.0, tilt_deg, psi_deg).transpose();
@@ -213,7 +209,7 @@ void subtractBackgroundRamp(
         // not implemented for 3D data
         if (I().getDim() == 2) { tilt_deg = 0.0; }
 
-        auto coords = Matrix1D<RFLOAT>::zeros(3);
+        Matrix1D<RFLOAT> coords {0, 0, 0};
 
         // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
         // Since Z = 0, tilt_deg does not matter

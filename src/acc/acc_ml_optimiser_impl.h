@@ -80,19 +80,19 @@ void getFourierTransformsAndCtfs(
 
         my_old_offset = baseMLO->mymodel.data_dim;  // BUG? my_old_offset.vdim?
         my_prior      = baseMLO->mymodel.data_dim,  // BUG? my_prior.vdim?
-        XX(my_old_offset) = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_XOFF);
-        YY(my_old_offset) = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_YOFF);
-        XX(my_prior)      = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_XOFF_PRIOR);
-        YY(my_prior)      = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_YOFF_PRIOR);
+        my_old_offset[0] = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_XOFF);
+        my_old_offset[1] = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_YOFF);
+        my_prior[0]      = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_XOFF_PRIOR);
+        my_prior[1]      = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_YOFF_PRIOR);
         // Uninitialised priors were set to 999.0
-        if (EQUAL(XX(my_prior), 999.0)) { XX(my_prior) = 0.0; }
-        if (EQUAL(YY(my_prior), 999.0)) { YY(my_prior) = 0.0; }
+        if (EQUAL(my_prior[0], 999.0)) { my_prior[0] = 0.0; }
+        if (EQUAL(my_prior[1], 999.0)) { my_prior[1] = 0.0; }
 
         if (accMLO->dataIs3D) {
-            ZZ(my_old_offset) = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ZOFF);
-            ZZ(my_prior)      = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ZOFF_PRIOR);
+            my_old_offset[2] = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ZOFF);
+            my_prior[2]      = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ZOFF_PRIOR);
             // Unitialised priors were set to 999.0
-            if (EQUAL(ZZ(my_prior), 999.0)) { ZZ(my_prior) = 0.0; }
+            if (EQUAL(my_prior[2], 999.0)) { my_prior[2] = 0.0; }
         }
 
         if (baseMLO->mymodel.nr_bodies > 1) {
@@ -117,13 +117,13 @@ void getFourierTransformsAndCtfs(
             icol_xoff = 3 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
             icol_yoff = 4 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
             icol_zoff = 5 + METADATA_LINE_LENGTH_BEFORE_BODIES + ibody * METADATA_NR_BODY_PARAMS;
-            XX(my_refined_ibody_offset) = direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_xoff);
-            YY(my_refined_ibody_offset) = direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_yoff);
+            my_refined_ibody_offset[0] = direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_xoff);
+            my_refined_ibody_offset[1] = direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_yoff);
             if (baseMLO->mymodel.data_dim == 3)
-            ZZ(my_refined_ibody_offset) = direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_zoff);
+            my_refined_ibody_offset[2] = direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_zoff);
 
             // For multi-body refinement: set the priors of the translations to zero (i.e. everything centred around consensus offset)
-            my_prior.initZeros();
+            std::fill(my_prior.begin(), my_prior.end(), 0);
         }
 
         // }))
@@ -387,9 +387,9 @@ void getFourierTransformsAndCtfs(
                 bool do_local_angular_searches = do_auto_refine_local_searches || do_classification_local_searches;
                 if (!do_local_angular_searches) {
                     if (!accMLO->dataIs3D) {
-                        XX(my_old_offset_helix_coords) = 0.0;
+                        my_old_offset_helix_coords[0] = 0.0;
                     } else {
-                        ZZ(my_old_offset_helix_coords) = 0.0;
+                        my_old_offset_helix_coords[2] = 0.0;
                     }
                 }
             }
@@ -417,8 +417,8 @@ void getFourierTransformsAndCtfs(
             img.data,	// input   	host-side 	MultidimArray
             d_img,		// output  	acc-side  	Array
             normcorr_val,
-            XX(my_old_offset), YY(my_old_offset),
-            accMLO->dataIs3D ? ZZ(my_old_offset) : 0.0,
+            my_old_offset[0], my_old_offset[1],
+            accMLO->dataIs3D ? my_old_offset[2] : 0.0,
             accMLO->dataIs3D
         );
         LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
@@ -437,8 +437,8 @@ void getFourierTransformsAndCtfs(
                 rec_img.data,	// input   	host-side 	MultidimArray
                 d_rec_img,		// output  	acc-side  	Array
                 normcorr_val,
-                XX(my_old_offset), YY(my_old_offset),
-                accMLO->dataIs3D ? ZZ(my_old_offset) : 0.0,
+                my_old_offset[0], my_old_offset[1],
+                accMLO->dataIs3D ? my_old_offset[2] : 0.0,
                 accMLO->dataIs3D
             );
             LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
@@ -795,10 +795,10 @@ void getFourierTransformsAndCtfs(
                     other_projected_com -= my_old_offset_ori;
 
                     // Subtract refined obody-displacement
-                    XX(other_projected_com) -= direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_xoff);
-                    YY(other_projected_com) -= direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_yoff);
+                    other_projected_com[0] -= direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_xoff);
+                    other_projected_com[1] -= direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_yoff);
                     if (baseMLO->mymodel.data_dim == 3)
-                    ZZ(other_projected_com) -= direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_zoff);
+                    other_projected_com[2] -= direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_zoff);
 
                     // Add the my_old_offset=selfRound(my_old_offset_ori - my_projected_com) already applied to this image for ibody
                     other_projected_com += my_old_offset;
@@ -806,7 +806,7 @@ void getFourierTransformsAndCtfs(
                     shiftImageInFourierTransform(
                         FTo,
                         (RFLOAT) baseMLO->image_full_size[optics_group],
-                        XX(other_projected_com), YY(other_projected_com), accMLO->dataIs3D ? ZZ(other_projected_com) : 0.0
+                        other_projected_com[0], other_projected_com[1], accMLO->dataIs3D ? other_projected_com[2] : 0.0
                     );
 
                     // Sum the Fourier transforms of all the obodies
@@ -855,11 +855,11 @@ void getFourierTransformsAndCtfs(
             // 23jul17: NEW: as we haven't applied the (nonROUNDED!!) my_refined_ibody_offset yet, do this now in the FourierTransform
             shiftImageInFourierTransform(
                 op.Fimg.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
-                XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), accMLO->dataIs3D ? ZZ(my_refined_ibody_offset) : 0
+                my_refined_ibody_offset[0], my_refined_ibody_offset[1], accMLO->dataIs3D ? my_refined_ibody_offset[2] : 0
             );
             shiftImageInFourierTransform(
                 op.Fimg_nomask.at(img_id), (RFLOAT) baseMLO->image_full_size[optics_group],
-                XX(my_refined_ibody_offset), YY(my_refined_ibody_offset), accMLO->dataIs3D ? ZZ(my_refined_ibody_offset) : 0
+                my_refined_ibody_offset[0], my_refined_ibody_offset[1], accMLO->dataIs3D ? my_refined_ibody_offset[2] : 0
             );
         }
     }
@@ -1599,10 +1599,10 @@ void convertAllSquaredDifferencesToWeights(
         if (baseMLO->mymodel.nr_bodies > 1) {
             old_offset_x = old_offset_y = old_offset_z = 0.0;
         } else {
-            old_offset_x = XX(op.old_offset[img_id]);
-            old_offset_y = YY(op.old_offset[img_id]);
+            old_offset_x = op.old_offset[img_id][0];
+            old_offset_y = op.old_offset[img_id][1];
             if (accMLO->dataIs3D)
-            old_offset_z = ZZ(op.old_offset[img_id]);
+            old_offset_z = op.old_offset[img_id][2];
         }
 
         if (baseMLO->iter == 1 && baseMLO->do_firstiter_cc || baseMLO->do_always_cc) {
@@ -1659,13 +1659,13 @@ void convertAllSquaredDifferencesToWeights(
                 if (baseMLO->mymodel.nr_bodies > 1) {
                     myprior_x = myprior_y = myprior_z = 0.0;
                 } else if (baseMLO->mymodel.ref_dim == 2 && !baseMLO->do_helical_refine) {
-                    myprior_x = XX(baseMLO->mymodel.prior_offset_class[exp_iclass]);
-                    myprior_y = YY(baseMLO->mymodel.prior_offset_class[exp_iclass]);
+                    myprior_x = baseMLO->mymodel.prior_offset_class[exp_iclass][0];
+                    myprior_y = baseMLO->mymodel.prior_offset_class[exp_iclass][1];
                 } else {
-                    myprior_x = XX(op.prior[img_id]);
-                    myprior_y = YY(op.prior[img_id]);
+                    myprior_x = op.prior[img_id][0];
+                    myprior_y = op.prior[img_id][1];
                     if (accMLO->dataIs3D)
-                    myprior_z = ZZ(op.prior[img_id]);
+                    myprior_z = op.prior[img_id][2];
                 }
 
                 for (unsigned long itrans = sp.itrans_min; itrans <= sp.itrans_max; itrans++) {
@@ -2091,7 +2091,9 @@ void storeWeightedSums(
     // Possibly different array sizes in different optics groups!
     for (int img_id = 0; img_id < sp.nr_images; img_id++) {
         int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, img_id);
-        thr_wsum_sigma2_noise[img_id].initZeros(baseMLO->image_full_size[optics_group] / 2 + 1);
+        thr_wsum_sigma2_noise[img_id].resize(baseMLO->image_full_size[optics_group] / 2 + 1);
+        std::fill(thr_wsum_sigma2_noise[img_id].begin(),
+                  thr_wsum_sigma2_noise[img_id].end(), 0);
         if (baseMLO->do_scale_correction) {
             exp_wsum_scale_correction_AA    [img_id] = 0.0;
             exp_wsum_scale_correction_XA    [img_id] = 0.0;
@@ -2170,18 +2172,18 @@ void storeWeightedSums(
             sumBlockNum += block_nums[nr_fake_classes * img_id + fake_class];
 
             RFLOAT myprior_x, myprior_y, myprior_z, old_offset_z;
-            RFLOAT old_offset_x = XX(op.old_offset[img_id]);
-            RFLOAT old_offset_y = YY(op.old_offset[img_id]);
+            RFLOAT old_offset_x = op.old_offset[img_id][0];
+            RFLOAT old_offset_y = op.old_offset[img_id][1];
 
             if (baseMLO->mymodel.ref_dim == 2 && baseMLO->mymodel.nr_bodies == 1) {
-                myprior_x = XX(baseMLO->mymodel.prior_offset_class[exp_iclass]);
-                myprior_y = YY(baseMLO->mymodel.prior_offset_class[exp_iclass]);
+                myprior_x = baseMLO->mymodel.prior_offset_class[exp_iclass][0];
+                myprior_y = baseMLO->mymodel.prior_offset_class[exp_iclass][1];
             } else {
-                myprior_x = XX(op.prior[img_id]);
-                myprior_y = YY(op.prior[img_id]);
+                myprior_x = op.prior[img_id][0];
+                myprior_y = op.prior[img_id][1];
                 if (baseMLO->mymodel.data_dim == 3) {
-                myprior_z = ZZ(op.prior[img_id]);
-                old_offset_z = ZZ(op.old_offset[img_id]);
+                myprior_z = op.prior[img_id][2];
+                old_offset_z = op.old_offset[img_id][2];
                 }
             }
 
@@ -2189,7 +2191,7 @@ void storeWeightedSums(
                                 COLLECT 2
             ======================================================*/
 
-            //Pregenerate oversampled translation objects for kernel-call
+            // Pregenerate oversampled translation objects for kernel-call
             for (long int itrans = 0, iitrans = 0; itrans < sp.nr_trans; itrans++) {
                 baseMLO->sampling.getTranslationsInPixel(
                     itrans, baseMLO->adaptive_oversampling, my_pixel_size,
@@ -2400,19 +2402,19 @@ void storeWeightedSums(
 
         Matrix1D<RFLOAT> shifts(baseMLO->mymodel.data_dim);
 
-        XX(shifts) = XX(op.old_offset[img_id]) + oversampled_translations_x[op.max_index[img_id].iovertrans];
-        YY(shifts) = YY(op.old_offset[img_id]) + oversampled_translations_y[op.max_index[img_id].iovertrans];
+        shifts[0] = op.old_offset[img_id][1] + oversampled_translations_x[op.max_index[img_id].iovertrans];
+        shifts[1] = op.old_offset[img_id][1] + oversampled_translations_y[op.max_index[img_id].iovertrans];
         if (accMLO->dataIs3D)
-        ZZ(shifts) = oversampled_translations_z[op.max_index[img_id].iovertrans];
+        shifts[2] = oversampled_translations_z[op.max_index[img_id].iovertrans];
 
-        // Use oldpsi-angle to rotate back the XX(exp_old_offset[img_id]) + oversampled_translations_x[iover_trans] and
+        // Use oldpsi-angle to rotate back the exp_old_offset[img_id][0] + oversampled_translations_x[iover_trans] and
         if (baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry)
         transformCartesianAndHelicalCoords(shifts, shifts, old_rot, old_tilt, old_psi, HELICAL_TO_CART_COORDS);
 
-        direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_xoff) = XX(shifts);
-        direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_yoff) = YY(shifts);
+        direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_xoff) = shifts[0];
+        direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_yoff) = shifts[1];
         if (accMLO->dataIs3D)
-        direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_zoff) = ZZ(shifts);
+        direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_zoff) = shifts[2];
 
         if (ibody == 0) {
             direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_CLASS) = (RFLOAT) op.max_index[img_id].iclass + 1;
@@ -2950,8 +2952,8 @@ void storeWeightedSums(
         for (int n = 0; n < baseMLO->mymodel.nr_classes; n++) {
             baseMLO->wsum_model.pdf_class[n] += thr_wsum_pdf_class[n];
             if (baseMLO->mymodel.ref_dim == 2) {
-                XX(baseMLO->wsum_model.prior_offset_class[n]) += thr_wsum_prior_offsetx_class[n];
-                YY(baseMLO->wsum_model.prior_offset_class[n]) += thr_wsum_prior_offsety_class[n];
+                baseMLO->wsum_model.prior_offset_class[n][0] += thr_wsum_prior_offsetx_class[n];
+                baseMLO->wsum_model.prior_offset_class[n][1] += thr_wsum_prior_offsety_class[n];
             }
         }
 

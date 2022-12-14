@@ -26,7 +26,7 @@ OriginalBasis AberrationFit::fitBasic(
     Image<RFLOAT> phase, Image<RFLOAT> weight, double angpix
 ) {
     Matrix2D<RFLOAT> A = Matrix2D<RFLOAT>::zeros(5, 5);
-    Matrix1D<RFLOAT> b = Matrix1D<RFLOAT>::zeros(5);
+    Matrix1D<RFLOAT> b {0, 0, 0, 0, 0};
 
     const int sh = phase.data.xdim;
     const int s  = phase.data.ydim;
@@ -34,7 +34,7 @@ OriginalBasis AberrationFit::fitBasic(
     const double as = angpix * s;
 
     OriginalBasis basis;
-    std::vector<double> vals(5);
+    std::vector<double> vals (5);
 
     for (int yi = 0; yi < s; yi++)
     for (int xi = 0; xi < sh; xi++) {
@@ -56,12 +56,10 @@ OriginalBasis AberrationFit::fitBasic(
     }
 
     const double tol = 1e-20;
-    Matrix1D<RFLOAT> sol(5);
+    Matrix1D<RFLOAT> sol (5);
     solve(A, b, sol, tol);
 
-    for (int i = 0; i < 5; i++) {
-        basis.coefficients[i] = sol[i];
-    }
+    std::copy(sol.begin(), sol.end(), basis.coefficients.begin());
 
     return basis;
 }

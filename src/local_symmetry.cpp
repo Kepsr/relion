@@ -103,7 +103,8 @@ void Localsym_composeOperator(
     RFLOAT dx, RFLOAT dy, RFLOAT dz,
     RFLOAT cc
 ) {
-    op.initZeros(NR_LOCALSYM_PARAMETERS);
+    op.resize(NR_LOCALSYM_PARAMETERS);
+    std::fill(op.begin(), op.end(), 0);
 
     op[AA_POS] = aa; op[BB_POS] = bb; op[GG_POS] = gg;
     op[DX_POS] = dx; op[DY_POS] = dy; op[DZ_POS] = dz;
@@ -148,9 +149,9 @@ void Localsym_shiftTranslations(
     if (voffset.size() != 3)
         REPORT_ERROR("ERROR: voffset is not a vectorR3!");
 
-    op[DX_POS] += XX(voffset);
-    op[DY_POS] += YY(voffset);
-    op[DZ_POS] += ZZ(voffset);
+    op[DX_POS] += voffset[0];
+    op[DY_POS] += voffset[1];
+    op[DZ_POS] += voffset[2];
 }
 
 void Localsym_translations2vector(
@@ -163,16 +164,14 @@ void Localsym_translations2vector(
     if (vec.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: Syntax error in input vector!");
 
-    trans_vec.initZeros(3);
-    XX(trans_vec) = vec[DX_POS];
-    YY(trans_vec) = vec[DY_POS];
-    ZZ(trans_vec) = vec[DZ_POS];
+    trans_vec.resize(3);
+    trans_vec[0] = vec[DX_POS];
+    trans_vec[1] = vec[DY_POS];
+    trans_vec[2] = vec[DZ_POS];
 
-    if (invert == LOCALSYM_OP_DO_INVERT) {
-        XX(trans_vec) *= -1.0;
-        YY(trans_vec) *= -1.0;
-        ZZ(trans_vec) *= -1.0;
-    }
+    if (invert == LOCALSYM_OP_DO_INVERT)
+        for (auto& x: trans_vec)
+            x = -x;
 }
 
 void Localsym_angles2matrix(
@@ -201,7 +200,6 @@ void Localsym_operator2matrix(
     bool invert
 ) {
     RFLOAT aa = 0.0, bb = 0.0, gg = 0.0;
-    Matrix1D<RFLOAT> trans_vec;
 
     mat.clear();
 
@@ -216,17 +214,14 @@ void Localsym_operator2matrix(
     if (invert == LOCALSYM_OP_DO_INVERT) {
         mat = mat.transpose();
 
-        trans_vec.initZeros(3);
-        XX(trans_vec)= -1.0 * vec[DX_POS];
-        YY(trans_vec)= -1.0 * vec[DY_POS];
-        ZZ(trans_vec)= -1.0 * vec[DZ_POS];
+        Matrix1D<RFLOAT> trans_vec {-vec[DX_POS], -vec[DY_POS], -vec[DZ_POS]};
 
         trans_vec = mat * trans_vec;
 
         mat.resize(4, 4);
-        mat.at(0, 3) = XX(trans_vec);
-        mat.at(1, 3) = YY(trans_vec);
-        mat.at(2, 3) = ZZ(trans_vec);
+        mat.at(0, 3) = trans_vec[0];
+        mat.at(1, 3) = trans_vec[1];
+        mat.at(2, 3) = trans_vec[2];
     } else {
         mat.resize(4, 4);
         mat.at(0, 3) = vec[DX_POS];
@@ -369,8 +364,10 @@ void readRelionFormatMasksAndOperators(
         REPORT_ERROR("ERROR: No mask filenames in " + (std::string) fn_info + " !");
 
     // Load all operators
-    op.initZeros(NR_LOCALSYM_PARAMETERS);
-    op_i.initZeros(NR_LOCALSYM_PARAMETERS);
+    op.resize(NR_LOCALSYM_PARAMETERS);
+    std::fill(op.begin(), op.end(), 0);
+    op_i.resize(NR_LOCALSYM_PARAMETERS);
+    std::fill(op_i.begin(), op_i.end(), 0);
     for (int id_mask = 0; id_mask < fn_mask_list.size(); id_mask++) {
         dummy.clear();
         if (verb) {
@@ -559,7 +556,8 @@ void readRelionFormatMasksWithoutOperators(
 
     // Screen output
     if (verb) {
-        op_empty.initZeros(NR_LOCALSYM_PARAMETERS);
+        op_empty.resize(NR_LOCALSYM_PARAMETERS);
+        std::fill(op_empty.begin(), op_empty.end(), 0);
 
         for (int imask = 0; imask < fn_mask_list.size(); imask++) {
             std::cout << " * Mask #" << imask + 1 << " = " << fn_mask_list[imask] << std::endl;
@@ -695,8 +693,10 @@ void readDMFormatMasksAndOperators(FileName fn_info,
     op_i.clear();
     ops.clear();
 
-    op.initZeros(NR_LOCALSYM_PARAMETERS);
-    op_i.initZeros(NR_LOCALSYM_PARAMETERS);
+    op.resize(NR_LOCALSYM_PARAMETERS);
+    std::fill(op.begin(), op.end(), 0);
+    op_i.resize(NR_LOCALSYM_PARAMETERS);
+    std::fill(op_i.begin(), op_i.end(), 0);
 
     // Open info file
     fin.open(fn_info.c_str(), std::ios_base::in);
@@ -1245,16 +1245,18 @@ void getMinCropSize(
     RFLOAT xori = 0.0, yori = 0.0, zori = 0.0;
 
     mindim = -1;
-    Matrix1D<RFLOAT> new_center;
-    new_center.initZeros(3);
-    center.initZeros(3);
+    Matrix1D<RFLOAT> new_center {0, 0, 0};
+    center.resize(3);
+    std::fill(center.begin(), center.end(), 0);
 
     if (Nsize(vol) != 1 || Zsize(vol) <= 1 || Ysize(vol) <= 1 || Xsize(vol) <= 1)
         REPORT_ERROR("ERROR: input mask is not 3D!");
 
     vol.setXmippOrigin();
     vol.centerOfMass(center);
-    xori = XX(center); yori = YY(center); zori = ZZ(center);
+    xori = center[0];
+    yori = center[1];
+    zori = center[2];
 
     dist2_max = -999.0;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
@@ -1515,7 +1517,8 @@ void getLocalSearchOperatorSamplings(
 
     // Get all sampling points
     op_samplings.clear();
-    op_tmp.initZeros(NR_LOCALSYM_PARAMETERS);
+    op_tmp.resize(NR_LOCALSYM_PARAMETERS);
+    std::fill(op_tmp.begin(), op_tmp.end(), 0);
     nr_all_samplings = 0;
     // For translations: op_ori = op_int + op_res
     if (dx_range < Xmipp::epsilon) dx_range = 1e+10;
@@ -1679,7 +1682,7 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     // Initialise vol_rec
     vol_rec.reshape(img());
     vol_rec.initZeros();
-    //vol_rec.setXmippOrigin();
+    // vol_rec.setXmippOrigin();
 
     // Count voxels with positive values
     pos_val_ctr = 0;
@@ -1716,14 +1719,16 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
         while (!q.empty()) {
             vec1 = q.front();
             q.pop();
-            direct::elem(vol_rec, XX(vec1), YY(vec1), ZZ(vec1)) = id;
+            direct::elem(vol_rec, vec1[0], vec1[1], vec1[2]) = id;
             for (int dz = -1; dz <= 1; dz++)
             for (int dy = -1; dy <= 1; dy++)
             for (int dx = -1; dx <= 1; dx++) {
 
                 if (dx * dy * dz != 0) continue;
 
-                zz = ZZ(vec1) + dz; yy = YY(vec1) + dy; xx = XX(vec1) + dx;
+                xx = vec1[0] + dx;
+                yy = vec1[1] + dy;
+                zz = vec1[2] + dz;
 
                 if (
                     zz < 0 || zz >= Zsize(vol_rec) ||
@@ -1855,7 +1860,8 @@ void separateMasksKMeans(
     vec_len_max = (vec_len_max >= pos_val_ctr) ? (pos_val_ctr) : (vec_len_max);
     q = pos_val_ctr / vec_len_max;
     q = (q <= 1) ? (1) : (q);
-    vec.initZeros(vec_len_max + 1);
+    vec.resize(vec_len_max + 1);
+    std::fill(vec.begin(), vec.end(), 0);
     for (int ii = 1; ii <= K; ii++) // Knuth shuffle
     {
         cen_ptr = (long int)(rnd_unif(RFLOAT(ii), RFLOAT(vec_len_max)));
@@ -1891,7 +1897,7 @@ void separateMasksKMeans(
     for (int ii = 0; ii < K; ii++)
     {
 #ifdef DEBUG
-        std::cout << " Centroid #" << ii + 1 << " : XYZ= " << XX(ocen[ii]) << ", " << YY(ocen[ii]) << ", " << ZZ(ocen[ii]) << std::endl;
+        std::cout << " Centroid #" << ii + 1 << " : XYZ= " << ocen[ii][0] << ", " << ocen[ii][1] << ", " << ocen[ii][3] << std::endl;
 #endif
     }
 
@@ -1908,7 +1914,7 @@ void separateMasksKMeans(
 
     //    ocen[ii] = mat * vectorR3(x, y, z);
 //#ifdef DEBUG
-    //    std::cout << " Centroid #" << ii + 1 << " : XYZ= " << XX(ocen[ii]) << ", " << YY(ocen[ii]) << ", " << ZZ(ocen[ii]) << std::endl;
+    //    std::cout << " Centroid #" << ii + 1 << " : XYZ= " << ocen[ii][0] << ", " << ocen[ii][1] << ", " << ocen[ii][2] << std::endl;
 //#endif
     //}
 
@@ -1930,7 +1936,7 @@ void separateMasksKMeans(
             best_cen = -1;
             for (int icen = 0; icen < K; icen++)
             {
-                z = ZZ(ocen[icen]); y = YY(ocen[icen]); x = XX(ocen[icen]);
+                z = ocen[icen][2]; y = ocen[icen][1]; x = ocen[icen][0];
                 dist2 = (RFLOAT(k) - z) * (RFLOAT(k) - z) + (RFLOAT(i) - y) * (RFLOAT(i) - y) + (RFLOAT(j) - x) * (RFLOAT(j) - x);
                 if (dist2 < dist2_min)
                 {
@@ -1941,9 +1947,9 @@ void separateMasksKMeans(
             if (best_cen < 0)
                 REPORT_ERROR("ERROR: best_cen < 0 !");
 
-            ZZ(ncen[best_cen]) += k * val;
-            YY(ncen[best_cen]) += i * val;
-            XX(ncen[best_cen]) += j * val;
+            ncen[best_cen][2] += k * val;
+            ncen[best_cen][1] += i * val;
+            ncen[best_cen][0] += j * val;
             wcen[best_cen] += val;
 
             vol_rec.elem(i, j, k) = best_cen + 1;
@@ -1959,7 +1965,7 @@ void separateMasksKMeans(
             ncen[ii] = vectorR3(0., 0., 0.);
             wcen[ii] = 0.0;
 #ifdef DEBUG
-            std::cout << " Centroid #" << ii + 1 << " : XYZ= " << XX(ocen[ii]) << ", " << YY(ocen[ii]) << ", " << ZZ(ocen[ii]) << std::endl;
+            std::cout << " Centroid #" << ii + 1 << " : XYZ= " << ocen[ii][0] << ", " << ocen[ii][1] << ", " << ocen[ii][2] << std::endl;
 #endif
         }
     }
@@ -2278,10 +2284,9 @@ void local_symmetry_parameters::run() {
             getMinCropSize(mask(), com0_int, cropdim, offset_range / angpix_image);
             if (cropdim < 2)
                 REPORT_ERROR("ERROR: Mask " + fn_mask_list[imask] + " is too small!");
-            XX(com0_int) = round(XX(com0_int));
-            YY(com0_int) = round(YY(com0_int));
-            ZZ(com0_int) = round(ZZ(com0_int));
-            std::cout << " Mask #" << imask + 1 << " : center of mass XYZ = (" << XX(com0_int) << ", " << YY(com0_int) << ", " << ZZ(com0_int) << ") pixel(s)."<< std::endl;
+            for (int i = 0; i < 3; i++)
+                com0_int[i] = round(com0_int[i]);
+            std::cout << " Mask #" << imask + 1 << " : center of mass XYZ = (" << com0_int[0] << ", " << com0_int[1] << ", " << com0_int[2] << ") pixel(s)."<< std::endl;
 
             // Crop the mask and the corresponding region of the map
             z0 = round(ZZ(com0_int)) + Xmipp::init(cropdim);
@@ -2331,9 +2336,12 @@ void local_symmetry_parameters::run() {
                 std::cout << std::endl;
 
                 // Master gets sampling points
-                com1_float.initZeros(3);
-                com1_int  .initZeros(3);
-                com1_diff .initZeros(3);
+                com1_float.resize(3);
+                std::fill(com1_float.begin(), com1_float.end(), 0);
+                com1_int.resize(3);
+                std::fill(com1_int.begin(), com1_int.end(), 0);
+                com1_diff.resize(3);
+                std::fill(com1_diff.begin(), com1_diff.end(), 0);
 
                 Localsym_decomposeOperator(op_list[imask][iop], aa, bb, gg, dx, dy, dz, cc);
 
@@ -2439,7 +2447,7 @@ void local_symmetry_parameters::run() {
                     Localsym_decomposeOperator(samp, aa, bb, gg, dx, dy, dz, cc);
                     const auto m = Euler::angles2matrix(aa, bb, gg);
                     const auto vecR3 = vectorR3(dx, dy, dz) - m * com0_int;
-                    Localsym_composeOperator(samp, aa, bb, gg, XX(vecR3), YY(vecR3), ZZ(vecR3), cc);
+                    Localsym_composeOperator(samp, aa, bb, gg, vecR3[0], vecR3[1], vecR3[2], cc);
                 }
 
                 // Master sorts the results

@@ -1046,9 +1046,9 @@ void MlModel::writeBildFileBodies(FileName fn_bild) {
         const auto &rotate_direction = rotate_direction_bodies[ibody];
 
         // Place a sphere at the centre-of-mass
-        const RFLOAT x = XX(com) * pixel_size + pixel_size + xcen;
-        const RFLOAT y = YY(com) * pixel_size + pixel_size + ycen;
-        const RFLOAT z = ZZ(com) * pixel_size + pixel_size + zcen;
+        const RFLOAT x = com[0] * pixel_size + pixel_size + xcen;
+        const RFLOAT y = com[1] * pixel_size + pixel_size + ycen;
+        const RFLOAT z = com[2] * pixel_size + pixel_size + zcen;
         // Add the center of the box to the coordinates
         fh_bild << ".sphere " << x << " " << y << " " << z << " 3 "  << std::endl;
         // Add a label
@@ -1057,9 +1057,9 @@ void MlModel::writeBildFileBodies(FileName fn_bild) {
         // Add an arrow for the direction of the rotation
         const RFLOAT length = 10.0;
         fh_bild << ".arrow " << x << " " << y << " " << z << " "
-                << x + length * XX(rotate_direction) * pixel_size << " "
-                << y + length * YY(rotate_direction) * pixel_size << " "
-                << z + length * ZZ(rotate_direction) * pixel_size << " 1 " << std::endl;
+                << x + length * rotate_direction[0] * pixel_size << " "
+                << y + length * rotate_direction[1] * pixel_size << " "
+                << z + length * rotate_direction[2] * pixel_size << " 1 " << std::endl;
     }
 }
 
@@ -1291,7 +1291,8 @@ void MlWsumModel::initZeros() {
     for (int iclass = 0; iclass < nr_classes; iclass++) {
         pdf_class[iclass] = 0.0;
         if (ref_dim == 2)
-            prior_offset_class[iclass].initZeros();
+            std::fill(prior_offset_class[iclass].begin(),
+                      prior_offset_class[iclass].end(), 0);
     }
 
     // Initialise sigma2_noise spectra and sumw_group

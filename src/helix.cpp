@@ -1445,7 +1445,7 @@ void makeSimpleHelixFromPDBParticle(
         REPORT_ERROR("helix.cpp::makeHelixFromPDBParticle(): Original assembly contains no atoms!");
 
     // Calculate centre of mass of the original assembly
-    Matrix1D<RFLOAT> mass_centre = Matrix1D<RFLOAT>::zeros(3);
+    Matrix1D<RFLOAT> mass_centre {0, 0, 0};
     for (int imol = 0; imol < ori.molecules.size(); imol++) {
         for (int ires = 0; ires < ori.molecules[imol].residues.size(); ires++) {
             for (int iatom = 0; iatom < ori.molecules[imol].residues[ires].atoms.size(); iatom++) {
@@ -1477,7 +1477,7 @@ void makeSimpleHelixFromPDBParticle(
     }
 
     // Construct the helix
-    Matrix1D<RFLOAT> shift = Matrix1D<RFLOAT>::zeros(3);
+    Matrix1D<RFLOAT> shift {0, 0, 0};
     helix.clear();
     helix.join(aux0);
     for (int ii = ((nr_copy + 1) % 2) - nr_copy / 2 ; ii <= nr_copy / 2; ii++) {
@@ -3807,13 +3807,10 @@ void updatePriorsForOneHelicalTube(
 
             // Init
             this_rot = this_psi = this_tilt = center_pos = this_pos = sum_w = this_w = offset2 = 0.0;
-            Matrix1D<RFLOAT> this_ang_vec     = Matrix1D<RFLOAT>::zeros(3);
-            Matrix1D<RFLOAT> this_rot_vec     = Matrix1D<RFLOAT>::zeros(2);	// KThurber
-            Matrix1D<RFLOAT> sum_ang_vec      = Matrix1D<RFLOAT>::zeros(3);
-            Matrix1D<RFLOAT> sum_rot_vec      = Matrix1D<RFLOAT>::zeros(2);	// KThurber
-            Matrix1D<RFLOAT> this_trans_vec   = Matrix1D<RFLOAT>::zeros(data_dim);
-            Matrix1D<RFLOAT> center_trans_vec = Matrix1D<RFLOAT>::zeros(data_dim);
-            Matrix1D<RFLOAT> sum_trans_vec    = Matrix1D<RFLOAT>::zeros(data_dim);
+            Matrix1D<RFLOAT> this_ang_vec     {0, 0, 0};
+            Matrix1D<RFLOAT> this_rot_vec     {0, 0};	// KThurber
+            Matrix1D<RFLOAT> sum_ang_vec      {0, 0, 0};
+            Matrix1D<RFLOAT> sum_rot_vec      {0, 0};	// KThurber
 
             // Check position
             center_pos = this_pos = list[id].track_pos_A;
@@ -3837,19 +3834,21 @@ void updatePriorsForOneHelicalTube(
             // end new KThurber
 
             // Analyze translations
+            Matrix1D<RFLOAT> this_trans_vec (data_dim);
+            std::fill(this_trans_vec.begin(), this_trans_vec.end(), 0);
             XX(this_trans_vec) = list[id].dx_prior_A = list[id].dx_A; // REFRESH XOFF PRIOR
             YY(this_trans_vec) = list[id].dy_prior_A = list[id].dy_A; // REFRESH YOFF PRIOR
             if (is_3D_data)
             ZZ(this_trans_vec) = list[id].dz_prior_A = list[id].dz_A; // REFRESH ZOFF PRIOR
 
             transformCartesianAndHelicalCoords(this_trans_vec, this_trans_vec, (is_3D_data) ? (this_rot) : (0.0), (is_3D_data) ? (this_tilt) : (0.0), this_psi, CART_TO_HELICAL_COORDS);
-            center_trans_vec = this_trans_vec; // Record helical coordinates of the central segment
+            Matrix1D<RFLOAT> center_trans_vec = this_trans_vec; // Record helical coordinates of the central segment
             if (is_3D_data) {
                 ZZ(this_trans_vec) = 0.0;
             } else {
                 XX(this_trans_vec) = 0.0; // Do not accumulate translation along helical axis
             }
-            sum_trans_vec = this_trans_vec * this_w;
+            Matrix1D<RFLOAT> sum_trans_vec = this_trans_vec * this_w;
 
             // Local averaging
             if (do_avg) {
@@ -4548,7 +4547,7 @@ void HermiteInterpolateOne3DHelicalFilament(
     accu_len_pix = 0.0;
     present_len_pix = -1.0;
     nr_segments = 0;
-    Matrix1D<RFLOAT> dr = Matrix1D<RFLOAT>::zeros(3);
+    Matrix1D<RFLOAT> dr {0, 0, 0};
     for (int id = 0; id < xlist.size() - 1; id++) {
         // Step size for interpolation is smaller than 1% of the inter-box distance
         // sqrt(0.57735 * 0.57735 * 0.57735 * 3) = 1.0, step size is larger than 1 pixel

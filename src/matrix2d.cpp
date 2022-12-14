@@ -29,18 +29,19 @@ void svbksb(
     // Call to the numerical recipes routine. Results will be stored in X
     svbksb(
         u.adaptForNumericalRecipes2(),
-        w.adaptForNumericalRecipes(),
+        w.data() - 1,
         v.adaptForNumericalRecipes2(),
         u.mdimy, u.mdimx,
-        b.adaptForNumericalRecipes(),
-        x.adaptForNumericalRecipes()
+        b.data() - 1,
+        x.data() - 1
     );
 }
 
 template <typename T>
 void Matrix2D<T>::setSmallValuesToZero(RFLOAT accuracy) {
     for (auto &x : *this)
-    if (abs(x) < accuracy) { x = 0.0; }
+        if (abs(x) < accuracy)
+            x = 0.0;
 }
 
 template <typename T>
@@ -141,7 +142,7 @@ void solve(
     /*if (A.mdimx != A.mdimy)
         REPORT_ERROR("Solve: Matrix is not square");*/
 
-    if (A.mdimy != b.vdim)
+    if (A.mdimy != b.size())
         REPORT_ERROR("Solve: Differently sized Matrix and Vector");
 
     /*if (b.isRow())
@@ -159,7 +160,7 @@ void solve(
     for (RFLOAT &x : w) if (x < tolerance) { x = 0; }
 
     // Set size of matrices
-    result.resize(b.vdim);
+    result.resize(b.size());
 
     // Xmipp interface that calls to svdksb of numerical recipes
     Matrix1D<RFLOAT> bd (b);

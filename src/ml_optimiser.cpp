@@ -4016,7 +4016,8 @@ void MlOptimiser::maximizationOtherParameters() {
                 mymodel.prior_offset_class[iclass] *= mu;
                 mymodel.prior_offset_class[iclass] += (1.0 - mu) * wsum_model.prior_offset_class[iclass] / sum_weight;
             } else {
-                mymodel.prior_offset_class[iclass].initZeros();
+                std::fill(mymodel.prior_offset_class[iclass].begin(),
+                          mymodel.prior_offset_class[iclass].end(), 0);
             }
         }
     }
@@ -4529,7 +4530,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
             }
 
             // For multi-body refinement: set the priors of the translations to zero (i.e. everything centred around consensus offset)
-            my_prior.initZeros();
+            std::fill(my_prior.begin(), my_prior.end(), 0);
 
             #ifdef DEBUG_BODIES
             if (part_id == round(debug1)) {

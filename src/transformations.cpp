@@ -241,8 +241,8 @@ Matrix2D<RFLOAT> translation2DMatrix(const Matrix1D<RFLOAT> &v) {
     //    REPORT_ERROR("Translation2D_matrix: vector is not in R2");
     Matrix2D<RFLOAT> result;
     result.initIdentity(3);
-    result.at(0, 2) = XX(v);
-    result.at(1, 2) = YY(v);
+    result.at(0, 2) = v[0];
+    result.at(1, 2) = v[1];
     return result;
 }
 
@@ -352,9 +352,9 @@ Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v) {
         REPORT_ERROR("Translation3D_matrix: vector is not in R3");
     Matrix2D<RFLOAT> result;
     result.initIdentity(4);
-    result.at(0, 3) = XX(v);
-    result.at(1, 3) = YY(v);
-    result.at(2, 3) = ZZ(v);
+    result.at(0, 3) = v[0];
+    result.at(1, 3) = v[1];
+    result.at(2, 3) = v[2];
     return result;
 }
 
@@ -369,8 +369,8 @@ Matrix2D<RFLOAT> scale3DMatrix(
     auto result = Matrix2D<RFLOAT>::zeros(n, n);
     if (homogeneous) { result.at(3, 3) = 1; }
 
-    result.at(0, 0) = XX(sc);
-    result.at(1, 1) = YY(sc);
-    result.at(2, 2) = ZZ(sc);
+    result.at(0, 0) = sc[0];
+    result.at(1, 1) = sc[1];
+    result.at(2, 2) = sc[2];
     return result;
 }

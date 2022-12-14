@@ -265,9 +265,9 @@ void FrameRecombiner::process(
 
         for (int p = 0; do_recenter && p < pc; p++) {
             // FIXME: code duplication from preprocess.cpp
-            Matrix1D<RFLOAT> my_projected_center = Matrix1D<RFLOAT>::zeros(3);
+            Matrix1D<RFLOAT> my_projected_center {0, 0, 0};
 
-            RFLOAT xoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p); // in A
+            RFLOAT xoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);  // in A
             RFLOAT yoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
 			// std::cout << "IN  xoff = " << xoff << " yoff = " << yoff;
             xoff /= ref_angpix; // Now in reference pixels
@@ -283,12 +283,8 @@ void FrameRecombiner::process(
                 RFLOAT psi  = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_PSI,  p);
 
                 // Project the center-coordinates
-                Matrix1D<RFLOAT> my_center(3);
-                XX(my_center) = recenter_x; // in reference pixels
-                YY(my_center) = recenter_y;
-                ZZ(my_center) = recenter_z;
                 Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-                my_projected_center = A3D * my_center;
+                my_projected_center = A3D * Matrix1D<RFLOAT>({recenter_x, recenter_y, recenter_z});  // in reference pixels
             }
 
             xoff -= XX(my_projected_center);
@@ -308,7 +304,7 @@ void FrameRecombiner::process(
 
             mdtOut.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, coords_angpix * xoff, p);
             mdtOut.setValue(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, coords_angpix * yoff, p);
-//			std::cout << "OUT xoff = " << xoff << " yoff = " << yoff << " xcoord = " << xcoord << " ycoord = " << ycoord << std::endl;;
+			// std::cout << "OUT xoff = " << xoff << " yoff = " << yoff << " xcoord = " << xcoord << " ycoord = " << ycoord << std::endl;;
         }
 
         // loadMovie() will extract squares around the value of shift0 rounded in movie coords,
@@ -319,7 +315,7 @@ void FrameRecombiner::process(
         );
 
         const int out_size = crop_arg > 0 ? crop_arg : s_out[ogmg];
-        Image<RFLOAT> stack(out_size, out_size, 1, pc);
+        Image<RFLOAT> stack (out_size, out_size, 1, pc);
 
         #pragma omp parallel for num_threads(nr_omp_threads)
         for (int p = 0; p < pc; p++) {
@@ -341,7 +337,7 @@ void FrameRecombiner::process(
                 }
             }
 
-            Image<RFLOAT> real(s_out[ogmg], s_out[ogmg]);
+            Image<RFLOAT> real (s_out[ogmg], s_out[ogmg]);
 
             // Premultiply by CTF
             if (do_ctf_multiply) {

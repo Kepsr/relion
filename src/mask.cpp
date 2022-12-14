@@ -130,7 +130,7 @@ void softMaskOutsideMapForHelix(
     D1 = mask_cyl_radius_pix;
     D2 = D1 + cosine_width;
 
-    Matrix1D<RFLOAT> coords = Matrix1D<RFLOAT>::zeros(3);
+    Matrix1D<RFLOAT> coords {0, 0, 0};
 
     // Init rotational matrix A
     // Rotate the particle (helical axes are X and Z for 2D and 3D segments respectively)
@@ -142,9 +142,11 @@ void softMaskOutsideMapForHelix(
     if (!Mnoise) {
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
             // X, Y, Z coordinates
-            XX(coords) =            (RFLOAT) i;
-            YY(coords) =            (RFLOAT) j;
-            ZZ(coords) = dim == 3 ? (RFLOAT) k : 0.0;
+            coords[0] = i;
+            coords[1] = j;
+            if (dim == 3)
+            coords[2] = k;
+
             // Rotate
             coords = A * coords;
 
@@ -153,12 +155,12 @@ void softMaskOutsideMapForHelix(
             if (d > D2) {
                 // Noise areas (get values for noise estimations)
                 sum_bg += vol.elem(i, j, k);
-                sum += 1.0;
+                sum    += 1.0;
             } else if (d > D1) {
                 // Edges of noise areas (get values and weights for noise estimations)
                 RFLOAT noise_w = raised_cos((D2 - d) * PI / cosine_width);
                 sum_bg += noise_w * vol.elem(i, j, k);
-                sum += noise_w;
+                sum    += noise_w;
             }
         }
         // Test (this should not happen)
@@ -171,9 +173,10 @@ void softMaskOutsideMapForHelix(
     RFLOAT noise_val = sum_bg;
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
         // X, Y, Z coordinates
-        XX(coords) =            (RFLOAT) i;
-        YY(coords) =            (RFLOAT) j;
-        ZZ(coords) = dim == 3 ? (RFLOAT) k : 0.0;
+        coords[0] = i;
+        coords[1] = j;
+        if (dim == 3)
+        coords[2] = k;
 
         // Rotate
         coords = A * coords;
@@ -182,7 +185,7 @@ void softMaskOutsideMapForHelix(
         d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
 
         // Distance from the origin
-        r = sqrt((RFLOAT) (dim == 3 ? i * i + j * j + k * k : i * i + j * j));
+        r = sqrt((RFLOAT) (dim == 3 ? euclidsq(i, j, k) : euclidsq(i, j)));
 
         // Info areas
         if (r < R1 && d < D1) continue;
