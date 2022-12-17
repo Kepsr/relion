@@ -45,67 +45,11 @@
 #ifndef MATRIX1D_H_
 #define MATRIX1D_H_
 
-#include <numeric>
-#include <cstring>  // memcpy, memset
+#include <numeric>  // std::accumulate
 #include "src/funcs.h"
 
-extern int bestPrecision(float F, int _width);
-extern std::string floatToString(float F, int _width, int _prec);
+enum class VectorMode: bool { row, column };
 
-template <typename T> class Matrix2D;
-
-/** @defgroup Vectors Matrix1D Vectors
- * @ingroup DataLibrary
-*/
-//@{
-/** @name Vectors speed up macros
- *
- * This macros are defined to allow high speed in critical parts of your program.
- * They shouldn't be used systematically
- * as usually there is no checking on the correctness of the operation you are performing.
- * Speed comes from three facts:
- * 1. They are macros and no function call is performed
- * (although most critical functions are inline functions).
- * 2. There is no checking on the correctness of the operation
- * (it could be wrong and you are not warned of it).
- * 3. Destination vectors are not returned,
- * saving time in the copy constructor and in the creation/destruction of temporary vectors.
- */
-//@{
-
-// Convention: { 0, 1, 2 } <-> { X, Y, Z }
-
-template <typename T>
-class Matrix1D;
-
-/** Access to X component
- * @code
- * XX(v) = 1;
- * val = XX(v);
- * @endcode
- */
-template <typename T>
-inline T& XX(Matrix1D<T> &v) { return v[0]; }
-
-/** Access to Y component
- * @code
- * YY(v) = 1;
- * val = YY(v);
- * @endcode
- */
-template <typename T>
-inline T& YY(Matrix1D<T> &v) { return v[1]; }
-
-/** Access to Z component
- * @code
- * ZZ(v) = 1;
- * val = ZZ(v);
- * @endcode
- */
-template <typename T>
-inline T& ZZ(Matrix1D<T> &v) { return v[2]; }
-
-/** Matrix1D class.*/
 template<typename T>
 class Matrix1D {
 
@@ -116,7 +60,11 @@ class Matrix1D {
     int vdim;
 
     /// Whether row vector or column vector
-    enum class Mode: bool { row, column } mode;
+    VectorMode mode;
+
+    template <typename U> friend class Matrix1D;
+
+    template <typename U> friend class Matrix2D;
 
     public:
 
@@ -125,23 +73,20 @@ class Matrix1D {
 
     /** Default / dimension constructor
      *
-     * Construct a vector of the given size.
+     * Construct a zero-initialised vector of the given size.
      * You can choose between a column (default) or a row vector.
-     * The data will be zeroed out.
      * Default construction will produce an empty column vector.
      */
-    Matrix1D(int dim = 0, Mode mode = Mode::column): vdim(0), vdata(nullptr), mode(mode) {
+    Matrix1D(int dim = 0, VectorMode mode = VectorMode::column): vdim(0), vdata(nullptr), mode(mode) {
         resize(dim);
     }
 
-    /** Copy constructor
-     */
+    /// Copy constructor
     Matrix1D(const Matrix1D<T> &other): Matrix1D(other.size(), other.mode) {
         std::copy(other.begin(), other.end(), begin());
     }
 
-    /** Type-casting copy constructor
-     */
+    /// Type-casting copy constructor
     template<typename U>
     Matrix1D(const Matrix1D<U> &other): Matrix1D(other.size(), other.mode) {
         std::copy(other.begin(), other.end(), begin());
@@ -151,25 +96,30 @@ class Matrix1D {
         std::copy(list.begin(), list.end(), begin());
     }
 
-    /** Destructor
-     */
+    /// Destructor
     ~Matrix1D() { clear(); }
 
-    /** Assignment
-     */
-    template <typename U>
-    Matrix1D<T>& operator = (const Matrix1D<U> &other) {
-        if (this != &other) {
-            resize(other.size());
-            std::copy(other.begin(), other.end(), begin());
-            mode = other.mode;
-        }
+    /// Assignment
+    Matrix1D<T>& operator = (Matrix1D<T> other) {
+        swap(*this, other);
         return *this;
+    }
+
+    /// Type-casting assignment
+    template <typename U>
+    Matrix1D<T>& operator = (const Matrix1D<U>& other) {
+        Matrix1D<T> copy (other);
+        swap(*this, copy);
+        return *this;
+    }
+
+    friend void swap(Matrix1D<T>& lhs, Matrix1D<T>& rhs) {
+        std::swap(lhs.vdim,  rhs.vdim);
+        std::swap(lhs.vdata, rhs.vdata);
+        std::swap(lhs.mode,  rhs.mode);
     }
     //@}
 
-    /** Clear.
-     */
     void clear() {
         delete[] vdata;
         vdata = nullptr;
@@ -179,126 +129,78 @@ class Matrix1D {
     ///@name Size and shape of Matrix1D
     //@{
 
-    /** Resize to a given size
+    /** Resize
      *
      * Resize the array to the given size.
      * When the size decreases, the data get truncated.
      * When the size increases, the data get zero-padded.
-     * Might throw a std::bad_alloc.
+     * Might throw.
      */
-    inline void resize(int new_vdim) {
+    void resize(int new_vdim) {
 
-        if (new_vdim == size()) return;
+        if (new_vdim == vdim) return;
 
         if (new_vdim <= 0) {
             clear();
             return;
         }
 
-        T *new_vdata;
         try {
-            new_vdata = new T[new_vdim];
+            T *new_vdata = new T[new_vdim];
+            // Copy old data
+            auto it = std::copy_n(vdata, std::min(vdim, new_vdim), new_vdata);
+            // Zero-pad if necessary
+            std::fill_n(it, new_vdim - vdim, 0);
+
+            // Delete old data
+            clear();
+
+            // Assign new data
+            vdata = new_vdata;
+            vdim  = new_vdim;
         } catch (std::bad_alloc &) {
             REPORT_ERROR("Allocate: No space left");
         }
-
-        // Copy old data
-        memcpy(new_vdata, vdata, sizeof(T) * std::min(vdim, new_vdim));
-        // Zero-pad if necessary
-        memset(new_vdata + vdim, 0, sizeof(T) * std::max(0, new_vdim - vdim));
-
-        // Delete old data
-        clear();
-
-        // Assign new data
-        vdata = new_vdata;
-        vdim  = new_vdim;
     }
 
-    /** The size of the vector
-     */
     inline int size() const { return vdim; }
 
     inline T* data() { return vdata; }
 
-    /** Is this a row vector?
-     */
-    inline int isRow() const { return mode == Mode::row; }
+    /// Is this a row vector?
+    inline int isRow() const { return mode == VectorMode::row; }
 
-    /** Is this a column vector?
-     */
-    inline int isCol() const { return mode == Mode::column; }
+    /// Is this a column vector?
+    inline int isCol() const { return mode == VectorMode::column; }
 
-    /** Make the vector a row vector
-     */
-    inline void setRow() { mode = Mode::row; }
+    /// Make this a row vector
+    inline void setRow() { mode = VectorMode::row; }
 
-    /** Make the vector a column vector
-     */
-    inline void setCol() { mode = Mode::column; }
+    /// Make this a column vector
+    inline void setCol() { mode = VectorMode::column; }
     //@}
 
     /// @name Matrix1D operators
     //@{
 
-    Matrix1D<T> operator + (T rhs) const {
-        return Matrix1D<T>(*this) += rhs;
+    Matrix1D<T>& operator += (T rhs) {
+        for (T& x: *this) { x += rhs; }
+        return *this;
     }
 
-    Matrix1D<T> operator - (T rhs) const {
-        return Matrix1D<T>(*this) -= rhs;
+    Matrix1D<T>& operator -= (T rhs) {
+        for (T& x: *this) { x -= rhs; }
+        return *this;
     }
 
-    Matrix1D<T> operator * (T rhs) const {
-        return Matrix1D<T>(*this) *= rhs;
+    Matrix1D<T>& operator *= (T rhs) {
+        for (T& x: *this) { x *= rhs; } 
+        return *this;
     }
 
-    Matrix1D<T> operator / (T rhs) const {
-        return Matrix1D<T>(*this) /= rhs;
-    }
-
-    friend Matrix1D<T> operator + (T lhs, Matrix1D<T> rhs) {
-        for (auto& x: rhs) { x = lhs + x; }
-        return rhs;
-    }
-
-    friend Matrix1D<T> operator - (T lhs, Matrix1D<T> rhs) {
-        for (auto& x: rhs) { x = lhs - x; }
-        return rhs;
-    }
-
-    friend Matrix1D<T> operator * (T lhs, Matrix1D<T> rhs) {
-        for (auto& x: rhs) { x = lhs * x; }
-        return rhs;
-    }
-
-    friend Matrix1D<T> operator / (T lhs, Matrix1D<T> rhs) {
-        for (auto& x: rhs) { x = lhs / x; }
-        return rhs;
-    }
-
-    Matrix1D<T>& operator += (T rhs) { for (auto& x: *this) { x += rhs; } return *this; }
-
-    Matrix1D<T>& operator -= (T rhs) { for (auto& x: *this) { x -= rhs; } return *this; }
-
-    Matrix1D<T>& operator *= (T rhs) { for (auto& x: *this) { x *= rhs; } return *this; }
-
-    Matrix1D<T>& operator /= (T rhs) { for (auto& x: *this) { x /= rhs; } return *this; }
-
-    Matrix1D<T> operator + (const Matrix1D<T> &other) const {
-        return Matrix1D<T>(*this) += other;
-    }
-
-    Matrix1D<T> operator - (const Matrix1D<T> &other) const {
-        return Matrix1D<T>(*this) -= other;
-    }
-
-    Matrix1D<T> operator * (const Matrix1D<T> &other) const {
-        return Matrix1D<T>(*this) *= other;
-    }
-
-    Matrix1D<T> operator / (const Matrix1D<T> &other) const {
-        return Matrix1D<T>(*this) /= other;
+    Matrix1D<T>& operator /= (T rhs) {
+        for (T& x: *this) { x /= rhs; }
+        return *this;
     }
 
     Matrix1D<T>& operator += (const Matrix1D<T> &other) {
@@ -329,36 +231,14 @@ class Matrix1D {
         return *this;
     }
 
-    /** Negation
-     */
+    /// Negation
     Matrix1D<T> operator - () const {
         Matrix1D<T> copy (*this);
         for (auto& x: copy) { x = -x; }
         return copy;
     }
 
-    /** Vector by matrix
-     *
-     * Algebraic vector by matrix multiplication.
-     * This function is actually implemented in xmippMatrices2D.
-     */
-    Matrix1D<T> operator * (const Matrix2D<T> &M);  // Defined in matrix2D.h
-
-    void operator *= (const Matrix2D<T> &M) {
-        *this = *this * M;
-    }
-
-    /** Vector element access
-     *
-     * Returns the value of a vector logical iterator.
-     * In our example we could access from v(-2) to v(2).
-     * The elements can be used either by value or by reference.
-     *
-     * @code
-     * v(-2) = 1;
-     * val = v(-2);
-     * @endcode
-     */
+    /// Subscripting
           T& operator () (int i)       { return vdata[i]; }
     const T& operator () (int i) const { return vdata[i]; }
 
@@ -369,31 +249,10 @@ class Matrix1D {
     /// @name Utilities for Matrix1D
     //@{
 
-    /** Index for the maximum element.
-     *
-     * This function returns the index of the maximum element of an matrix1d.
-     * Returns -1 if the array is empty
-     */
-    int maxIndex() const {
-        if (size() == 0) return -1;
-        return std::max_element(begin(), end()) - begin();
-    }
-
-    /** Index for the minimum element.
-     *
-     * Returns the index of the minimum element of an matrix1d.
-     * Returns -1 if the array is empty
-     */
-    int minIndex() const {
-        if (size() == 0) return -1;
-        return std::min_element(begin(), end()) - begin();
-    }
-
-    /** Algebraic transpose of vector
-     */
+    /// Algebraic transpose
     Matrix1D<T> transpose() const {
         auto t (*this);
-        t.mode = static_cast<Mode>(!static_cast<bool>(mode));
+        t.mode = static_cast<VectorMode>(!static_cast<bool>(mode));
         return t;
     }
 
@@ -442,16 +301,14 @@ class Matrix1D {
           iterator end()       { return vdata + vdim; }
     const iterator end() const { return vdata + vdim; }
 
-    /** Sum of vector values.
-     */
+    /// Sum of vector values
     RFLOAT sum() const {
         return std::accumulate(begin(), end(), 0);
     }
 
     inline RFLOAT mean() const { return sum() / (RFLOAT) size(); }
 
-    /** Sum of squared vector values.
-     */
+    /// Sum of squared vector values
     RFLOAT sum2() const {
         return std::accumulate(begin(), end(), 0, [] (T acc, T x) { return acc + x * x; });
     }
@@ -472,7 +329,7 @@ class Matrix1D {
         return atan2((RFLOAT) (*this)[1], (RFLOAT) (*this)[0]);
     }
 
-    // Normalise vector
+    /// Normalise vector
     void normalise() {
         const RFLOAT m = modulus();
         if (abs(m) > Xmipp::epsilon) {
@@ -482,59 +339,125 @@ class Matrix1D {
         }
     }
 
-    /** Compute numerical derivative
-     *
-     * https://en.wikipedia.org/wiki/Five-point_stencil
-     * The numerical derivative is of the same size as the input vector.
-     * However, the first two and the last two samples are set to 0,
-     * because this method does not predict the derivative there.
-     */
-    Matrix1D<RFLOAT> numericalDerivative() {
-        Matrix1D<RFLOAT> result = zeros(size());
-        for (int i = 2; i <= this->xdim - 1 - 2; i++)
-            result[i] = (- (*this)[i + 2] + 8 * (*this)[i + 1]
-                         + (*this)[i - 2] - 8 * (*this)[i - 1]) / 12;
-        return result;
-    }
-
-    /** Output to output stream.*/
-    friend std::ostream& operator << (std::ostream &ostrm, const Matrix1D<T> &v) {
-        if (v.size() == 0) { ostrm << "NULL Array"; }
-        ostrm << '\n';
-
-        const int prec = bestPrecision(v.max(), 10);
-
-        for (const auto &x : v) {
-            ostrm << floatToString((RFLOAT) x, 10, prec) << '\n';
-        }
-        return ostrm;
-    }
-
     //@}
 };
 
 /**@name Vector Related functions
- * These functions are not methods of Matrix1D
  */
 
-/** Creates vector in R2
- */
+/// Creates a vector in R2
 template <typename T>
 inline Matrix1D<T> vectorR2(T x, T y) {
     return {x, y};
 }
 
-/** Creates vector in R3
- */
+/// Creates a vector in R3
 template <typename T>
 inline Matrix1D<T> vectorR3(T x, T y, T z) {
     return {x, y, z};
 }
 
+/// 'X' component
+template <typename T>
+inline T& XX(Matrix1D<T> &v) { return v[0]; }
+
+/// 'Y' component
+template <typename T>
+inline T& YY(Matrix1D<T> &v) { return v[1]; }
+
+/// 'Z' component
+template <typename T>
+inline T& ZZ(Matrix1D<T> &v) { return v[2]; }
+
 // This function is only needed for single-precision compilation
 #ifdef RELION_SINGLE_PRECISION
-Matrix1D<float> vectorR3(double xx, double yy, double zz);
+Matrix1D<float> vectorR3(double xx, double yy, double zz) {
+	return {(float) xx, (float) yy, (float) zz};
+}
 #endif
+
+template <typename T>
+Matrix1D<T> operator + (Matrix1D<T> lhs, const Matrix1D<T> &other) {
+    return lhs += other;
+}
+
+template <typename T>
+Matrix1D<T> operator - (Matrix1D<T> lhs, const Matrix1D<T> &other) {
+    return lhs -= other;
+}
+
+template <typename T>
+Matrix1D<T> operator * (Matrix1D<T> lhs, const Matrix1D<T> &other) {
+    return lhs *= other;
+}
+
+template <typename T>
+Matrix1D<T> operator / (Matrix1D<T> lhs, const Matrix1D<T> &other) {
+    return lhs /= other;
+}
+
+template <typename T>
+Matrix1D<T> operator + (Matrix1D<T> lhs, T rhs) {
+    return lhs += rhs;
+}
+
+template <typename T>
+Matrix1D<T> operator - (Matrix1D<T> lhs, T rhs) {
+    return lhs -= rhs;
+}
+
+template <typename T>
+Matrix1D<T> operator * (Matrix1D<T> lhs, T rhs) {
+    return lhs *= rhs;
+}
+
+template <typename T>
+Matrix1D<T> operator / (Matrix1D<T> lhs, T rhs) {
+    return lhs /= rhs;
+}
+
+template <typename T>
+Matrix1D<T> operator + (T lhs, Matrix1D<T> rhs) {
+    for (T& x: rhs) { x = lhs + x; }
+    return rhs;
+}
+
+template <typename T>
+Matrix1D<T> operator - (T lhs, Matrix1D<T> rhs) {
+    for (T& x: rhs) { x = lhs - x; }
+    return rhs;
+}
+
+template <typename T>
+Matrix1D<T> operator * (T lhs, Matrix1D<T> rhs) {
+    for (T& x: rhs) { x = lhs * x; }
+    return rhs;
+}
+
+template <typename T>
+Matrix1D<T> operator / (T lhs, Matrix1D<T> rhs) {
+    for (T& x: rhs) { x = lhs / x; }
+    return rhs;
+}
+
+extern int bestPrecision(float F, int _width);
+extern std::string floatToString(float F, int _width, int _prec);
+
+/** Output to output stream.*/
+template <typename T>
+std::ostream& operator << (std::ostream &ostrm, const Matrix1D<T> &v) {
+    if (v.size() == 0) {
+        ostrm << "Empty array\n";
+    } else {
+        ostrm << '\n';
+        const T maximum = *std::max_element(v.begin(), v.end());
+        const int prec = bestPrecision(maximum, 10);
+        for (const T& x: v) {
+            ostrm << floatToString((RFLOAT) x, 10, prec) << '\n';
+        }
+    }
+    return ostrm;
+}
 
 /** Dot product.
  * Given any two vectors in Rn (n-dimensional vector), this function returns the
@@ -555,7 +478,7 @@ Matrix1D<float> vectorR3(double xx, double yy, double zz);
 template<typename T>
 T dotProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
     if (v1.size() != v2.size())
-        REPORT_ERROR("Dot product: vectors of different size or shape");
+        REPORT_ERROR("Dot product: vectors of different size");
 
     T accumulate = 0;
     for (int i = 0; i < v1.size(); i++) {
@@ -579,31 +502,16 @@ T dotProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
 template<typename T>
 Matrix1D<T> crossProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
     if (v1.size() != 3 || v2.size() != 3)
-        REPORT_ERROR("Vector_product: vectors are not in R3");
+        REPORT_ERROR("Cross product: vectors are not in R3");
 
     if (v1.isRow() != v2.isRow())
-        REPORT_ERROR("Vector_product: vectors are of different shape");
+        REPORT_ERROR("Cross product: vectors of different size");
 
     return {
         v1(1) * v2(2) - v1(2) * v2(1),
         v1(2) * v2(0) - v1(0) * v2(2),
         v1(0) * v2(1) - v1(1) * v2(0)
     };
-}
-
-/** Vector product in R3.
- * This function computes the vector product of two R3 vectors.
- * No check is performed, it is assumed that the output vector
- * is already resized
- *
- */
-template<typename T>
-void crossProduct(
-    const Matrix1D<T> &v1, const Matrix1D<T> &v2, Matrix1D<T> &result
-) {
-    result[0] = v1[1] * v2[2] - v1[2] * v2[1];
-    result[1] = v1[2] * v2[0] - v1[0] * v2[2];
-    result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 }
 
 /** Sort two vectors.
@@ -629,7 +537,5 @@ void sortTwoVectors(Matrix1D<T> &v1, Matrix1D<T> &v2) {
         if (v1[i] > v2[i]) std::swap(v1[i], v2[i]);
     }
 }
-
-//@}
 
 #endif /* MATRIX1D_H_ */

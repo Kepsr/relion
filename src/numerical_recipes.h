@@ -45,6 +45,7 @@
 #define _NUMERICAL_HH
 
 #include <math.h>
+#include <vector>
 #include "src/memory.h"
 #include "src/macros.h"
 #include "src/error.h"
@@ -93,6 +94,20 @@ void powell(RFLOAT *p, RFLOAT *xi, int n, RFLOAT ftol, int &iter,
 // Matrix operations ----------------------------------------------------------
 
 RFLOAT Pythag(RFLOAT a, RFLOAT b);
+
+/** Compute numerical derivative
+ *
+ * https://en.wikipedia.org/wiki/Five-point_stencil
+ * The numerical derivative is of the same size as the input vector.
+ * However, the first two and the last two samples are set to 0,
+ * because this method does not predict the derivative there.
+ */
+static std::vector<RFLOAT> numericalDerivative(const std::vector<RFLOAT> &f) {
+    std::vector<RFLOAT> result (f.size());
+    for (int i = 2; i < f.size() - 2; i++)
+        result[i] = (- f[i + 2] + 8 * f[i + 1] + f[i - 2] - 8 * f[i - 1]) / 12;
+    return result;
+}
 
 // LU decomposition
 /* Chapter 2 Section 3: LU DECOMPOSITION */

@@ -343,6 +343,16 @@ class Matrix2D {
         for (int i = 0; i < mdim; i++) { mdata[i] /= op1; }
     }
 
+    /** Vector by matrix
+     *
+     * Algebraic vector by matrix multiplication.
+     * This function is actually implemented in xmippMatrices2D.
+     */
+
+    // void operator *= (const Matrix2D<T> &M) {
+    //     *this = *this * M;
+    // }
+
     /** Matrix * vector multiplication
     *
     * @code
@@ -850,25 +860,27 @@ class Matrix2D {
 };
 
 // vector * matrix
-// Declared in matrix1D.h
 template<typename T>
-Matrix1D<T> Matrix1D<T>::operator * (const Matrix2D<T> &M) {
+Matrix1D<T> operator * (const Matrix1D<T> &v, const Matrix2D<T> &M) {
 
-    if (size() != M.mdimy)
+    if (v.size() != M.mdimy)
         REPORT_ERROR("Not compatible sizes in matrix by vector");
 
-    if (!isRow())
+    if (!v.isRow())
         REPORT_ERROR("Vector is not a row");
 
-    Matrix1D<T> result (M.mdimx);
+    Matrix1D<T> result (M.mdimx, VectorMode::row);
     for (int j = 0; j < M.mdimx; j++) {
         result[j] = 0;
         for (int i = 0; i < M.mdimy; i++)
-            result[j] += (*this)[i] * M.at(i, j);
+            result[j] += v[i] * M.at(i, j);
     }
-
-    result.setRow();
     return result;
+}
+
+template<typename T>
+Matrix1D<T> operator *= (Matrix1D<T> &v, const Matrix2D<T> &M) {
+    return v = (v * M);
 }
 
 /** @name Matrix-related functions
