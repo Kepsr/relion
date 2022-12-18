@@ -1364,7 +1364,7 @@ void transformCartesianAndHelicalCoords(
     if (dim != 2 && dim != 3)
         REPORT_ERROR("helix.cpp::transformCartesianAndHelicalCoords(): Vector of input coordinates should have 2 or 3 values!");
 
-    Matrix1D<RFLOAT> aux = vectorR3(XX(in), YY(in), dim == 3 ? ZZ(in) : 0.0);
+    Matrix1D<RFLOAT> aux {in[0], in[1], dim == 3 ? in[2] : 0.0};
 
     if (dim == 2)
         rot_deg = tilt_deg = 0.0;
@@ -1374,15 +1374,12 @@ void transformCartesianAndHelicalCoords(
     Matrix2D<RFLOAT> A = Euler::angles2matrix(rot_deg, tilt_deg, psi_deg);
     if (direction == CART_TO_HELICAL_COORDS) // Don't put minus signs before angles, use 'transpose' instead
         A = A.transpose();
-    aux = A * aux;
+    aux = matmul(A, aux);
 
     out.clear();
     out.resize(dim);
-    for (int i = 0; i < dim; i++) {
-        out[i] = aux[i];
-    }
+    std::copy_n(aux.begin(), dim, out.begin());
     aux.clear();
-
     return;
 }
 
@@ -3016,12 +3013,12 @@ void makeHelicalReference3DWithPolarity(
     append_additional_densities = false;
     for (int id = 0; true; id++) {
         RFLOAT rot1_deg, x1, y1, z1;
-        rot1_deg = (RFLOAT)(id) * twist_deg;
+        rot1_deg = (RFLOAT) id * twist_deg;
         Matrix2D<RFLOAT> matrix1 = rotation2DMatrix(rot1_deg, false);
-        vec1 = matrix1 * vec0;
+        vec1 = matmul(matrix1, vec0);
 
-        x1 = XX(vec1);
-        y1 = YY(vec1);
+        x1 = vec1[0];
+        y1 = vec1[1];
         z1 = z0 + (RFLOAT) id * rise_pix;
         if (z1 > Xmipp::last(box_size))
             break;
@@ -3030,9 +3027,9 @@ void makeHelicalReference3DWithPolarity(
             RFLOAT rot2_deg, x2, y2, z2;
             rot2_deg = 360.0 * (RFLOAT) Cn / (RFLOAT) sym_Cn;
             Matrix2D<RFLOAT> matrix2 = rotation2DMatrix(rot2_deg, false);
-            vec2 = matrix2 * vec1;
-            x2 = XX(vec2);
-            y2 = YY(vec2);
+            vec2 = matmul(matrix2, vec1);
+            x2 = vec2[0];
+            y2 = vec2[1];
             z2 = z1;
 
             for (int dz = -particle_radius_max_pix; dz <= particle_radius_max_pix; dz++) {

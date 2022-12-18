@@ -720,18 +720,15 @@ class star_handler_parameters {
             REPORT_ERROR("ERROR: input STAR file does not contain rlnOriginX/Y for re-centering.");
         }
 
-        Matrix1D<RFLOAT> my_center(3);
-        XX(my_center) = center_X;
-        YY(my_center) = center_Y;
-        ZZ(my_center) = center_Z;
+        Matrix1D<RFLOAT> my_center {center_X, center_Y, center_Z};
 
-        for (long int i : MD) {
+        for (long int i: MD) {
 
             RFLOAT angpix;
             if (do_ignore_optics) {
                 angpix = cl_angpix;
             } else {
-                int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i) - 1;
+                const int optics_group = MD.getValue<int>(EMDL::IMAGE_OPTICS_GROUP, i) - 1;
                 angpix = obsModel.getPixelSize(optics_group);
             }
 
@@ -743,10 +740,10 @@ class star_handler_parameters {
 
             // Project the center-coordinates
             Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-            Matrix1D<RFLOAT> my_projected_center = A3D * my_center;
+            Matrix1D<RFLOAT> my_projected_center = matmul(A3D, my_center);
 
-            xoff -= XX(my_projected_center);
-            yoff -= YY(my_projected_center);
+            xoff -= my_projected_center[0];
+            yoff -= my_projected_center[1];
 
             // Set back the new centers
             MD.setValue(EMDL::ORIENT_ORIGIN_X_ANGSTROM, xoff * angpix, i);
@@ -756,7 +753,7 @@ class star_handler_parameters {
             RFLOAT zoff;
             if (do_contains_z) {
                 zoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, i) / angpix;
-                zoff -= ZZ(my_projected_center);
+                zoff -= my_projected_center[2];
                 MD.setValue(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, zoff * angpix, i);
             }
         }

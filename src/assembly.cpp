@@ -441,8 +441,7 @@ void Assembly::applyTransformation(Matrix2D<RFLOAT> &mat, Matrix1D<RFLOAT> &shif
     for (int imol = 0;  imol  < molecules.size();                             imol++)
     for (int ires = 0;  ires  < molecules[imol].residues.size();              ires++)
     for (int iatom = 0; iatom < molecules[imol].residues[ires].atoms.size(); iatom++) {
-        Matrix1D<RFLOAT> &coordinates = molecules[imol].residues[ires].atoms[iatom].coords;
-        coordinates *= mat;
-        coordinates += shift;
+        Matrix1D<RFLOAT>& coordinates = molecules[imol].residues[ires].atoms[iatom].coords;
+        coordinates = matmul(coordinates, mat) + shift;
     }
 }

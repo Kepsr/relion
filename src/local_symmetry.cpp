@@ -215,8 +215,7 @@ void Localsym_operator2matrix(
         mat = mat.transpose();
 
         Matrix1D<RFLOAT> trans_vec {-vec[DX_POS], -vec[DY_POS], -vec[DZ_POS]};
-
-        trans_vec = mat * trans_vec;
+        trans_vec = matmul(mat, trans_vec);
 
         mat.resize(4, 4);
         mat.at(0, 3) = trans_vec[0];
@@ -2350,7 +2349,7 @@ void local_symmetry_parameters::run() {
                     // Get com1_float. (floating point numbers)
                     // Com1f = R * Com0 + v
                     const auto m = Euler::angles2matrix(aa, bb, gg);
-                    com1_float = m * com0_int + vectorR3(dx, dy, dz);
+                    com1_float = matmul(m, com0_int) + vectorR3(dx, dy, dz);
                 } else {
                     // Global searches
                     // Master reads and checks the mask
@@ -2446,7 +2445,7 @@ void local_symmetry_parameters::run() {
                     // Update v = newCom1f + ( - newR * com0)
                     Localsym_decomposeOperator(samp, aa, bb, gg, dx, dy, dz, cc);
                     const auto m = Euler::angles2matrix(aa, bb, gg);
-                    const auto vecR3 = vectorR3(dx, dy, dz) - m * com0_int;
+                    const auto vecR3 = vectorR3(dx, dy, dz) - matmul(m, com0_int);
                     Localsym_composeOperator(samp, aa, bb, gg, vecR3[0], vecR3[1], vecR3[2], cc);
                 }
 

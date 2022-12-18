@@ -293,7 +293,8 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
     Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-    if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
+    if (hasMagMatrices)
+        A3D = A3D.matmul(anisoMag(opticsGroup));
     A3D *= scaleDifference(opticsGroup, s_ref, angpix_ref);
 
     auto pred = proj.get2DFourierTransform(sh_out, s_out, 1, A3D);
@@ -360,7 +361,8 @@ Volume<t2Vector<Complex>> ObservationModel::predictComplexGradient(
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
     auto A3D = Euler::angles2matrix(rot, tilt, psi);
-    if (hasMagMatrices) { A3D *= anisoMag(opticsGroup); }
+    if (hasMagMatrices)
+        A3D = A3D.matmul(anisoMag(opticsGroup));
     A3D *= scaleDifference(opticsGroup, s_ref, angpix_ref);
 
     const int s_out = boxSizes[opticsGroup];

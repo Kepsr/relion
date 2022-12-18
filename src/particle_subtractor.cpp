@@ -458,18 +458,18 @@ void ParticleSubtractor::subtractOneParticle(
     if (opt.do_norm_correction) 
         img() *= opt.mymodel.avg_norm_correction / mynorm;
 
-    Matrix1D<RFLOAT> my_projected_com(3), my_refined_ibody_offset(3);
+    Matrix1D<RFLOAT> my_projected_com (3), my_refined_ibody_offset (3);
     if (opt.fn_body_masks != "None") {
         // 17May2017: Shift image to the projected COM for this body!
         // Aori is the original transformation matrix of the consensus refinement
         Aori = Euler::angles2matrix(rot, tilt, psi);
-        my_projected_com = Aori * opt.mymodel.com_bodies[subtract_body];
+        my_projected_com = matmul(Aori, opt.mymodel.com_bodies[subtract_body]);
 
         // Subtract the projected COM offset, to position this body in the center
         my_old_offset -= my_projected_com;
         my_residual_offset = my_old_offset;
         // Apply the old_offset (rounded to avoid interpolation errors)
-        for (auto &x : my_old_offset) { x = round(x); }
+        for (auto& x: my_old_offset) { x = round(x); }
         img() = translate(img(), my_old_offset, WRAP);
         // keep track of the differences between the rounded and the original offsets
         my_residual_offset -= my_old_offset;
@@ -535,11 +535,14 @@ void ParticleSubtractor::subtractOneParticle(
             Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
             if (obody == subtract_body) { Aresi_subtract = Aresi; }
             // The real orientation to be applied is the obody transformation applied and the original one
-            Matrix2D<RFLOAT> Abody = Aori * opt.mymodel.orient_bodies[obody].transpose() * A_rot90 * Aresi * opt.mymodel.orient_bodies[obody];
+            Matrix2D<RFLOAT> Abody = Aori
+                .matmul(opt.mymodel.orient_bodies[obody].transpose())
+                .matmul(A_rot90)
+                .matmul(Aresi)
+                .matmul(opt.mymodel.orient_bodies[obody]);
             // Apply anisotropic mag and scaling
-            if (opt.mydata.obsModel.hasMagMatrices) {
-                Abody *= opt.mydata.obsModel.anisoMag(optics_group);
-            }
+            if (opt.mydata.obsModel.hasMagMatrices)
+                Abody = Abody.matmul(opt.mydata.obsModel.anisoMag(optics_group));
             Abody *= opt.mydata.obsModel.scaleDifference(optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
 
             // The following line gets the correct pointer to account for overlap in the bodies
@@ -551,8 +554,7 @@ void ParticleSubtractor::subtractOneParticle(
             // Body is centered at its own COM: move it back to its place in the original particle image
 
             // Projected COM for this body (using Aori, just like above for ibody and my_projected_com!!!)
-            Matrix1D<RFLOAT> other_projected_com(3);
-            other_projected_com = Aori * opt.mymodel.com_bodies[obody];
+            Matrix1D<RFLOAT> other_projected_com = matmul(Aori, opt.mymodel.com_bodies[obody]);
 
             // Subtract refined obody-displacement
             other_projected_com -= body_offset;
@@ -572,7 +574,11 @@ void ParticleSubtractor::subtractOneParticle(
         // Set orientations back into the original RELION system of coordinates
 
         // Write out the rot, tilt, psi as the combination of Aori and Aresi!! So get rid of the rotations around the tilt=90 axes,
-        Matrix2D<RFLOAT> Abody = Aori * opt.mymodel.orient_bodies[subtract_body].transpose() * A_rot90 * Aresi_subtract * opt.mymodel.orient_bodies[subtract_body];
+        Matrix2D<RFLOAT> Abody = Aori
+            .matmul(opt.mymodel.orient_bodies[subtract_body].transpose())
+            .matmul(A_rot90)
+            .matmul(Aresi_subtract)
+            .matmul(opt.mymodel.orient_bodies[subtract_body]);
         angles_t angles = Euler::matrix2angles(Abody);
 
         // Store the optimal orientations in the MDimg table
@@ -589,7 +595,7 @@ void ParticleSubtractor::subtractOneParticle(
         my_refined_ibody_offset /= my_pixel_size;
 
         // re-center to new_center
-        my_residual_offset += my_refined_ibody_offset + Abody * (opt.mymodel.com_bodies[subtract_body] - new_center * opt.mymodel.pixel_size / my_pixel_size);
+        my_residual_offset += my_refined_ibody_offset + matmul(Abody, opt.mymodel.com_bodies[subtract_body] - new_center * opt.mymodel.pixel_size / my_pixel_size);
     } else {
         // Normal 3D classification/refinement: get the projection in rot,tilt,psi for the corresponding class
         auto A3D_pure_rot = Euler::angles2matrix(rot, tilt, psi);
@@ -597,7 +603,7 @@ void ParticleSubtractor::subtractOneParticle(
         // Apply anisotropic mag and scaling
         auto A3D = opt.mydata.obsModel.hasMagMatrices ?
             A3D_pure_rot :
-            A3D_pure_rot * opt.mydata.obsModel.anisoMag(optics_group);
+            A3D_pure_rot.matmul(opt.mydata.obsModel.anisoMag(optics_group));
         A3D *= opt.mydata.obsModel.scaleDifference(optics_group, opt.mymodel.ori_size, opt.mymodel.pixel_size);
         Fsubtrahend = opt.mymodel.PPref[myclass].get2DFourierTransform(
             Fimg.xdim, Fimg.ydim, Fimg.zdim, A3D);
@@ -608,10 +614,9 @@ void ParticleSubtractor::subtractOneParticle(
             -XX(my_old_offset), -YY(my_old_offset), -ZZ(my_old_offset)
         );
 
-        if (do_center) {
+        if (do_center)
             // Re-center the output particle to a new centre...
-            my_residual_offset = my_old_offset - A3D_pure_rot * new_center * opt.mymodel.pixel_size / my_pixel_size;
-        }
+            my_residual_offset = my_old_offset - matmul(A3D_pure_rot, new_center) * opt.mymodel.pixel_size / my_pixel_size;
     }
 
     // Apply the CTF to the subtrahend projection

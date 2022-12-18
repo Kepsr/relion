@@ -190,10 +190,10 @@ void generateEulerMatrices(
     Matrix2D<RFLOAT> &R
 ) {
 
-    Matrix2D<RFLOAT> A(3,3);
+    Matrix2D<RFLOAT> A (3, 3);
 
-    bool doL = (L.mdimx == 3 && L.mdimy == 3);
-    bool doR = (R.mdimx == 3 && R.mdimy == 3);
+    bool doL = L.ncols() == 3 && L.nrows() == 3;
+    bool doR = R.ncols() == 3 && R.nrows() == 3;
 
     for (long int i = 0; i < ProjectionData.rots.size(); i++) {
         // TODO In a sense we're doing degrees just to do radians here.
@@ -229,15 +229,15 @@ void generateEulerMatrices(
         A(2, 1) = ss;
         A(2, 2) = cb;
 
-        if (doL) { A = L * A; }
+        if (doL) { A = L.matmul(A); }
 
-        if (doR) { A = A * R; }
+        if (doR) { A = A.matmul(R); }
 
         if (inverse) { A = A.inv(); }
 
         for (int m = 0; m < 3; m++)
         for (int n = 0; n < 3; n++)
-        { eulers[9 * i + (m * 3 + n)] = A(m, n); }
+            eulers[9 * i + (3 * m + n)] = A(m, n);
     }
 
 }

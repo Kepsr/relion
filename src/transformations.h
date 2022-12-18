@@ -239,8 +239,7 @@ Matrix2D<RFLOAT> scale3DMatrix(const Matrix1D<RFLOAT> &sc, bool homogeneous=true
  * Although you can also use the constants IS_INV, or WRAP.
  *
  * @code
- * Matrix2D<RFLOAT> A(4, 4);
- * A.initIdentity;
+ * Matrix2D<RFLOAT> A = Matrix2D<RFLOAT>::identity(4);
  * A = applyGeometry(A, V);
  * @endcode
  */
@@ -252,17 +251,17 @@ MultidimArray<T> applyGeometry(
     T outside = 0
 ) {
 
-    if (V.getDim() == 2 && (A.mdimx != 3 || A.mdimy != 3))
+    if (V.getDim() == 2 && (A.ncols() != 3 || A.nrows() != 3))
         REPORT_ERROR("ApplyGeometry: 2D transformation matrix is not 3×3");
 
-    if (V.getDim() == 3 && (A.mdimx != 4 || A.mdimy != 4))
+    if (V.getDim() == 3 && (A.ncols() != 4 || A.nrows() != 4))
         REPORT_ERROR("ApplyGeometry: 3D transformation matrix is not 4×4");
 
     if (A.isIdentity())
         return V;
 
     if (Xsize(V) == 0)
-        return MultidimArray<RFLOAT>();
+        return {};
 
     MultidimArray<RFLOAT> result;
     result.resize(V);
@@ -574,13 +573,15 @@ MultidimArray<T> scaleToSize(
     switch (V.getDim()) {
 
         case 2:
-        tmp.initIdentity(3);
+        tmp.resize(3, 3);
+        tmp.setIdentity();
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V);
         break;
 
         case 3:
-        tmp.initIdentity(4);
+        tmp.resize(4, 4);
+        tmp.setIdentity();
         tmp(0, 0) = (RFLOAT) Xdim / (RFLOAT) Xsize(V);
         tmp(1, 1) = (RFLOAT) Ydim / (RFLOAT) Ysize(V);
         tmp(2, 2) = (RFLOAT) Zdim / (RFLOAT) Zsize(V);
@@ -634,28 +635,27 @@ void radialAverage(
     RFLOAT x = Xinit(m) - XX(center_of_rot),
            y = Yinit(m) - YY(center_of_rot),
            z = Zinit(m) - ZZ(center_of_rot);
-
     distances.push_back(floor(euclid(x, y, z)));
+
     x = Xlast(m) - XX(center_of_rot);
-
     distances.push_back(floor(euclid(x, y, z)));
+
     y = Ylast(m) - YY(center_of_rot);
-
     distances.push_back(floor(euclid(x, y, z)));
+
     x = Xinit(m) - XX(center_of_rot);
-
     distances.push_back(floor(euclid(x, y, z)));
+
     z = Zlast(m) - ZZ(center_of_rot);
-
     distances.push_back(floor(euclid(x, y, z)));
+
     x = Xlast(m) - XX(center_of_rot);
-
     distances.push_back(floor(euclid(x, y, z)));
+
     y = Yinit(m) - YY(center_of_rot);
-
     distances.push_back(floor(euclid(x, y, z)));
-    x = Xinit(m) - XX(center_of_rot);
 
+    x = Xinit(m) - XX(center_of_rot);
     distances.push_back(floor(euclid(x, y, z)));
 
     const int dim = ceil(*std::max_element(distances.begin(), distances.end())) + 1 + rounding;

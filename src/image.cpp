@@ -138,14 +138,14 @@ Stats<RFLOAT> calculateBackgroundAvgStddev(
         // Calculate avg in the background pixels
         FOR_ALL_ELEMENTS_IN_ARRAY3D(I(), i, j, k) {
             // X, Y, Z coordinates
-            ZZ(coords) = dim == 3 ? (RFLOAT) k : 0.0;
-            YY(coords) =            (RFLOAT) i;
-            XX(coords) =            (RFLOAT) j;
+            coords[0] =            (RFLOAT) j;
+            coords[1] =            (RFLOAT) i;
+            coords[2] = dim == 3 ? (RFLOAT) k : 0.0;
             // Rotate
-            coords = A * coords;
+            coords = matmul(A, coords);
 
             // Distance from the point to helical axis (perpendicular to X axis)
-            RFLOAT d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
+            RFLOAT d = dim == 3 ? sqrt(coords[0] * coords[0] + coords[1] * coords[1]) : abs(coords[1]);
 
             if (d > helical_mask_tube_outer_radius_pix) {
                 RFLOAT x = I().elem(i, j, k);
@@ -217,12 +217,12 @@ void subtractBackgroundRamp(
 
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I(), i, j) {
             // not implemented for 3D data
-            XX(coords) = (RFLOAT) i;
-            YY(coords) = (RFLOAT) j;
-            ZZ(coords) = 0.0;
+            coords[0] = (RFLOAT) i;
+            coords[1] = (RFLOAT) j;
+            coords[2] = 0.0;
             // Rotate
-            coords = A * coords;
-            if (abs(YY(coords)) > helical_mask_tube_outer_radius_pix) {
+            coords = matmul(A, coords);
+            if (abs(coords[1]) > helical_mask_tube_outer_radius_pix) {
                 // Not implemented for 3D data
                 point.x = i;
                 point.y = j;
@@ -236,7 +236,7 @@ void subtractBackgroundRamp(
         }
     } else {
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I(), i, j) {
-            if (i * i + j * j > bg_radius2) {
+            if (euclidsq(i, j) > bg_radius2) {
                 point.x = i;
                 point.y = j;
                 point.z = I().elem(i, j);

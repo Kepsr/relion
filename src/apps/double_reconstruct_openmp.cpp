@@ -149,13 +149,13 @@ class reconstruct_parameters {
             float angle_step = 180.0 / nr_sectors;
             for (float angle = 0.0; angle < 180.0;  angle += angle_step) {
                 MultidimArray<Complex> CTFP(Fin), Fapp(Fin);
-                MultidimArray<RFLOAT> Iapp(YSIZE(Fin), YSIZE(Fin));
+                MultidimArray<RFLOAT> Iapp(Ysize(Fin), Ysize(Fin));
                 // Two passes: one for CTFP, one for CTFQ
                 for (int ipass = 0; ipass < 2; ipass++) {
                     bool is_my_positive = (ipass == 1) ? is_positive : !is_positive;
 
                     // Get CTFP and multiply the Fapp with it
-                    CTFP = ctf.getCTFPImage(Fin.xdim, Fin.ydim, YSIZE(Fin), YSIZE(Fin), angpix, is_my_positive, angle);
+                    CTFP = ctf.getCTFPImage(Fin.xdim, Fin.ydim, Ysize(Fin), Ysize(Fin), angpix, is_my_positive, angle);
 
                     Fapp = Fin * CTFP; // Element-wise complex multiplication
 
@@ -166,8 +166,8 @@ class reconstruct_parameters {
                     softMaskOutsideMap(Iapp, round(mask_diameter / (angpix * 2.0)), (RFLOAT) width_mask_edge);
 
                     // Re-box to a smaller size if necessary....
-                    if (0 < newbox && newbox < YSIZE(Fin)) {
-                        Iapp = Iapp.setXmippOrigin().window(
+                    if (0 < newbox && newbox < Ysize(Fin)) {
+                        Iapp = Iapp.setXmippOrigin().windowed(
                             Xmipp::init(newbox), Xmipp::last(newbox),
                             Xmipp::init(newbox), Xmipp::last(newbox));
                     }
@@ -353,7 +353,7 @@ class reconstruct_parameters {
                         // has to be provided to the backprojector explicitly
                         // (to avoid creating an Ewald ellipsoid)
                         if ((!do_ewald || Ewald_ellipsoid) && obsModel.hasMagMatrices) {
-                            A3D *= obsModel.anisoMag(opticsGroup);
+                            A3D = A3D.matmul(obsModel.anisoMag(opticsGroup));
                         }
 
                         A3D *= obsModel.scaleDifference(opticsGroup, boxOut, angpixOut);
@@ -361,7 +361,7 @@ class reconstruct_parameters {
 
                         // Translations (either through phase-shifts or in real space
                         Matrix1D<RFLOAT> trans (2 + do_3d_rot);
-                        trans.initZeros();
+                        std::fill(trans.begin(), trans.end(), 0);
                         XX(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p) / pixelsize;
                         YY(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p) / pixelsize;
 
@@ -411,7 +411,7 @@ class reconstruct_parameters {
 
                         if (deloc_supp) {
                             DelocalisationHelper::maskOutsideBox(
-                                ctf, mask_diameter_ds / (pixelsize * 2.0),
+                                ctf, &obsModel, , mask_diameter_ds / (pixelsize * 2.0),
                                 pixelsize, origSizes2D[opticsGroup],
                                 Fctf, XX(trans), YY(trans)
                             );
@@ -472,14 +472,10 @@ class reconstruct_parameters {
                             direct::elem(F2D, 0, 0) = 0.0;
 
                             if (do_ewald) {
-                                Matrix2D<RFLOAT> magMat;
 
-                                if (obsModel.hasMagMatrices && !Ewald_ellipsoid) {
-                                    magMat = obsModel.getMagMatrix(opticsGroup);
-                                } else {
-                                    magMat = Matrix2D<RFLOAT>(2,2);
-                                    magMat.initIdentity();
-                                }
+                                Matrix2D<RFLOAT> magMat = obsModel.hasMagMatrices && !Ewald_ellipsoid ?
+                                    obsModel.getMagMatrix(opticsGroup) :
+                                    Matrix2D<RFLOAT>::identity(2);
 
                                 backproj.set2DFourierTransform(
                                     F2DP, A3D, &Fctf, r_ewald_sphere, true, &magMat

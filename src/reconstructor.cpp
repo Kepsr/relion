@@ -319,9 +319,8 @@ void Reconstructor::backprojectOneParticle(long int p) {
         ctf_premultiplied = obsModel.getCtfPremultiplied(opticsGroup);
         if (do_ewald && ctf_premultiplied)
             REPORT_ERROR("We cannot perform Ewald sphere correction on CTF premultiplied particles.");
-        if (!do_ewald && obsModel.hasMagMatrices) {
-            A3D *= obsModel.anisoMag(opticsGroup);
-        }
+        if (!do_ewald && obsModel.hasMagMatrices)
+            A3D = A3D.matmul(obsModel.anisoMag(opticsGroup));
         A3D *= obsModel.scaleDifference(opticsGroup, output_boxsize, angpix);
     }
 

@@ -123,11 +123,11 @@ void AccProjectorPlan::setup(
     auto R = Matrix2D<RFLOAT>::identity(3);
 
     bool doL = false, doR = false;
-    RFLOAT myperturb(0.0);
+    RFLOAT myperturb = 0.0;
 
-    if (L_.mdimx == L.mdimx && L_.mdimy == L.mdimy) {
+    if (L_.shape() == L.shape()) {
         doL = true;
-        L = L * L_;
+        L = L.matmul(L_);
     }
 
     if (abs(sampling.random_perturbation) > 0.0) {
@@ -138,9 +138,9 @@ void AccProjectorPlan::setup(
         doR = true;
     }
 
-    if (R_.mdimx == R.mdimx && R_.mdimy == R.mdimy) {
+    if (R_.shape() == R.shape()) {
         doR = true;
-        R = R * R_;
+        R = R.matmul(R_);
     }
 
     TICTOC(TIMING_SAMPLING, ({
@@ -232,13 +232,13 @@ void AccProjectorPlan::setup(
 
     if (doL) {
         adjustL.hostAlloc();
-        for (int i = 0; i < 9; i++) { adjustL[i] = (XFLOAT) L.mdata[i]; }
+        for (int i = 0; i < 9; i++) { adjustL[i] = (XFLOAT) L[i]; }
         adjustL.putOnDevice();
     }
 
     if (doR) {
         adjustR.hostAlloc();
-        for (int i = 0; i < 9; i++) { adjustR[i] = (XFLOAT) R.mdata[i]; }
+        for (int i = 0; i < 9; i++) { adjustR[i] = (XFLOAT) R[i]; }
         adjustR.putOnDevice();
     }
 

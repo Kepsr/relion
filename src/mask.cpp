@@ -148,7 +148,7 @@ void softMaskOutsideMapForHelix(
             coords[2] = k;
 
             // Rotate
-            coords = A * coords;
+            coords = matmul(A, coords);
 
             // Distance from the point to helical axis (perpendicular to X axis)
             d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
@@ -179,7 +179,7 @@ void softMaskOutsideMapForHelix(
         coords[2] = k;
 
         // Rotate
-        coords = A * coords;
+        coords = matmul(A, coords);
 
         // Distance from the point to helical axis (perpendicular to X axis)
         d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));

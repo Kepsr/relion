@@ -31,46 +31,29 @@ void svbksb(
         u.adaptForNumericalRecipes2(),
         w.data() - 1,
         v.adaptForNumericalRecipes2(),
-        u.mdimy, u.mdimx,
+        u.nrows(), u.ncols(),
         b.data() - 1,
         x.data() - 1
     );
 }
 
 template <typename T>
-void Matrix2D<T>::setSmallValuesToZero(RFLOAT accuracy) {
-    for (auto &x : *this)
-        if (abs(x) < accuracy)
+void Matrix2D<T>::setSmallValuesToZero(RFLOAT epsilon) {
+    for (auto& x: *this)
+        if (abs(x) < epsilon)
             x = 0.0;
-}
-
-template <typename T>
-T Matrix2D<T>::max() const {
-    if (mdim <= 0) return static_cast<T>(0);
-
-    T maxval = mdata[0];
-    for (auto &x : *this) if (x > maxval) { maxval = x; }
-    return maxval;
-}
-
-template <typename T>
-T Matrix2D<T>::min() const {
-    if (mdim <= 0) return static_cast<T>(0);
-
-    T minval = mdata[0];
-    for (auto &x : *this) if (x < minval) { minval = x; }
-    return minval;
 }
 
 template<typename T>
 void Matrix2D<T>::inv(Matrix2D<T> &result) const {
 
-    if (mdimx == 0 || mdimy == 0)
+    if (ncols() == 0 || nrows() == 0)
         REPORT_ERROR("Inverse: Matrix is empty");
     // Initialise output
-    result.initZeros(mdimx, mdimy);
+    result.resize(ncols(), nrows());
+    std::fill(result.begin(), result.end(), 0);
 
-    if (mdimx == 3 && mdimy == 3) {
+    if (ncols() == 3 && nrows() == 3) {
         int a, b, c, d;
         for (int i = 0; i <= 2; i++)
         for (int j = 0; j <= 2; j++) {
@@ -85,14 +68,12 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
                        + at(1, 0) * result.at(0, 1) 
                        + at(2, 0) * result.at(0, 2);
         result /= divisor;
-    } else if (mdimx == 2 && mdimy == 2) {
-        int sign, a, b;
+    } else if (ncols() == 2 && nrows() == 2) {
         for (int i = 0; i <= 1; i++)
         for (int j = 0; j <= 1; j++) {
-            sign = (i + j) % 2 == 0 ? 1 : -1;
-            a = (j + 1) % 2;  // logical negation
-            b = (i + 1) % 2;
-            result.at(i, j) = sign * at(a, b);
+            int a = (j + 1) % 2;  // logical negation
+            int b = (i + 1) % 2;
+            result.at(i, j) = (i + j) % 2 ? -at(a, b) : +at(a, b);
         }
         RFLOAT divisor = at(0, 0) * at(1, 1) - at(0, 1) * at(1, 0);
         result /= divisor;
@@ -102,7 +83,8 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
         Matrix1D<RFLOAT> w;
         svdcmp(*this, u, w, v); // *this = U * W * V^t
 
-        RFLOAT tol = max() * std::max(mdimx, mdimy) * 1e-14;
+        const T maximum = *std::max_element(begin(), end());
+        RFLOAT tol = maximum * std::max(ncols(), nrows()) * 1e-14;
 
         // Compute W^-1
         bool invertible = false;
@@ -118,14 +100,14 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
         if (!invertible) return;
 
         // Compute V*W^-1
-        for (int i = 0; i < v.mdimy; i++)
-        for (int j = 0; j < v.mdimx; j++)
+        for (int i = 0; i < v.nrows(); i++)
+        for (int j = 0; j < v.ncols(); j++)
         v.at(i, j) *= w[j];
 
         // Compute inverse
-        for (int i = 0; i < mdimx; i++)
-        for (int j = 0; j < mdimy; j++)
-        for (int k = 0; k < mdimx; k++)
+        for (int i = 0; i < ncols(); i++)
+        for (int j = 0; j < nrows(); j++)
+        for (int k = 0; k < ncols(); k++)
         result.at(i, j) += (T) v.at(i, k) * u.at(j, k);
     }
 }
@@ -136,13 +118,13 @@ void solve(
     const Matrix2D<T> &A, const Matrix1D<T> &b,
     Matrix1D<RFLOAT> &result, RFLOAT tolerance
 ) {
-    if (A.mdimx == 0)
+    if (A.ncols() == 0)
         REPORT_ERROR("Solve: Matrix is empty");
 
-    /*if (A.mdimx != A.mdimy)
+    /*if (A.ncols() != A.nrows())
         REPORT_ERROR("Solve: Matrix is not square");*/
 
-    if (A.mdimy != b.size())
+    if (A.nrows() != b.size())
         REPORT_ERROR("Solve: Differently sized Matrix and Vector");
 
     /*if (b.isRow())
@@ -157,7 +139,7 @@ void solve(
     // Check if eigenvalues of the SVD are acceptable.
     // If a value is lower than the tolerance, it is made zero,
     // to improve the routine's precision.
-    for (RFLOAT &x : w) if (x < tolerance) { x = 0; }
+    for (RFLOAT& x: w) if (x < tolerance) { x = 0; }
 
     // Set size of matrices
     result.resize(b.size());

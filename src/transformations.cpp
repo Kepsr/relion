@@ -239,8 +239,7 @@ template RFLOAT interpolate_sub(
 Matrix2D<RFLOAT> translation2DMatrix(const Matrix1D<RFLOAT> &v) {
     // if (v.size() != 2)
     //    REPORT_ERROR("Translation2D_matrix: vector is not in R2");
-    Matrix2D<RFLOAT> result;
-    result.initIdentity(3);
+    auto result = Matrix2D<RFLOAT>::identity(3);
     result.at(0, 2) = v[0];
     result.at(1, 2) = v[1];
     return result;
@@ -297,12 +296,14 @@ void alignWithZ(
     if (axis.size() != 3)
         REPORT_ERROR("alignWithZ: Axis is not in R3");
     if (homogeneous) {
-        result.initZeros(4, 4);
+        result.resize(4, 4);
+        std::fill(result.begin(), result.end(), 0);
         result.at(3, 3) = 1;
     } else {
-        result.initZeros(3, 3);
+        result.resize(3, 3);
+        std::fill(result.begin(), result.end(), 0);
     }
-    Matrix1D<RFLOAT> Axis(axis);
+    Matrix1D<RFLOAT> Axis (axis);
     Axis.normalise();
 
     // Compute length of the projection on YZ plane
@@ -343,15 +344,14 @@ Matrix2D<RFLOAT> rotation3DMatrix(
     Matrix2D<RFLOAT> A;
     alignWithZ(axis, A, homogeneous);
     const Matrix2D<RFLOAT> R = rotation3DMatrix(ang, 'Z', homogeneous);
-    return A.transpose() * R * A;
+    return A.transpose().matmul(R).matmul(A);
 }
 
 /* Translation 3D ---------------------------------------------------------- */
 Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v) {
     if (v.size() != 3)
         REPORT_ERROR("Translation3D_matrix: vector is not in R3");
-    Matrix2D<RFLOAT> result;
-    result.initIdentity(4);
+    auto result = Matrix2D<RFLOAT>::identity(4);
     result.at(0, 3) = v[0];
     result.at(1, 3) = v[1];
     result.at(2, 3) = v[2];

@@ -124,7 +124,10 @@ void FlexAnalyser::initialise() {
             f_weights << ibody + 1;
             // rot
             Aresi = Euler::angles2matrix(1.0, 90.0, 0.0);
-            Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
+            Abody = model.orient_bodies[ibody].transpose()
+                .matmul(A_rot90)
+                .matmul(Aresi)
+                .matmul(model.orient_bodies[ibody]);
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
             Mbody = applyGeometry(Irefp, Abody, IS_NOT_INV, DONT_WRAP) - Irefp;
@@ -132,7 +135,10 @@ void FlexAnalyser::initialise() {
             f_weights << " " << sqrt(Mbody.sum2());
             // tilt
             Aresi = Euler::angles2matrix(0.0, 91.0, 0.0);
-            Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
+            Abody = model.orient_bodies[ibody].transpose()
+                .matmul(A_rot90)
+                .matmul(Aresi)
+                .matmul(model.orient_bodies[ibody]);
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
             Mbody = applyGeometry(Irefp, Abody, IS_NOT_INV, DONT_WRAP) - Irefp;
@@ -140,7 +146,10 @@ void FlexAnalyser::initialise() {
             f_weights << " " << sqrt(Mbody.sum2());
             // psi
             Aresi = Euler::angles2matrix(0.0, 90.0, 1.0);
-            Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
+            Abody = model.orient_bodies[ibody].transpose()
+                .matmul(A_rot90)
+                .matmul(Aresi)
+                .matmul(model.orient_bodies[ibody]);
             Abody.resize(4, 4);
             Abody.at(3, 3) = 1.0;
             Mbody = applyGeometry(Irefp, Abody, IS_NOT_INV, DONT_WRAP) - Irefp;
@@ -148,7 +157,10 @@ void FlexAnalyser::initialise() {
             f_weights << " " << sqrt(Mbody.sum2());
             // translation x & y (considered the same)
             Aresi = Euler::angles2matrix(0.0, 90.0, 0.0);
-            Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
+            Abody = model.orient_bodies[ibody].transpose()
+                .matmul(A_rot90)
+                .matmul(Aresi)
+                .matmul(model.orient_bodies[ibody]);
             Abody.resize(4, 4);
             Abody.at(0, 3) = 1.0;
             Abody.at(3, 3) = 1.0;
@@ -247,12 +259,12 @@ void FlexAnalyser::loopThroughParticles(int rank, int size) {
         std::ofstream f_evec(fn_evec);
         std::cout << " Eigenvectors (rotations only):" << std::endl;
         for (int j = 0; j < eigenvectors[0].size(); j++) {
-            std::string stro = j % 6 == 0 ? "rot" 
-                             : j % 6 == 1 ? "tilt" 
-                             : j % 6 == 2 ? "psi" 
-                             : j % 6 == 3 ? "x" 
-                             : j % 6 == 4 ? "y" 
-                             : j % 6 == 5 ? "z" 
+            std::string stro = j % 6 == 0 ? "rot"
+                             : j % 6 == 1 ? "tilt"
+                             : j % 6 == 2 ? "psi"
+                             : j % 6 == 3 ? "x"
+                             : j % 6 == 4 ? "y"
+                             : j % 6 == 5 ? "z"
                              : "";
             if (stro != "") {
                 stro +=  "-body-" + integerToString(1 + j / 6);
@@ -345,22 +357,25 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
         // Aresi is the residual orientation for this ibody
         Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
         // Only apply the residual orientation now!!!
-        Matrix2D<RFLOAT> Abody = model.orient_bodies[ibody].transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
+        Matrix2D<RFLOAT> Abody = model.orient_bodies[ibody].transpose()
+            .matmul(A_rot90)
+            .matmul(Aresi)
+            .matmul(model.orient_bodies[ibody]);
 
         // Now we have to get back from the 2D refined body_offset to some 3D translation of the body (with one direction undefined)
         // We will need the original projection direction, Aori for that!!
         // Because one direction is ill-defined, this may not be such a good idea?
         // But anyway, this should bring it closer to truth than not doing anything at all...
-        Matrix2D<RFLOAT> Anew = Aori * Abody;
-        body_offset_3d = Anew.inv() * (-body_offset);
+        Matrix2D<RFLOAT> Anew = Aori.matmul(Abody);
+        body_offset_3d = matmul(Anew.inv(), -body_offset);
 
         if (do_PCA_orient) {
             datarow.push_back(norm_pca[ibody * 4 + 0] * body_rot);
             datarow.push_back(norm_pca[ibody * 4 + 1] * body_tilt);
             datarow.push_back(norm_pca[ibody * 4 + 2] * body_psi);
-            datarow.push_back(norm_pca[ibody * 4 + 3] * XX(body_offset_3d));
-            datarow.push_back(norm_pca[ibody * 4 + 3] * YY(body_offset_3d));
-            datarow.push_back(norm_pca[ibody * 4 + 3] * ZZ(body_offset_3d));
+            datarow.push_back(norm_pca[ibody * 4 + 3] * body_offset_3d[0]);
+            datarow.push_back(norm_pca[ibody * 4 + 3] * body_offset_3d[1]);
+            datarow.push_back(norm_pca[ibody * 4 + 3] * body_offset_3d[2]);
         }
 
         if (do_3dmodels) {
@@ -556,16 +571,19 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
                 // Aresi is the residual orientation for this ibody
                 Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
                 // Only apply the residual orientation now!!!
-                Matrix2D<RFLOAT> Abody = (model.orient_bodies[ibody]).transpose() * A_rot90 * Aresi * model.orient_bodies[ibody];
+                Matrix2D<RFLOAT> Abody = model.orient_bodies[ibody].transpose()
+                    .matmul(A_rot90)
+                    .matmul(Aresi)
+                    .matmul(model.orient_bodies[ibody]);
 
                 // Also put back at the centre-of-mass of this body
-                Abody.resize(4,4);
-                Abody.at(0, 3) = XX(body_offset_3d);
-                Abody.at(1, 3) = YY(body_offset_3d);
-                Abody.at(2, 3) = ZZ(body_offset_3d);
+                Abody.resize(4, 4);
+                Abody.at(0, 3) = body_offset_3d[0];
+                Abody.at(1, 3) = body_offset_3d[1];
+                Abody.at(2, 3) = body_offset_3d[2];
                 Abody.at(3, 3) = 1.0;
 
-                MultidimArray<RFLOAT> Mbody = applyGeometry(model.Iref[ibody], Abody, IS_NOT_INV, DONT_WRAP);
+                MultidimArray<RFLOAT> Mbody = applyGeometry(model.Iref[ibody],         Abody, IS_NOT_INV, DONT_WRAP);
                 MultidimArray<RFLOAT> Mmask = applyGeometry(model.masks_bodies[ibody], Abody, IS_NOT_INV, DONT_WRAP);
 
                 img() += Mbody * Mmask;

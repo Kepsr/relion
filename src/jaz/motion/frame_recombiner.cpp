@@ -284,12 +284,12 @@ void FrameRecombiner::process(
 
                 // Project the center-coordinates
                 Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-                my_projected_center = A3D * Matrix1D<RFLOAT>({recenter_x, recenter_y, recenter_z});  // in reference pixels
+                my_projected_center = matmul(A3D, Matrix1D<RFLOAT>({recenter_x, recenter_y, recenter_z}));  // in reference pixels
             }
 
-            xoff -= XX(my_projected_center);
-            yoff -= YY(my_projected_center);
-            xoff = xoff * ref_angpix / coords_angpix; // Now in (possibly binned) micrograph's pixel
+            xoff -= my_projected_center[0];
+            yoff -= my_projected_center[1];
+            xoff = xoff * ref_angpix / coords_angpix;  // Now in (possibly binned) micrograph's pixel
             yoff = yoff * ref_angpix / coords_angpix;
 
             RFLOAT xcoord = mdtOut.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, p);

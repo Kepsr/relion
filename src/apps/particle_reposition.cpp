@@ -194,7 +194,7 @@ class particle_reposition_parameters {
                     A = Euler::angles2matrix(rot, tilt, psi);
                     if (do_ctf) {
                         if (optimiser.mydata.obsModel.hasMagMatrices)
-                            A *= optimiser.mydata.obsModel.anisoMag(optics_group);
+                            A = A.matmul(optimiser.mydata.obsModel.anisoMag(optics_group));
                         A *= optimiser.mydata.obsModel.scaleDifference(optics_group, optimiser.mymodel.ori_size, optimiser.mymodel.pixel_size);
                     }
 

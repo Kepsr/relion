@@ -199,8 +199,7 @@ angles_t mirrorXY(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
  * @code
  * Matrix2D< RFLOAT > R60 = rotation3DMatrix(60, 'Z');
  * R60.resize(3, 3); // Get rid of homogeneous part
- * Matrix2D<RFLOAT> I(3, 3);
- * I.initIdentity();
+ * Matrix2D<RFLOAT> I = Matrix2D<RFLOAT>::identity(3);
  * angles_t new_angles = apply_transf(I, R60, rot, tilt, psi);
  * @endcode
  */

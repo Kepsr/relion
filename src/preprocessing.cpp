@@ -278,16 +278,15 @@ void Preprocessing::joinAllStarFiles() {
         imic++;
     }
 
-    std::string optgroup_name;
     // Write out the joined star files
     if (!fn_part_star.empty()) {
         // Get pixel size in original micrograph from obsModelMic, as this may no longer be present in obsModelPart
         std::map<std::string, RFLOAT> optics_group_mic_angpix;
         if (!fn_data.empty()) {
-            for (long int i : obsModelMic.opticsMdt) {
-                RFLOAT mic_angpix = obsModelMic.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, i);
-                optgroup_name = obsModelMic.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, i);
-                optics_group_mic_angpix.insert(std::make_pair(optgroup_name, mic_angpix));
+            for (long int i: obsModelMic.opticsMdt) {
+                const std::string optgroup_name = obsModelMic.opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, i);
+                const RFLOAT mic_angpix        = obsModelMic.opticsMdt.getValue<RFLOAT>     (EMDL::MICROGRAPH_PIXEL_SIZE,   i);
+                optics_group_mic_angpix.insert({optgroup_name, mic_angpix});
             }
         }
 
@@ -295,20 +294,21 @@ void Preprocessing::joinAllStarFiles() {
         myOutObsModel = fn_data.empty() || keep_ctf_from_micrographs ? &obsModelMic : &obsModelPart;
 
         std::set<std::string> isOgPresent;
-        for (long int i : MDout) {
+        for (long int i: MDout) {
             og = myOutObsModel->getOpticsGroup(MDout);
             std::string optgroup_name = myOutObsModel->opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, og);
             isOgPresent.insert(optgroup_name);
         }
 
-        RFLOAT my_angpix;
         // Set the (possibly rescale output_angpix and the output image size in the opticsMdt
-        for (long int i : myOutObsModel->opticsMdt) {
+        for (long int i: myOutObsModel->opticsMdt) {
+            RFLOAT my_angpix;
+            std::string optgroup_name;
             // Find the pixel size for the original micrograph
             if (fn_data.empty()) {
                 my_angpix = obsModelMic.opticsMdt.getValue<RFLOAT>(EMDL::MICROGRAPH_PIXEL_SIZE, i);
             } else {
-                std::string optgroup_name = myOutObsModel->opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, i);
+                optgroup_name = myOutObsModel->opticsMdt.getValue<std::string>(EMDL::IMAGE_OPTICS_GROUP_NAME, i);
                 if (optics_group_mic_angpix.count(optgroup_name) == 0) {
                     if (isOgPresent.count(optgroup_name) != 0) {
                         REPORT_ERROR("ERROR: optics group \"" + optgroup_name + "\" does not exist in micrograph STAR file...");
@@ -1093,8 +1093,8 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     Matrix1D<RFLOAT> my_center {recenter_x, recenter_y, recenter_z};  // in run_data's pixels
                     if (ref_angpix > 0)
                         my_center *= ref_angpix / particle_angpix;
-                    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-                    my_projected_center = A3D * my_center;
+                    const Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+                    my_projected_center = matmul(A3D, my_center);
                 }
 
                 xoff -= XX(my_projected_center);

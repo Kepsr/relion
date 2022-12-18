@@ -291,7 +291,8 @@ class angular_error_parameters {
         // Get coordinates of all pairs:
         Matrix2D<RFLOAT> Au = Matrix2D<RFLOAT>::zeros(3, 3);
         Matrix2D<RFLOAT> Bt = Matrix2D<RFLOAT>::zeros(3, 3);
-        Pass.initZeros(4,4);
+        Pass.resize(4, 4);
+        std::fill(Pass.begin(), Pass.end(), 0);
 
         // Add all pairs to dependent matrices (adapted from add_point in Xmipps micrograph_mark main_widget_mark.cpp)
         for (int t = 0; t < pairs_t2u.size(); t++) {

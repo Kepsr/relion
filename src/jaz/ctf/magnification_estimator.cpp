@@ -182,8 +182,7 @@ void MagnificationEstimator::parametricFit(
         }
 
         if (!groupPresent) {
-            mat_by_optGroup[og] = Matrix2D<RFLOAT>(2,2);
-            mat_by_optGroup[og].initIdentity();
+            mat_by_optGroup[og] = Matrix2D<RFLOAT>::identity(2);
             continue;
         }
 
@@ -238,7 +237,7 @@ void MagnificationEstimator::parametricFit(
         mat_by_optGroup[og] = mat;
 
         Matrix2D<RFLOAT> mat0 = obsModel->getMagMatrix(og);
-        Matrix2D<RFLOAT> mat1 = mat * mat0;
+        Matrix2D<RFLOAT> mat1 = mat.matmul(mat0);
 
         Matrix2D<RFLOAT> u, vh;
         Matrix1D<RFLOAT> eig;

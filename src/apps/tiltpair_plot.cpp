@@ -168,13 +168,11 @@ class tiltpair_plot_parameters {
         RFLOAT &alpha, RFLOAT &tilt_angle, RFLOAT &beta
     ) {
         // Transformation matrices
-        Matrix1D<RFLOAT> axis(3);
-        axis.resize(3);
         RFLOAT rot2 = alpha, tilt2 = tilt_angle, psi2 = beta;
 
         // Calculate the transformation from one setting to the second one.
         Matrix2D<RFLOAT> E1 = Euler::angles2matrix(psi1, tilt1, rot1);
-        Matrix2D<RFLOAT> E2 = Euler::angles2matrix(psi2, tilt2, rot2) * E1.inv();
+        Matrix2D<RFLOAT> E2 = Euler::angles2matrix(psi2, tilt2, rot2).matmul(E1.inv());
 
         // Get the tilt angle (and its sine)
         RFLOAT ah = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
@@ -183,18 +181,19 @@ class tiltpair_plot_parameters {
         tilt_angle = degrees(tilt_angle_radians);
         RFLOAT sine_tilt_angle = 2.0 * sin(tilt_angle_radians);
 
+        Matrix1D<RFLOAT> axis;
         // Get the tilt axis direction in angles alpha and beta
         if (sine_tilt_angle > Xmipp::epsilon) {
-            XX(axis) = (E2(2, 1) - E2(1, 2)) / sine_tilt_angle;
-            YY(axis) = (E2(0, 2) - E2(2, 0)) / sine_tilt_angle;
-            ZZ(axis) = (E2(1, 0) - E2(0, 1)) / sine_tilt_angle;
+            axis = Matrix1D<RFLOAT>({
+                (E2(2, 1) - E2(1, 2)) / sine_tilt_angle,
+                (E2(0, 2) - E2(2, 0)) / sine_tilt_angle,
+                (E2(1, 0) - E2(0, 1)) / sine_tilt_angle});
         } else {
-            XX(axis) = YY(axis) = 0.0;
-            ZZ(axis) = 1.0;
+            axis = Matrix1D<RFLOAT>({0.0, 0.0, 1.0});
         }
 
         // Apply E1.inv() to the axis to get everyone in the same coordinate system again
-        axis = E1.inv() * axis;
+        axis = matmul(E1.inv(), axis);
 
         // Convert to alpha and beta angle
         Euler::direction2angles(axis, alpha, beta);

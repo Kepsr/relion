@@ -109,7 +109,7 @@ namespace pg { enum {
     within this first numIMG images of the image we want to symmetrize The
     first image in the list is the number 0 */
 #define SYMINDEX(SL, sym_no, i, numIMG) \
-    numIMG + SL.__L.mdimy / 4 * i + sym_no
+    numIMG + SL.__L.nrows() / 4 * i + sym_no
 
 /** Symmetry List class.
     Internally the symmetry list class is implemented as a single 2D matrix,
@@ -255,7 +255,7 @@ class SymList {
            }
         @endcode */
     int SymsNo() const {
-        return __L.mdimy / 4;
+        return __L.nrows() / 4;
     }
 
     /** Number of symmetry matrices which generated the structure.

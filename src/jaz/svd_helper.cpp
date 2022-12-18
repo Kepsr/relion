@@ -31,14 +31,10 @@ void SvdHelper::decompose(
     Matrix1D<RFLOAT> S0;
     svdcmp(A, U0, S0, Vt0);
 
-    const int rc = A.mdimy;
-    const int cc = A.mdimx;
+    const int rc = A.nrows(), cc = A.ncols();
 
-    std::vector<RFLOAT> Svec(cc);
-
-    for (int i = 0; i < cc; i++) {
-        Svec[i] = S0[i];
-    }
+    std::vector<RFLOAT> Svec (cc);
+    std::copy_n(S0.begin(), cc, Svec.begin());
 
     std::vector<int> order = IndexSort<RFLOAT>::sortIndices(Svec);
 

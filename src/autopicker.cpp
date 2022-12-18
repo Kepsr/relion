@@ -933,23 +933,23 @@ std::vector<AmyloidCoord> AutoPicker::findNextCandidateCoordinates(
     int new_micrograph_xsize = (float) micrograph_xsize * scale;
     int new_micrograph_ysize = (float) micrograph_ysize * scale;
     int skip_side_pix = round(skip_side * scale);
-    Matrix1D<RFLOAT> vec_c(2), vec_p(2);
+    Matrix1D<RFLOAT> vec_c (2), vec_p (2);
     Matrix2D<RFLOAT> A2D = rotation2DMatrix(-mycoord.psi, false);
 
-    for (const auto &coord : circle) {
+    for (const auto& coord: circle) {
         // Rotate the circle-vector coordinates along the mycoord.psi
-        XX(vec_c) = coord.x;
-        YY(vec_c) = coord.y;
-        vec_p = A2D * vec_c;
+        vec_c[0] = coord.x;
+        vec_c[1] = coord.y;
+        vec_p = matmul(A2D, vec_c);
 
-        long int jj = round(mycoord.x + XX(vec_p));
-        long int ii = round(mycoord.y + YY(vec_p));
+        long int jj = round(mycoord.x + vec_p[0]);
+        long int ii = round(mycoord.y + vec_p[1]);
 
         if (
-            jj >= (Xmipp::init(new_micrograph_xsize) + skip_side_pix + 1) &&
-            jj <  (Xmipp::last(new_micrograph_xsize) - skip_side_pix - 1) &&
-            ii >= (Xmipp::init(new_micrograph_ysize) + skip_side_pix + 1) &&
-            ii <  (Xmipp::last(new_micrograph_ysize) - skip_side_pix - 1)
+            jj >= Xmipp::init(new_micrograph_xsize) + skip_side_pix + 1 &&
+            jj <  Xmipp::last(new_micrograph_xsize) - skip_side_pix - 1 &&
+            ii >= Xmipp::init(new_micrograph_ysize) + skip_side_pix + 1 &&
+            ii <  Xmipp::last(new_micrograph_ysize) - skip_side_pix - 1
         ) {
             RFLOAT myccf = Mccf.elem(ii, jj);
             RFLOAT mypsi = Mpsi.elem(ii, jj);

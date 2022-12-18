@@ -104,7 +104,7 @@ void getFourierTransformsAndCtfs(
                 direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT),
                 direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_PSI)
             );
-            my_projected_com = Aori * baseMLO->mymodel.com_bodies[ibody];
+            my_projected_com = matmul(Aori, baseMLO->mymodel.com_bodies[ibody]);
             // This will have made my_projected_com of size 3 again! resize to mymodel.data_dim
             my_projected_com.resize(baseMLO->mymodel.data_dim);
 
@@ -763,11 +763,15 @@ void getFourierTransformsAndCtfs(
                         direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_psi)
                     );
                     // The real orientation to be applied is the obody transformation applied and the original one
-                    Matrix2D<RFLOAT> Abody = Aori * (baseMLO->mymodel.orient_bodies[obody]).transpose() * baseMLO->A_rot90 * Aresi * baseMLO->mymodel.orient_bodies[obody];
+                    Matrix2D<RFLOAT> Abody = Aori
+                        .matmul(baseMLO->mymodel.orient_bodies[obody].transpose())
+                        .matmul(baseMLO->A_rot90)
+                        .matmul(Aresi)
+                        .matmul(baseMLO->mymodel.orient_bodies[obody]);
 
                     // Apply anisotropic mag and scaling
                     if (baseMLO->mydata.obsModel.hasMagMatrices) {
-                        Abody *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+                        Abody = Abody.matmul(baseMLO->mydata.obsModel.anisoMag(optics_group));
                     }
                     Abody *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
 
@@ -787,7 +791,7 @@ void getFourierTransformsAndCtfs(
                     Matrix1D<RFLOAT> other_projected_com(baseMLO->mymodel.data_dim);
 
                     // Projected COM for this body (using Aori, just like above for ibody and my_projected_com!!!)
-                    other_projected_com = Aori * (baseMLO->mymodel.com_bodies[obody]);
+                    other_projected_com = matmul(Aori, baseMLO->mymodel.com_bodies[obody]);
                     // This will have made other_projected_com of size 3 again! resize to mymodel.data_dim
                     other_projected_com.resize(baseMLO->mymodel.data_dim);
 
@@ -915,7 +919,7 @@ void getAllSquaredDifferencesCoarse(
     } else {  // If particle specific sampling plan required
         CTICTOC(accMLO->timer, "generateProjectionSetupCoarse", ({
 
-        projectorPlans.resize(baseMLO->mymodel.nr_classes, (CudaCustomAllocator *)accMLO->getAllocator());
+        projectorPlans.resize(baseMLO->mymodel.nr_classes, (CudaCustomAllocator *) accMLO->getAllocator());
 
         for (unsigned long iclass = sp.iclass_min; iclass <= sp.iclass_max; iclass++) {
             if (baseMLO->mymodel.pdf_class[iclass] > 0.0) {
@@ -928,18 +932,20 @@ void getAllSquaredDifferencesCoarse(
                     RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
                     Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
-                    MBL = Aori * (baseMLO->mymodel.orient_bodies[ibody]).transpose() * baseMLO->A_rot90;
+                    MBL = Aori
+                        .matmul(baseMLO->mymodel.orient_bodies[ibody].transpose())
+                        .matmul(baseMLO->A_rot90);
                     MBR = baseMLO->mymodel.orient_bodies[ibody];
                 }
 
                 int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, 0); // get optics group of first image for this particle...
                 Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
                 if (baseMLO->mydata.obsModel.hasMagMatrices) {
-                    mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+                    mag = mag.matmul(baseMLO->mydata.obsModel.anisoMag(optics_group));
                 }
                 mag *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
                 if (!mag.isIdentity()) {
-                    MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? MBL * mag : mag;
+                    MBL = MBL.ncols() == 3 && MBL.nrows() == 3 ? MBL.matmul(mag) : mag;
                 }
 
                 projectorPlans[iclass].setup(
@@ -1393,7 +1399,9 @@ void getAllSquaredDifferencesFine(
                     RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
                     Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
-                    MBL = Aori * baseMLO->mymodel.orient_bodies[ibody].transpose() * baseMLO->A_rot90;
+                    MBL = Aori
+                        .matmul(baseMLO->mymodel.orient_bodies[ibody].transpose())
+                        .matmul(baseMLO->A_rot90);
                     MBR = baseMLO->mymodel.orient_bodies[ibody];
                 }
 
@@ -1403,11 +1411,11 @@ void getAllSquaredDifferencesFine(
 
                 Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
                 if (baseMLO->mydata.obsModel.hasMagMatrices) {
-                    mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+                    mag = mag.matmul(baseMLO->mydata.obsModel.anisoMag(optics_group));
                 }
                 mag *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
                 if (!mag.isIdentity()) {
-                    MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? mag * MBL : mag;
+                    MBL = MBL.ncols() == 3 && MBL.nrows() == 3 ? mag.matmul(MBL) : mag;
                 }
 
                 generateEulerMatrices(
@@ -2655,7 +2663,9 @@ void storeWeightedSums(
                 RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
                 Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
-                MBL = Aori * (baseMLO->mymodel.orient_bodies[ibody]).transpose() * baseMLO->A_rot90;
+                MBL = Aori
+                    .matmul(baseMLO->mymodel.orient_bodies[ibody].transpose())
+                    .matmul(baseMLO->A_rot90);
                 MBR = baseMLO->mymodel.orient_bodies[ibody];
             }
 
@@ -2667,11 +2677,11 @@ void storeWeightedSums(
 
             Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
             if (baseMLO->mydata.obsModel.hasMagMatrices) {
-                mag *= baseMLO->mydata.obsModel.anisoMag(optics_group);
+                mag = mag.matmul(baseMLO->mydata.obsModel.anisoMag(optics_group));
             }
             mag *= baseMLO->mydata.obsModel.scaleDifference(optics_group, baseMLO->mymodel.ori_size, baseMLO->mymodel.pixel_size);
             if (!mag.isIdentity()) {
-                MBL = MBL.mdimx == 3 && MBL.mdimx == 3 ? mag * MBL : mag;
+                MBL = MBL.ncols() == 3 && MBL.nrows() == 3 ? mag.matmul(MBL) : mag;
             }
 
             generateEulerMatrices(

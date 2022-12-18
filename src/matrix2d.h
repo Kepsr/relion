@@ -54,431 +54,219 @@
  * @ingroup DataLibrary
  */
 //@{
-/** @name Matrices speed up macros */
-//@{
 
-// Matrix2D class
 template<typename T>
 class Matrix2D {
 
-    public:
-
     // The array itself
-    T *mdata;
+    T* mdata;
 
-    // Number of elements in X
-    int mdimx;
+    // Number of columns, rows
+    int mdimx, mdimy;
 
-    // Number of elements in Y
-    int mdimy;
-
-    // Total number of elements
-    int mdim;
+    public:
 
     /// @name Constructors
     /// @{
-    // Empty constructor
-    Matrix2D() {
-        coreInit();
-    }
 
-    // Dimension constructor
-    Matrix2D(int Ydim, int Xdim) {
-        coreInit();
-        resize(Xdim, Ydim);
+    // Default / dimension constructor
+    Matrix2D(int m = 0, int n = 0): mdimx(0), mdimy(0), mdata(nullptr) {
+        resize(m, n);
     }
 
     // Copy constructor
-    Matrix2D(const Matrix2D<T> &v) {
-        coreInit();
-        *this = v;
+    Matrix2D(const Matrix2D<T> &other): Matrix2D(other.ncols(), other.nrows()) {
+        std::copy(other.begin(), other.end(), begin());
+    }
+
+    // Type-casting copy constructor
+    template<typename U>
+    Matrix2D(const Matrix2D<U> &other): Matrix2D(other.ncols(), other.nrows()) {
+        std::copy(other.begin(), other.end(), begin());
     }
 
     // Destructor
-    ~Matrix2D() { coreDeallocate(); }
+    ~Matrix2D() { clear(); }
 
-    Matrix2D<T>& operator = (const Matrix2D<T> &op1) {
-        if (&op1 != this) {
-            resize(op1);
-            memcpy(mdata, op1.mdata, op1.mdim * sizeof(T));
-        }
+    friend void swap(Matrix2D<T> &lhs, Matrix2D<T> &rhs) {
+        std::swap(lhs.mdimx, rhs.mdimx);
+        std::swap(lhs.mdimy, rhs.mdimy);
+        std::swap(lhs.mdata, rhs.mdata);
+    }
+
+    Matrix2D<T>& operator = (Matrix2D<T> rhs) {
+        swap(*this, rhs);
         return *this;
     }
     //@}
 
-    /// @name Core memory operations for Matrix2D
-    //@{
     // Clear
     void clear() {
-        coreDeallocate();
-        coreInit();
-    }
-
-    void coreInit() {
-        // Initialise everything to 0
-        mdimx = mdimy = mdim = 0;
-        mdata = NULL;
-    }
-
-    void coreAllocate(int _mdimy, int _mdimx) {
-        if (_mdimy <= 0 || _mdimx <= 0) {
-            clear();
-            return;
-        }
-
-        mdimx = _mdimx;
-        mdimy = _mdimy;
-        mdim = _mdimx * _mdimy;
-        mdata = new T[mdim];
-        if (!mdata) REPORT_ERROR("coreAllocate: No space left");
-    }
-
-    void coreDeallocate() {
         delete[] mdata;
-        mdata = NULL;
+        mdata = nullptr;
+        mdimx = mdimy = 0;
     }
-    //@}
 
     /// @name Size and shape of Matrix2D
     //@{
     // Resize to a given size
-    void resize(int Xdim, int Ydim) {
+    void resize(int new_mdimx, int new_mdimy) {
 
-        if (Xdim == mdimx && Ydim == mdimy) return;
+        if (new_mdimx == mdimx && new_mdimy == mdimy) return;
 
-        if (Xdim <= 0 || Ydim <= 0) {
+        if (new_mdimx <= 0 || new_mdimy <= 0) {
             clear();
             return;
         }
 
         T *new_mdata;
-
         try {
-            new_mdata = new T[Xdim * Ydim];
+            new_mdata = new T[new_mdimx * new_mdimy];
         } catch (std::bad_alloc &) {
             REPORT_ERROR("Allocate: No space left");
         }
 
-        for (int i = 0; i < Ydim; i++)
-        for (int j = 0; j < Xdim; j++)
-        // Copy needed elements
-        // Fill with 0 if necessary
-        new_mdata[i * Xdim + j] = i >= mdimy || j >= mdimx ? 0 : mdata[i * mdimx + j];
+        for (int i = 0; i < new_mdimy; i++)
+        for (int j = 0; j < new_mdimx; j++)
+        // Copy old data
+        // Zero-pad where necessary
+            new_mdata[i * new_mdimx + j] = i >= mdimy || j >= mdimx ? 0 :
+                mdata[i * mdimx + j];
 
-        // Deallocate old vector
-        coreDeallocate();
+        // Deallocate old data
+        clear();
 
-        // Assign *this vector to the newly created
+        // Assign member variables
         mdata = new_mdata;
-        mdimx = Xdim;
-        mdimy = Ydim;
-        mdim = Xdim * Ydim;
+        mdimx = new_mdimx;
+        mdimy = new_mdimy;
     }
-
-    /** Resize according to a pattern.
-    *
-    * This function resize the actual array to the same size and origin
-    * as the input pattern. If the actual array is larger than the pattern
-    * then the trailing values are lost, if it is smaller then 0's are
-    * added at the end
-    *
-    * @code
-    * v2.resize(v1);
-    * // v2 has got now the same structure as v1
-    * @endcode
-    */
-    template<typename T1>
-    void resize(const Matrix2D<T1> &v) { resize(v.mdimx, v.mdimy); }
 
     // Extract submatrix and assign to this object
-    void submatrix(int i0, int j0, int iF, int jF) {
-        if (i0 < 0 || j0 < 0 || iF >= mdimy || jF >= mdimx)
+    Matrix2D<T> submatrix(int i0, int j0, int iF, int jF) const {
+        if (i0 < 0 || j0 < 0 || iF >= nrows() || jF >= ncols())
             REPORT_ERROR("Submatrix indices out of bounds");
-        Matrix2D<T> result(iF - i0 + 1, jF - j0 + 1);
+        Matrix2D<T> A (iF - i0 + 1, jF - j0 + 1);
 
-        for (int i = 0; i < result.mdimy; i++) 
-        for (int j = 0; j < result.mdimx; j++)
-        result.at(i, j) = at(i + i0, j + j0);
-
-        *this = result;
+        for (int i = 0; i < A.nrows(); i++) 
+        for (int j = 0; j < A.ncols(); j++)
+            A.at(i, j) = at(i + i0, j + j0);
+        return A;
     }
 
-    /** Same shape.
-    *
-    * Returns true if this object has got the same shape (origin and size)
-    * than the argument
-    */
-    template <typename T1>
-    bool sameShape(const Matrix2D<T1> &other) const {
-        return mdimx == other.mdimx && mdimy == other.mdimy;
-    }
+    int size() const { return mdimx * mdimy; }
 
-    // X dimension
-    inline int Xdim() const { return mdimx; }
+    T* data() const { return mdata; }
 
-    // Y dimension
-    inline int Ydim() const { return mdimy; }
+    std::pair<int, int> shape() const { return {mdimx, mdimy}; }
+
+    // Number of columns
+    inline int ncols() const { return mdimx; }
+
+    // Number of rows
+    inline int nrows() const { return mdimy; }
+
     //@}
 
     /// @name Initialise Matrix2D values
     //@{
 
-    /** Initialise to zeros with current size.
-    *
-    * All values are set to 0. The current size and origin are kept. It is not
-    * an error if the array is empty, then nothing is done.
-    *
-    * @code
-    * v.initZeros();
-    * @endcode
-    */
-    void initZeros() {
-        memset(mdata, 0, mdimx * mdimy * sizeof(T));
-    }
-
-    // Initialise to zeros with a given size
-    void initZeros(int Ydim, int Xdim) {
-        resize(Xdim, Ydim);
-        initZeros();
-    }
-
-    static Matrix2D<T> zeros(int Ydim, int Xdim) {
-        Matrix2D<T> m(Ydim, Xdim);
-        m.initZeros();
-        return m;
-    }
-
-    /** Initialise to zeros following a pattern.
-    *
-    * All values are set to 0, and the origin and size of the pattern are
-    * adopted.
-    *
-    * @code
-    * v2.initZeros(v1);
-    * @endcode
-    */
-    template <typename T1>
-    void initZeros(const Matrix2D<T1> &op) {
-        resize(op);
-        initZeros();
+    static Matrix2D<T> zeros(int m, int n) {
+        Matrix2D<T> A (m, n);
+        std::fill(A.begin(), A.end(), 0);
+        return A;
     }
 
     static Matrix2D<T> identity(int n) {
-        Matrix2D<T> m (n, n);
-        m.initIdentity();
-        return m;
+        Matrix2D<T> A (n, n);
+        A.setIdentity();
+        return A;
     }
 
-    /** 2D Identity matrix of current size
-    *
-    * If actually the matrix is not square then an identity matrix is
-    * generated of size (Xdim x Xdim).
-    *
-    * @code
-    * m.initIdentity();
-    * @endcode
+    /** Identity matrix
+    * 1 along diagonal, 0 everywhere else.
+    * The matrix will not be resized.
     */
-    void initIdentity() {
-        initIdentity(mdimx);
-    }
-
-    /** 2D Identity matrix of a given size
-    *
-    * A (dim x dim) identity matrix is generated.
-    *
-    * @code
-    * m.initIdentity(3);
-    * @endcode
-    */
-    void initIdentity(int dim) {
-        initZeros(dim, dim);
-        for (int i = 0; i < dim; i++) { at(i, i) = 1; }
+    void setIdentity() {
+        const auto n = std::min(ncols(), nrows());
+        std::fill(begin(), end(), 0);
+        for (int i = 0; i < n; i++) { at(i, i) = 1; }
     }
     //@}
 
     /// @name Operators for Matrix2D
     //@{
 
-    /** Matrix element access
-     *
-     * @code
-     * m.at(0, 0) = 1;
-     * std::cout << m.at(0, 0) << std::endl;
-     * @endcode
-     */
-    inline T& at(int i, int j) const { return mdata[i * mdimx + j]; }
+    /// Subscripting
 
-    inline T& operator () (int i, int j) { return at(i, j); }
+    inline T  at(int i, int j) const { return mdata[i * mdimx + j]; }
+    inline T& at(int i, int j)       { return mdata[i * mdimx + j]; }
 
-    inline const T& operator () (int i, int j) const { return at(i, j); }
+    inline T  operator () (int i, int j) const { return at(i, j); }
+    inline T& operator () (int i, int j)       { return at(i, j); }
 
-    // v3 = v1 * k
-    Matrix2D<T> operator * (T op1) const {
-        Matrix2D<T> tmp(*this);
-        for (int i = 0; i < mdim; i++) { tmp.mdata[i] = mdata[i] * op1; }
-        return tmp;
+    inline T  operator [] (int i) const { return mdata[i]; }
+    inline T& operator [] (int i)       { return mdata[i]; }
+
+    Matrix2D<T>& operator += (T rhs) {
+        for (auto& x: *this) { x += rhs; }
+        return *this;
     }
 
-    // v3 = v1 / k
-    Matrix2D<T> operator / (T op1) const {
-        Matrix2D<T> tmp(*this);
-        for (int i = 0; i < mdim; i++) { tmp.mdata[i] = mdata[i] / op1; }
-        return tmp;
+    Matrix2D<T>& operator -= (T rhs) {
+        for (auto& x: *this) { x -= rhs; }
+        return *this;
     }
 
-    // v3 = k * v2
-    friend Matrix2D<T> operator * (T op1, const Matrix2D<T> &op2) {
-        Matrix2D<T> tmp(op2);
-        for (int i = 0; i < op2.mdim; i++) { tmp.mdata[i] = op1 * op2.mdata[i]; }
-        return tmp;
+    Matrix2D<T>& operator *= (T rhs) {
+        for (auto& x: *this) { x *= rhs; }
+        return *this;
     }
 
-    // v3 *= k
-    void operator *= (T op1) {
-        for (int i = 0; i < mdim; i++) { mdata[i] *= op1; }
+    Matrix2D<T>& operator /= (T rhs) {
+        for (auto& x: *this) { x /= rhs; }
+        return *this;
     }
 
-    // v3 /= k
-    void operator /=  (T op1) {
-        for (int i = 0; i < mdim; i++) { mdata[i] /= op1; }
+    Matrix2D<T> matmul(const Matrix2D<T>& rhs) const {
+        const Matrix2D<T>& lhs = *this;
+        if (lhs.ncols() != rhs.nrows())
+            REPORT_ERROR("Incompatible shapes in matrix multiplication");
+
+        Matrix2D<T> product (lhs.nrows(), rhs.ncols());
+        std::fill(product.begin(), product.end(), 0);
+        for (int i = 0; i < lhs.nrows(); i++)
+        for (int j = 0; j < rhs.ncols(); j++)
+        for (int k = 0; k < lhs.ncols(); k++)
+            product.at(i, j) += lhs.at(i, k) * rhs.at(k, j);
+        return product;
     }
 
-    /** Vector by matrix
-     *
-     * Algebraic vector by matrix multiplication.
-     * This function is actually implemented in xmippMatrices2D.
-     */
-
-    // void operator *= (const Matrix2D<T> &M) {
-    //     *this = *this * M;
-    // }
-
-    /** Matrix * vector multiplication
-    *
-    * @code
-    * v2 = A*v1;
-    * @endcode
-    */
-    Matrix1D<T> operator * (const Matrix1D<T> &op1) const {
-
-        if (mdimx != op1.size()) {
-            std::cerr << " mdimx= " << mdimx << " opp1.size()= " << op1.size() << std::endl;
-            REPORT_ERROR("Incompatible sizes in matrix by vector");
-        }
-
-        if (!op1.isCol())
-            REPORT_ERROR("Vector is not a column");
-
-        Matrix1D<T> result (mdimy);
-        for (int i = 0; i < result.size(); i++) {
-            result[i] = 0;
-            for (int j = 0; j < op1.size(); j++)
-                result[i] += (*this)(i, j) * op1[j];
-        }
-
-        result.setCol();
-        return result;
-    }
-
-    /** Matrix by Matrix multiplication
-    *
-    * @code
-    * C = A*B;
-    * @endcode
-    */
-    Matrix2D<T> operator * (const Matrix2D<T> &op1) const {
-        if (mdimx != op1.mdimy)
-            REPORT_ERROR("Not compatible sizes in matrix multiplication");
-
-        Matrix2D<T> result = Matrix2D<T>::zeros(mdimy, op1.mdimx);
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < op1.mdimx; j++)
-        for (int k = 0; k < mdimx; k++)
-        result(i, j) += (*this)(i, k) * op1(k, j);
-        return result;
-    }
-
-    /** Matrix addition
-    *
-    * @code
-    * C = A + B;
-    * @endcode
-    */
-    Matrix2D<T> operator + (const Matrix2D<T> &op1) const {
-        if (mdimx != op1.mdimx || mdimy != op1.mdimy)
-            REPORT_ERROR("operator+: Not same sizes in matrix addition");
-
-        Matrix2D<T> result = Matrix2D<T>::zeros(mdimy, mdimx);
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++)
-        result(i, j) = (*this)(i, j) + op1(i, j);
-
-        return result;
-    }
-
-    /** In-place matrix addition
-     *
-     * @code
-     * A += B;
-     * @endcode
-     */
-    void operator += (const Matrix2D<T> &op1) {
-        if (mdimx != op1.mdimx || mdimy != op1.mdimy)
+    Matrix2D<T>& operator += (const Matrix2D<T> &rhs) {
+        if (shape() != rhs.shape())
             REPORT_ERROR("operator+=: Not same sizes in matrix addition");
-
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++)
-        at(i, j) += op1.at(i, j);
+        for (int i = 0; i < size(); i++) mdata[i] += rhs.mdata[i];
+        return *this;
     }
 
-    void operator *= (const Matrix2D<T> &other) {
-        *this = *this * other;
-    }
-
-    /** Matrix subtraction
-    *
-    * @code
-    * C = A - B;
-    * @endcode
-    */
-    Matrix2D<T> operator - (const Matrix2D<T> &op1) const {
-        if (mdimx != op1.mdimx || mdimy != op1.mdimy)
-            REPORT_ERROR("operator-: Not same sizes in matrix subtraction");
-
-        Matrix2D<T> result = Matrix2D<T>::zeros(mdimy, mdimx);
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++)
-        result(i, j) = (*this)(i, j) - op1(i, j);
-
-        return result;
-    }
-
-    /** In-place matrix subtraction
-    *
-    * @code
-    * A -= B;
-    * @endcode
-    */
-    void operator -= (const Matrix2D<T> &op1) const {
-        if (mdimx != op1.mdimx || mdimy != op1.mdimy)
+    Matrix2D<T>& operator -= (const Matrix2D<T> &rhs) {
+        if (shape() != rhs.shape())
             REPORT_ERROR("operator-=: Not same sizes in matrix subtraction");
-
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++)
-        at(i, j) -= op1.at(i, j);
+        for (int i = 0; i < size(); i++) mdata[i] -= rhs.mdata[i];
+        return *this;
     }
 
     /** Equality
     *
-    * Returns true if this object has the same shape (origin and size)
-    * as the argument and the same values (to within machine epsilon).
+    * Returns true if this object has the same shape as the argument
+    * and the same values (to within machine epsilon).
     */
     bool equal(const Matrix2D<T> &other, RFLOAT accuracy = Xmipp::epsilon) const {
-        if (!sameShape(other)) 
+        if (shape() != other.shape()) 
             return false;
 
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++)
+        for (int i = 0; i < nrows(); i++)
+        for (int j = 0; j < ncols(); j++)
         if (abs((*this)(i, j) - other(i, j)) > accuracy) return false;
 
         return true;
@@ -490,34 +278,25 @@ class Matrix2D {
     // Set very small values (abs(val) < accuracy) equal to zero
     void setSmallValuesToZero(RFLOAT accuracy = Xmipp::epsilon);
 
-    inline T* begin() const { return &mdata[0]; }
+    inline T* begin() const { return mdata; }
 
-    inline T* end() const { return &mdata[mdim]; }
+    inline T* end() const { return mdata + mdimx * mdimy; }
 
     /// @name Utilities for Matrix2D
     //@{
-
-    // Greatest value in an array
-    T max() const;
-
-    // Least value in an array
-    T min() const;
 
     /** Produce a 2D array suitable for working with Numerical Recipes
     *
     * This function must be used only as a preparation for routines which need
     * that the first physical index is 1 and not 0 as it usually is in C. New
-    * memory is needed to hold the new RFLOAT pointer array.
+    * memory is needed to hold the new pointer array.
     */
     T** adaptForNumericalRecipes() const {
-        T **m = NULL;
-        ask_Tmatrix(m, 1, mdimy, 1, mdimx);
-
+        T** ptr = ask_matrix<T>(1, mdimy, 1, mdimx);
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
-        m[i + 1][j + 1] = mdata[i * mdimx + j];
-
-        return m;
+            ptr[i + 1][j + 1] = mdata[i * mdimx + j];
+        return ptr;
     }
 
     /** Produce a 1D pointer suitable for working with Numerical Recipes (2)
@@ -532,128 +311,74 @@ class Matrix2D {
     }
 
     // Load 2D array from numerical recipes result
-    void loadFromNumericalRecipes(T **m, int Ydim, int Xdim) {
-        resize(Xdim, Ydim);
-
-        for (int i = 1; i <= Ydim; i++)
-        for (int j = 1; j <= Xdim; j++)
-        (*this)(i - 1, j - 1) = m[i][j];
+    void loadFromNumericalRecipes(T **ptr, int m, int n) {
+        resize(m, n);
+        for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            (*this)(i - 1, j - 1) = ptr[i][j];
     }
 
     // Kill a 2D array produced for numerical recipes
-    void killAdaptationForNumericalRecipes(T **m) const {
+    void killAdaptationForNumericalRecipes(T **ptr) const {
         // Free the allocated memory
-        free_Tmatrix(m, 1, mdimy, 1, mdimx);
+        free_matrix<T>(ptr, 1, mdimy, 1, mdimx);
+        ptr = nullptr;
     }
 
-    void killAdaptationForNumericalRecipes2(T **m) const {
+    void killAdaptationForNumericalRecipes2(T **ptr) const {
         // Do nothing
     }
 
     // Write this matrix to file
     void write(const FileName &fn) const {
-        std::ofstream fhOut(fn.c_str());
+        std::ofstream fhOut (fn.c_str());
         if (!fhOut)
             REPORT_ERROR((std::string) "write: Cannot open " + fn + " for output");
         fhOut << *this;
     }
 
-    // Show matrix
-    friend std::ostream& operator << (std::ostream &ostrm, const Matrix2D<T> &v) {
-        if (v.Xdim() == 0 || v.Ydim() == 0) {
-            ostrm << "NULL matrix\n";
-        } else {
-            ostrm << std::endl;
-            RFLOAT max_val = v.max();
-            int epsilon = bestPrecision(max_val, 10);
-            for (int i = 0; i < v.Ydim(); i++) {
-                for (int j = 0; j < v.Xdim(); j++) {
-                    ostrm << std::setw(13) << floatToString((RFLOAT) v(i, j), 10, epsilon) << ' ';
-                }
-                ostrm << std::endl;
-            }
-        }
-        return ostrm;
-    }
-
-    /** Makes a matrix from a vector
+    /** Construct from a vector
     *
     * The origin of the matrix is set such that it has one of the index origins
     * (X or Y) to the same value as the vector, and the other set to 0
     * according to the shape.
-    *
-    * @code
-    * Matrix2D<RFLOAT> m = fromVector(v);
-    * @endcode
     */
-    void fromVector(const Matrix1D<T> &op1) {
-        // Null vector => Null matrix
-        if (op1.size() == 0) {
-            clear();
-            return;
-        }
-
-        // Look at shape and copy values
-        if (op1.isRow()) {
-            resize(op1.size(), 1);
-            for (int j = 0; j < op1.size(); j++)
-                at(0, j) = op1[j];
+    explicit Matrix2D(const Matrix1D<T> &v): Matrix2D() {
+        if (v.isRow()) {
+            resize(v.size(), 1);
+            for (int j = 0; j < v.size(); j++)
+                at(0, j) = v[j];
         } else {
-            resize(1, op1.size());
-            for (int i = 0; i < op1.size(); i++)
-                at(i, 0) = op1[i];
+            resize(1, v.size());
+            for (int i = 0; i < v.size(); i++)
+                at(i, 0) = v[i];
         }
     }
 
-    /** Make a vector from a matrix
+    /** Construct a vector
     *
-    * An exception is thrown if the matrix is not a single row or a single
-    * column. The origin of the vector is set according to the one of the
-    * matrix.
-    *
-    * @code
-    * Matrix1D<RFLOAT> v;
-    * m.toVector(v);
-    * @endcode
+    * An exception is thrown if the matrix is not a row or column vector.
     */
-    void toVector(Matrix1D<T> &op1) const {
-        // Null matrix => Null vector
-        if (mdimx == 0 || mdimy == 0) {
-            op1.clear();
-            return;
+    explicit operator Matrix1D<T>() const {
+        if (nrows() == 1) {
+            Matrix1D<T> v (ncols(), VectorMode::row);  // Row vector
+            for (int j = 0; j < ncols(); j++) { v[j] = at(0, j); }
+            return v;
         }
-
-        // If matrix is not a vector, produce an error
-        if (mdimx != 1 && mdimy != 1)
-            REPORT_ERROR("toVector: Matrix cannot be converted to vector");
-
-        // Look at shape and copy values
-        if (mdimy == 1) {
-            // Row vector
-            op1.resize(mdimx);
-
-            for (int j = 0; j < mdimx; j++) { op1[j] = at(0, j); }
-
-            op1.setRow();
-        } else {
-            // Column vector
-            op1.resize(mdimy);
-
-            for (int i = 0; i < mdimy; i++) { op1[i] = at(i, 0); }
-
-            op1.setCol();
+        if (ncols() == 1) {
+            Matrix1D<T> v (nrows(), VectorMode::column);  // Column vector
+            for (int i = 0; i < nrows(); i++) { v[i] = at(i, 0); }
+            return v;
         }
+        // Otherwise, throw
+        REPORT_ERROR("toVector: Matrix cannot be converted to vector");
     }
 
-    // Copy matrix to stl::vector
-    void copyToVector(std::vector<T> &v) {
-        v.assign(mdata, mdata + mdim);
-    }
+    operator std::vector<T>() const { return {begin(), end()}; }
 
-    // Copy stl::vector to matrix
-    void copyFromVector(std::vector<T> &v, int Xdim, int Ydim) {
-        resize(Xdim, Ydim);
-        copy(v.begin(), v.begin() + v.size(), mdata);
+    Matrix2D(const std::vector<T>& v, int m, int n): Matrix2D(m, n) {
+        // m * n had better be at least v.size()
+        copy(v.begin(), v.end(), mdata);
     }
 
     /** Get row
@@ -661,130 +386,95 @@ class Matrix2D {
     * This function returns a row vector corresponding to the choosen
     * row inside the nth 2D matrix, the numbering of the rows is also
     * logical not physical.
-    *
-    * @code
-    * std::vector<RFLOAT> v;
-    * m.getRow(-2, v);
-    * @endcode
     */
-    void getRow(int i, Matrix1D<T> &v) const {
-        if (mdimx == 0 || mdimy == 0) {
-            v.clear();
-            return;
-        }
-
-        if (i < 0 || i >= mdimy)
+    Matrix1D<T> getRow(int i) const {
+        if (i < 0 || i >= nrows())
             REPORT_ERROR("getRow: index out of matrix bounds");
             // std::out_of_range ?
 
-        for (int j = 0; j < mdimx; j++) { v[j] = at(i, j); }
-
-        v.setRow();
+        Matrix1D<T> v (ncols(), VectorMode::row);
+        for (int j = 0; j < ncols(); j++) { v[j] = at(i, j); }
+        return v;
     }
 
-    /** Get Column
+    /** Get column
     *
     * This function returns a column vector corresponding to the
     * choosen column.
-    *
-    * @code
-    * std::vector<RFLOAT> v;
-    * m.getCol(-1, v);
-    * @endcode
     */
-    void getCol(int j, Matrix1D<T> &v) const {
-        if (mdimx == 0 || mdimy == 0) {
-            v.clear();
-            return;
-        }
-
-        if (j < 0 || j >= mdimx)
+    Matrix1D<T> getCol(int j) const {
+        if (j < 0 || j >= ncols())
             REPORT_ERROR("getCol: index outside matrix bounds");
             // std::out_of_range() ?
 
-        for (int i = 0; i < mdimy; i++) { v(i) = at(i, j); }
-
-        v.setCol();
+        Matrix1D<T> v (nrows(), VectorMode::column);
+        for (int i = 0; i < nrows(); i++) { v[i] = at(i, j); }
+        return v;
     }
 
-    /** Set Row
+    /** Set row
     *
     * This function sets a row vector corresponding to the choosen row in the 2D Matrix
     *
     * @code
-    * m.setRow(-2, m.row(1)); // Copies row 1 in row -2
+    * m.setRow(-2, m.row(1));  // Copies row 1 in row -2
     * @endcode
     */
     void setRow(int i, const Matrix1D<T> &v) {
-        if (mdimx == 0 || mdimy == 0)
-            REPORT_ERROR("setRow: Target matrix is empty");
-
-        if (i < 0 || i >= mdimy)
+        if (i < 0 || i >= nrows())
             REPORT_ERROR("setRow: Matrix subscript (i) out of range");
 
-        if (v.size()  != mdimx)
+        if (v.size() != ncols())
             REPORT_ERROR("setRow: Vector dimension different from matrix one");
 
         if (!v.isRow())
             REPORT_ERROR("setRow: Not a row vector in assignment");
 
-        for (int j = 0; j < mdimx; j++)
-            at(i, j) = v(j);
+        for (int j = 0; j < ncols(); j++)
+            at(i, j) = v[j];
     }
 
-    /** Set Column
+    /** Set column
     *
     * This function sets a column vector corresponding to the choosen column
     * inside matrix.
     *
     * @code
-    * m.setCol(0, (m.row(1)).transpose()); // Copies row 1 in column 0
+    * m.setCol(0, m.row(1).transpose());  // Copies row 1 in column 0
     * @endcode
     */
     void setCol(int j, const Matrix1D<T> &v) {
-        if (mdimx == 0 || mdimy == 0)
-            REPORT_ERROR("setCol: Target matrix is empty");
-
-        if (j < 0 || j >= mdimx)
+        if (j < 0 || j >= ncols())
             REPORT_ERROR("setCol: Matrix subscript (j) out of range");
 
-        if (v.size() != mdimy)
+        if (v.size() != nrows())
             REPORT_ERROR("setCol: Vector dimension different from matrix one");
 
         if (!v.isCol())
             REPORT_ERROR("setCol: Not a column vector in assignment");
 
-        for (int i = 0; i < mdimy; i++)
+        for (int i = 0; i < nrows(); i++)
             at(i, j) = v[i];
     }
 
     /** Matrix determinant
     *
     * An exception is thrown if the matrix is empty or non-square.
-    *
-    * @code
-    * RFLOAT det = m.det();
-    * @endcode
     */
     T det() const {
         // (see Numerical Recipes, Chapter 2 Section 5)
-        if (mdimx == 0 || mdimy == 0)
-            REPORT_ERROR("determinant: Matrix is empty");
-
-        if (mdimx != mdimy)
+        if (ncols() != nrows())
             REPORT_ERROR("determinant: Matrix is not square");
 
-        for (int i = 0; i < mdimy; i++) {
-            bool all_zeros = true;
-            for (int j = 0; j < mdimx; j++) {
-                if (abs(at(i, j)) > Xmipp::epsilon) {
-                    all_zeros = false;
-                    break;
-                }
+        if (size() == 0) return 1;
+
+        // If any row is all zeros, then the determinant is zero.
+        for (int i = 0; i < nrows(); i++) {
+            for (int j = 0; j < ncols(); j++) {
+                if (abs(at(i, j)) > Xmipp::epsilon) goto next;
             }
-            if (all_zeros) {
-                return 0;
-            }
+            return 0;
+            next: continue;
         }
 
         // Perform decomposition
@@ -794,43 +484,29 @@ class Matrix2D {
         ludcmp(*this, LU, indx, d);
 
         // Calculate determinant
-        for (int i = 0; i < mdimx; i++)
-        d *= (T) LU.at(i, i);
+        for (int i = 0; i < ncols(); i++)
+            d *= (T) LU.at(i, i);
 
         return d;
     }
 
     /** Algebraic transpose of a matrix
-    *
-    * You can use the transpose in as complex expressions as you like.
-    * The origin of the vector is not changed.
-    *
-    * @code
-    * v2 = v1.transpose();
-    * @endcode
     */
     Matrix2D<T> transpose() const {
-        Matrix2D<T> result(mdimx, mdimy);
-        for (int i = 0; i < result.mdimy; i++)
-        for (int j = 0; j < result.mdimx; j++)
-        result.at(i, j) = at(j, i);
-        return result;
+        /// XXX: Could be done in place.
+        Matrix2D<T> t (ncols(), nrows());
+        for (int i = 0; i < t.nrows(); i++)
+        for (int j = 0; j < t.ncols(); j++)
+        t.at(i, j) = at(j, i);
+        return t;
     }
 
     /** Matrix pseudoinverse
     * https://en.wikipedia.org/wiki/Moore–Penrose_inverse
     *
-    * Compute the pseudoinverse of a matrix
-    * using SVD.
-    *
-    * @code
-    * Matrix2D<RFLOAT> m1_inv;
-    * m1.inv(m1_inv);
-    * @endcode
+    * Compute the pseudoinverse of a matrix by SVD.
     */
     void inv(Matrix2D<T> &result) const;
-    // Why modify a pre-existing matrix?
-    // Why not just return a new one?
 
     // Matrix inverse
     Matrix2D<T> inv() const {
@@ -839,18 +515,12 @@ class Matrix2D {
         return result;
     }
 
-    /** Test for identity matrix
-    *
-    * @code
-    * if (m.isIdentity())
-    *     std::cout << "The matrix is identity\n";
-    * @endcode
-    */
+    // Test for identity matrix
     bool isIdentity() const {
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++) {
-            T elem = at(i, j);
-            if (abs(i == j ? elem - 1.0 : elem) > Xmipp::epsilon)
+        for (int i = 0; i < nrows(); i++)
+        for (int j = 0; j < ncols(); j++) {
+           const T& x = at(i, j);
+            if (abs(i == j ? x - 1.0 : x) > Xmipp::epsilon)
                 return false;
         }
         return true;
@@ -859,28 +529,42 @@ class Matrix2D {
 
 };
 
-// vector * matrix
-template<typename T>
-Matrix1D<T> operator * (const Matrix1D<T> &v, const Matrix2D<T> &M) {
+// Free functions
 
-    if (v.size() != M.mdimy)
-        REPORT_ERROR("Not compatible sizes in matrix by vector");
+template <typename T>
+Matrix1D<T> matmul(const Matrix2D<T> &lhs, const Matrix1D<T> &rhs) {
 
-    if (!v.isRow())
-        REPORT_ERROR("Vector is not a row");
+    if (lhs.ncols() != rhs.size())
+        REPORT_ERROR("Incompatible shapes in matrix by vector multiplication");
 
-    Matrix1D<T> result (M.mdimx, VectorMode::row);
-    for (int j = 0; j < M.mdimx; j++) {
-        result[j] = 0;
-        for (int i = 0; i < M.mdimy; i++)
-            result[j] += v[i] * M.at(i, j);
+    if (!rhs.isCol())
+        REPORT_ERROR("Right operand is not a column vector");
+
+    Matrix1D<T> result (lhs.nrows(), VectorMode::column);
+    for (int i = 0; i < result.size(); i++) {
+        result[i] = 0;
+        for (int j = 0; j < rhs.size(); j++)
+            result[i] += lhs(i, j) * rhs[j];
     }
     return result;
 }
 
 template<typename T>
-Matrix1D<T> operator *= (Matrix1D<T> &v, const Matrix2D<T> &M) {
-    return v = (v * M);
+Matrix1D<T> matmul(const Matrix1D<T> &lhs, const Matrix2D<T> &rhs) {
+
+    if (lhs.size() != rhs.nrows())
+        REPORT_ERROR("Incompatible shapes in vector by matrix multiplication");
+
+    if (!lhs.isRow())
+        REPORT_ERROR("Left operand is not a row vector");
+
+    Matrix1D<T> result (rhs.ncols(), VectorMode::row);
+    for (int j = 0; j < rhs.ncols(); j++) {
+        result[j] = 0;
+        for (int i = 0; i < rhs.nrows(); i++)
+            result[j] += lhs[i] * rhs(i, j);
+    }
+    return result;
 }
 
 /** @name Matrix-related functions
@@ -891,9 +575,9 @@ Matrix1D<T> operator *= (Matrix1D<T> &v, const Matrix2D<T> &M) {
 template<typename T>
 void ludcmp(const Matrix2D<T> &A, Matrix2D<T> &LU, Matrix1D<int> &indx, T &d) {
     LU = A;
-    indx.resize(A.mdimx);
+    indx.resize(A.ncols());
     ludcmp(
-        LU.adaptForNumericalRecipes2(), A.mdimx,
+        LU.adaptForNumericalRecipes2(), A.ncols(),
         indx.data() - 1, &d
     );
 }
@@ -920,15 +604,15 @@ void svdcmp(
     Matrix2D<RFLOAT> &u, Matrix1D<RFLOAT> &w, Matrix2D<RFLOAT> &v
 ) {
     // svdcmp only works with RFLOAT
-    typeCast(a, u);
-
-    // Set size of matrices
-    w.resize(u.mdimx);
+    u.resize(a.ncols(), a.nrows());
+    std::copy(a.begin(), a.end(), u.begin());
+    w.resize(u.ncols());
     std::fill(w.begin(), w.end(), 0);
-    v.initZeros(u.mdimx, u.mdimx);
+    v.resize(u.ncols(), u.ncols());
+    std::fill(u.begin(), u.end(), 0);
 
     // Call the numerical recipes routine
-    svdcmp(u.mdata, u.mdimy, u.mdimx, w.data(), v.mdata);
+    svdcmp(u.data(), a.nrows(), a.ncols(), w.data(), v.data());
 }
 
 // Solve a system of linear equations (Ax = b) by SVD
@@ -942,21 +626,21 @@ void solve(
 // by SVD Decomposition (through Gauss-Jordan numerical recipes)
 template<typename T>
 void solve(const Matrix2D<T> &A, const Matrix2D<T> &b, Matrix2D<T> &result) {
-    if (A.mdimx == 0)
+    if (A.ncols() == 0)
         REPORT_ERROR("Solve: Matrix is empty");
 
-    if (A.mdimx != A.mdimy)
+    if (A.ncols() != A.nrows())
         REPORT_ERROR("Solve: Matrix is not square");
 
-    if (A.mdimy != b.mdimy)
+    if (A.nrows() != b.nrows())
         REPORT_ERROR("Solve: Different sizes of A and b");
 
     // Solve
     result = b;
     Matrix2D<T> Aux = A;
     gaussj(
-        Aux.adaptForNumericalRecipes2(), Aux.mdimy,
-        result.adaptForNumericalRecipes2(), b.mdimx
+        Aux.adaptForNumericalRecipes2(), Aux.nrows(),
+        result.adaptForNumericalRecipes2(), b.ncols()
     );
 }
 
@@ -985,8 +669,10 @@ RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::
     avg1 /= (RFLOAT)set1.size();
     avg2 /= (RFLOAT)set1.size();
 
-    A.initZeros(3, 3);
-    Rot.initZeros(4,4);
+    A.resize(3, 3);
+    std::fill(A.begin(), A.end(), 0);
+    Rot.resize(4, 4);
+    std::fill(Rot.begin(), Rot.end(), 0);
     for (int i = 0; i < set1.size(); i++) {
         // fill A
         A(0, 0) += (XX(set1[i]) - XX(avg1)) * (XX(set2[i]) - XX(avg2));
@@ -1024,23 +710,61 @@ RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::
 }
 */
 
-/** Type casting
- *
- * If we have an integer array and we need a RFLOAT one, we can use this function.
- * The conversion is done by type casting each element.
- * If n >= 0, only the nth volumes will be converted, otherwise all NSIZE volumes.
- */
-template<typename T1, typename T2>
-void typeCast(const Matrix2D<T1> &v1,  Matrix2D<T2> &v2) {
-    if (v1.mdim == 0) {
-        v2.clear();
-        return;
-    }
-
-    v2.resize(v1);
-    for (unsigned long int n = 0; n < v1.mdim; n++)
-        v2.mdata[n] = static_cast<T2>(v1.mdata[n]);
+template <typename T>
+Matrix2D<T> operator + (Matrix2D<T> lhs, T rhs) {
+    return lhs += rhs;
 }
+
+template <typename T>
+Matrix2D<T> operator - (Matrix2D<T> lhs, T rhs) {
+    return lhs -= rhs;
+}
+
+template <typename T>
+Matrix2D<T> operator * (Matrix2D<T> lhs, T rhs) {
+    return lhs *= rhs;
+}
+
+template <typename T>
+Matrix2D<T> operator / (Matrix2D<T> lhs, T rhs) {
+    return lhs /= rhs;
+}
+
+template <typename T>
+Matrix2D<T> operator * (T lhs, Matrix2D<T> rhs) {
+    for (auto& x: rhs) x = lhs * x;
+    return rhs;
+}
+
+template <typename T>
+Matrix2D<T> operator + (Matrix2D<T> lhs, const Matrix2D<T> &rhs) {
+    return lhs += rhs;
+}
+
+template <typename T>
+Matrix2D<T> operator - (Matrix2D<T> lhs, const Matrix2D<T> &rhs) {
+    return lhs -= rhs;
+}
+
+// Show matrix
+template <typename T>
+std::ostream& operator << (std::ostream &ostrm, const Matrix2D<T> &m) {
+    if (m.size() == 0) {
+        ostrm << "Empty matrix\n";
+    } else {
+        ostrm << '\n';
+        const T maximum = *std::max_element(m.begin(), m.end());
+        const int epsilon = bestPrecision(maximum, 10);
+        for (int i = 0; i < m.nrows(); i++) {
+            for (int j = 0; j < m.ncols(); j++) {
+                ostrm << std::setw(13) << floatToString((RFLOAT) m.at(i, j), 10, epsilon) << ' ';
+            }
+            ostrm << std::endl;
+        }
+    }
+    return ostrm;
+}
+
 //@}
 //@}
 #endif /* MATRIX2D_H_ */

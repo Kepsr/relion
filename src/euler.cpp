@@ -57,7 +57,8 @@ Matrix2D<RFLOAT> Euler::angles2matrix(
     Matrix2D<RFLOAT> A;
 
     if (homogeneous) {
-        A.initZeros(4, 4);
+        A.resize(4, 4);
+        std::fill(A.begin(), A.end(), 0);
         A.at(3, 3) = 1;
     } else {
         A.resize(3, 3);
@@ -137,7 +138,7 @@ void Euler::direction2angles(
 // #define DEBUG_EULER
 angles_t Euler::matrix2angles(const Matrix2D<RFLOAT> &A) {
 
-    if (A.mdimx != 3 || A.mdimy != 3)
+    if (A.ncols() != 3 || A.nrows() != 3)
         REPORT_ERROR("Euler::matrix2angles: The Euler matrix is not 3×3");
 
     RFLOAT alpha, beta, gamma;
@@ -252,7 +253,7 @@ angles_t Euler::apply_transf(
     RFLOAT rot, RFLOAT tilt, RFLOAT psi
 ) {
     Matrix2D<RFLOAT> euler = Euler::angles2matrix(rot, tilt, psi);
-    return Euler::matrix2angles(L * euler * R);
+    return Euler::matrix2angles(L.matmul(euler).matmul(R));
 }
 
 /* Rotate (3D) MultidimArray with 3 Euler angles ------------------------------------- */
