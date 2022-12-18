@@ -25,6 +25,7 @@
 #include "src/jaz/ctf_helper.h"
 #include "src/multidim_array_statistics.h"
 #include "src/plot_metadata.h"
+#include <memory>  // std::unique_ptr
 
 // #define DEBUG
 // #define DEBUG_HELIX
@@ -875,43 +876,42 @@ void AutoPicker::generatePDFLogfile() {
     }
 
     // Values for all micrographs
-    FileName fn_eps;
     std::vector<FileName> all_fn_eps;
     std::vector<RFLOAT> histX, histY;
 
     MDresult.write(fn_odir + "summary.star");
-    CPlot2D *plot2Db = new CPlot2D("Nr of picked particles for all micrographs");
-    PlotMetaData::addToCPlot2D(MDresult, plot2Db, EMDL::UNDEFINED, EMDL::MLMODEL_GROUP_NR_PARTICLES, 1.0);
-    plot2Db->SetDrawLegend(false);
-    fn_eps = fn_odir + "all_nr_parts.eps";
-    plot2Db->OutputPostScriptPlot(fn_eps);
-    all_fn_eps.push_back(fn_eps);
-    delete plot2Db;
-    if (MDresult.size() > 3) {
-        CPlot2D *plot2D = new CPlot2D("");
-        PlotMetaData::columnHistogram(MDresult, EMDL::MLMODEL_GROUP_NR_PARTICLES, histX, histY, 0, plot2D);
-        fn_eps = fn_odir + "histogram_nrparts.eps";
-        plot2D->SetTitle("Histogram of nr of picked particles per micrograph");
-        plot2D->OutputPostScriptPlot(fn_eps);
+    {
+        std::unique_ptr<CPlot2D> plot (new CPlot2D("Nr of picked particles for all micrographs"));
+        PlotMetaData::addToCPlot2D(MDresult, plot.get(), EMDL::UNDEFINED, EMDL::MLMODEL_GROUP_NR_PARTICLES, 1.0);
+        plot->SetDrawLegend(false);
+        FileName fn_eps = fn_odir + "all_nr_parts.eps";
+        plot->OutputPostScriptPlot(fn_eps);
         all_fn_eps.push_back(fn_eps);
-        delete plot2D;
+    }
+    if (MDresult.size() > 3) {
+        std::unique_ptr<CPlot2D> plot (new CPlot2D(""));
+        PlotMetaData::columnHistogram(MDresult, EMDL::MLMODEL_GROUP_NR_PARTICLES, histX, histY, 0, plot.get());
+        FileName fn_eps = fn_odir + "histogram_nrparts.eps";
+        plot->SetTitle("Histogram of nr of picked particles per micrograph");
+        plot->OutputPostScriptPlot(fn_eps);
+        all_fn_eps.push_back(fn_eps);
     }
 
-    CPlot2D *plot2Dc = new CPlot2D("Average autopick FOM for all micrographs");
-    PlotMetaData::addToCPlot2D(MDresult, plot2Dc, EMDL::UNDEFINED, EMDL::PARTICLE_AUTOPICK_FOM, 1.);
-    plot2Dc->SetDrawLegend(false);
-    fn_eps = fn_odir + "all_FOMs.eps";
-    plot2Dc->OutputPostScriptPlot(fn_eps);
-    all_fn_eps.push_back(fn_eps);
-    delete plot2Dc;
-    if (MDresult.size() > 3) {
-        CPlot2D *plot2Dd = new CPlot2D("");
-        PlotMetaData::columnHistogram(MDresult, EMDL::PARTICLE_AUTOPICK_FOM, histX, histY, 0, plot2Dd);
-        fn_eps = fn_odir + "histogram_FOMs.eps";
-        plot2Dd->SetTitle("Histogram of average autopick FOM per micrograph");
-        plot2Dd->OutputPostScriptPlot(fn_eps);
+    {
+        std::unique_ptr<CPlot2D> plot (new CPlot2D("Average autopick FOM for all micrographs"));
+        PlotMetaData::addToCPlot2D(MDresult, plot.get(), EMDL::UNDEFINED, EMDL::PARTICLE_AUTOPICK_FOM, 1.0);
+        plot->SetDrawLegend(false);
+        FileName fn_eps = fn_odir + "all_FOMs.eps";
+        plot->OutputPostScriptPlot(fn_eps);
         all_fn_eps.push_back(fn_eps);
-        delete plot2Dd;
+    }
+    if (MDresult.size() > 3) {
+        std::unique_ptr<CPlot2D> plot (new CPlot2D(""));
+        PlotMetaData::columnHistogram(MDresult, EMDL::PARTICLE_AUTOPICK_FOM, histX, histY, 0, plot.get());
+        FileName fn_eps = fn_odir + "histogram_FOMs.eps";
+        plot->SetTitle("Histogram of average autopick FOM per micrograph");
+        plot->OutputPostScriptPlot(fn_eps);
+        all_fn_eps.push_back(fn_eps);
     }
 
     joinMultipleEPSIntoSinglePDF(fn_odir + "logfile.pdf", all_fn_eps);
