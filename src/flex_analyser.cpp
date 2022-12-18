@@ -120,7 +120,7 @@ void FlexAnalyser::initialise() {
             // Place each body with its center-of-mass in the center of the box
             Irefp = translate(Irefp, -model.com_bodies[ibody], DONT_WRAP);
 
-            Matrix2D<RFLOAT> Aresi, Abody;
+            Matrix<RFLOAT> Aresi, Abody;
             f_weights << ibody + 1;
             // rot
             Aresi = Euler::angles2matrix(1.0, 90.0, 0.0);
@@ -323,7 +323,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
     RFLOAT rot  = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_ROT,  part_id);
     RFLOAT tilt = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_TILT, part_id);
     RFLOAT psi  = data.MDimg.getValue<RFLOAT>(EMDL::ORIENT_PSI,  part_id);
-    Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot, tilt, psi);
+    Matrix<RFLOAT> Aori = Euler::angles2matrix(rot, tilt, psi);
 
     RFLOAT my_pixel_size = data.getImagePixelSize(part_id, 0);
 
@@ -339,7 +339,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
     datarow.clear();
     for (int ibody = 0; ibody < model.nr_bodies; ibody++) {
         MultidimArray<RFLOAT> Mbody, Mmask;
-        Matrix1D<RFLOAT> body_offset(3), body_offset_3d(3);
+        Vector<RFLOAT> body_offset(3), body_offset_3d(3);
         RFLOAT body_rot  = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_ROT,               part_id);
         RFLOAT body_tilt = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_TILT,              part_id);
         RFLOAT body_psi  = data.MDbodies[ibody].getValue<RFLOAT>(EMDL::ORIENT_PSI,               part_id);
@@ -355,9 +355,9 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
         body_offset *= rescale_3dmodels;
 
         // Aresi is the residual orientation for this ibody
-        Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
+        Matrix<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
         // Only apply the residual orientation now!!!
-        Matrix2D<RFLOAT> Abody = model.orient_bodies[ibody].transpose()
+        Matrix<RFLOAT> Abody = model.orient_bodies[ibody].transpose()
             .matmul(A_rot90)
             .matmul(Aresi)
             .matmul(model.orient_bodies[ibody]);
@@ -366,7 +366,7 @@ void FlexAnalyser::make3DModelOneParticle(long int part_id, long int imgno, std:
         // We will need the original projection direction, Aori for that!!
         // Because one direction is ill-defined, this may not be such a good idea?
         // But anyway, this should bring it closer to truth than not doing anything at all...
-        Matrix2D<RFLOAT> Anew = Aori.matmul(Abody);
+        Matrix<RFLOAT> Anew = Aori.matmul(Abody);
         body_offset_3d = matmul(Anew.inv(), -body_offset);
 
         if (do_PCA_orient) {
@@ -560,7 +560,7 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
                 RFLOAT body_rot  = orients[ibody * 6 + 0] / norm_pca[ibody * 4 + 0];
                 RFLOAT body_tilt = orients[ibody * 6 + 1] / norm_pca[ibody * 4 + 1];
                 RFLOAT body_psi  = orients[ibody * 6 + 2] / norm_pca[ibody * 4 + 2];
-                Matrix1D<RFLOAT> body_offset_3d {
+                Vector<RFLOAT> body_offset_3d {
                     orients[ibody * 6 + 3] / norm_pca[ibody * 4 + 3],
                     orients[ibody * 6 + 4] / norm_pca[ibody * 4 + 3],
                     orients[ibody * 6 + 5] / norm_pca[ibody * 4 + 3]};
@@ -569,9 +569,9 @@ void FlexAnalyser::make3DModelsAlongPrincipalComponents(
                 // std::cerr << " XX(body_offset_3d)= " << XX(body_offset_3d) << " YY(body_offset_3d)= " << YY(body_offset_3d) << " ZZ(body_offset_3d)= " << ZZ(body_offset_3d) << std::endl;
 
                 // Aresi is the residual orientation for this ibody
-                Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
+                Matrix<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
                 // Only apply the residual orientation now!!!
-                Matrix2D<RFLOAT> Abody = model.orient_bodies[ibody].transpose()
+                Matrix<RFLOAT> Abody = model.orient_bodies[ibody].transpose()
                     .matmul(A_rot90)
                     .matmul(Aresi)
                     .matmul(model.orient_bodies[ibody]);

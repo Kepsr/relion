@@ -234,8 +234,8 @@ int main(int argc, char *argv[]) {
             randSubset -= 1;
 
             if (quadratic) {
-                Matrix2D<RFLOAT> A(27,10);
-                Matrix1D<RFLOAT> b(27);
+                Matrix<RFLOAT> A (27, 10);
+                Vector<RFLOAT> b (27);
 
                 for (int rot = -1; rot <= 1; rot++)
                 for (int tilt = -1; tilt <= 1; tilt++)
@@ -277,7 +277,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 const double tol = 1e-20;
-                Matrix1D<RFLOAT> x(10);
+                Vector<RFLOAT> x(10);
                 solve(A, b, x, tol);
 
                 d3Matrix C3(

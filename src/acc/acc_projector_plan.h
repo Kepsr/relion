@@ -56,8 +56,8 @@ public:
 			bool do_skip_align,
 			bool do_skip_rotate,
 			int orientational_prior_mode,
-			Matrix2D<RFLOAT> &L_,
-			Matrix2D<RFLOAT> &R_);
+			Matrix<RFLOAT> &L_,
+			Matrix<RFLOAT> &R_);
 
 	void setup(
 			HealpixSampling &sampling,
@@ -85,7 +85,7 @@ public:
 			bool do_skip_rotate,
 			int orientational_prior_mode)
 	{
-		Matrix2D<RFLOAT> dummyRL;
+		Matrix<RFLOAT> dummyRL;
 
 		setup(
 			sampling, directions_prior, psi_prior, pointer_dir_nonzeroprior,

@@ -76,7 +76,7 @@ void truncateMultidimArray(
 }
 
 void Localsym_outputOperator(
-    const Matrix1D<RFLOAT> &op, std::ostream* o_ptr, RFLOAT scale_angpix
+    const Vector<RFLOAT> &op, std::ostream* o_ptr, RFLOAT scale_angpix
 ) {
     if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
@@ -98,7 +98,7 @@ void Localsym_outputOperator(
 }
 
 void Localsym_composeOperator(
-    Matrix1D<RFLOAT> &op,
+    Vector<RFLOAT> &op,
     RFLOAT aa, RFLOAT bb, RFLOAT gg,
     RFLOAT dx, RFLOAT dy, RFLOAT dz,
     RFLOAT cc
@@ -112,7 +112,7 @@ void Localsym_composeOperator(
 }
 
 void Localsym_decomposeOperator(
-    const Matrix1D<RFLOAT> &op,
+    const Vector<RFLOAT> &op,
     RFLOAT &aa, RFLOAT &bb, RFLOAT &gg,
     RFLOAT &dx, RFLOAT &dy, RFLOAT &dz,
     RFLOAT &cc
@@ -129,7 +129,7 @@ void Localsym_decomposeOperator(
 }
 
 void Localsym_scaleTranslations(
-    Matrix1D<RFLOAT> &op, RFLOAT factor
+    Vector<RFLOAT> &op, RFLOAT factor
 ) {
     if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
@@ -140,8 +140,8 @@ void Localsym_scaleTranslations(
 }
 
 void Localsym_shiftTranslations(
-    Matrix1D<RFLOAT> &op,
-    const Matrix1D<RFLOAT> &voffset
+    Vector<RFLOAT> &op,
+    const Vector<RFLOAT> &voffset
 ) {
     if (op.size() != NR_LOCALSYM_PARAMETERS)
         REPORT_ERROR("ERROR: op is not a local symmetry operator!");
@@ -155,8 +155,8 @@ void Localsym_shiftTranslations(
 }
 
 void Localsym_translations2vector(
-    const Matrix1D<RFLOAT> &vec,
-    Matrix1D<RFLOAT> &trans_vec,
+    const Vector<RFLOAT> &vec,
+    Vector<RFLOAT> &trans_vec,
     bool invert
 ) {
     trans_vec.clear();
@@ -175,8 +175,8 @@ void Localsym_translations2vector(
 }
 
 void Localsym_angles2matrix(
-    const Matrix1D<RFLOAT> &vec,
-    Matrix2D<RFLOAT> &mat,
+    const Vector<RFLOAT> &vec,
+    Matrix<RFLOAT> &mat,
     bool invert
 ) {
 
@@ -195,8 +195,8 @@ void Localsym_angles2matrix(
 }
 
 void Localsym_operator2matrix(
-    const Matrix1D<RFLOAT> &vec,
-    Matrix2D<RFLOAT> &mat,
+    const Vector<RFLOAT> &vec,
+    Matrix<RFLOAT> &mat,
     bool invert
 ) {
     RFLOAT aa = 0.0, bb = 0.0, gg = 0.0;
@@ -214,7 +214,7 @@ void Localsym_operator2matrix(
     if (invert == LOCALSYM_OP_DO_INVERT) {
         mat = mat.transpose();
 
-        Matrix1D<RFLOAT> trans_vec {-vec[DX_POS], -vec[DY_POS], -vec[DZ_POS]};
+        Vector<RFLOAT> trans_vec {-vec[DX_POS], -vec[DY_POS], -vec[DZ_POS]};
         trans_vec = matmul(mat, trans_vec);
 
         mat.resize(4, 4);
@@ -242,7 +242,7 @@ void standardiseEulerAngles(
         abs(gg_old) > 179.0 ||
             bb_old  > 179.0 || bb_old < 1.0
     ) {
-        Matrix2D<RFLOAT> rot_mat = Euler::angles2matrix(aa_old, bb_old, gg_old);
+        Matrix<RFLOAT> rot_mat = Euler::angles2matrix(aa_old, bb_old, gg_old);
         angles_t angles = Euler::matrix2angles(rot_mat);
         aa_new = angles.rot;
         bb_new = angles.tilt;
@@ -253,8 +253,8 @@ void standardiseEulerAngles(
 }
 
 bool sameLocalsymOperators(
-    const Matrix1D<RFLOAT> &lhs,
-    const Matrix1D<RFLOAT> &rhs
+    const Vector<RFLOAT> &lhs,
+    const Vector<RFLOAT> &rhs
 ) {
     RFLOAT aa1 = 0.0, bb1 = 0.0, gg1 = 0.0, dx1 = 0.0, dy1 = 0.0, dz1 = 0.0, cc1 = 0.0;
     RFLOAT aa2 = 0.0, bb2 = 0.0, gg2 = 0.0, dx2 = 0.0, dy2 = 0.0, dz2 = 0.0, cc2 = 0.0;
@@ -316,7 +316,7 @@ void parseDMFormatMasksAndOperators(
 void readRelionFormatMasksAndOperators(
     FileName fn_info,
     std::vector<FileName> &fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
+    std::vector<std::vector<Vector<RFLOAT>>> &ops,
     RFLOAT angpix,
     bool verb
 ) {
@@ -326,9 +326,9 @@ void readRelionFormatMasksAndOperators(
     ops.clear();
     MetaDataTable MD;
     MD.clear();
-    std::vector<Matrix1D<RFLOAT>> dummy;
+    std::vector<Vector<RFLOAT>> dummy;
     dummy.clear();
-    Matrix1D<RFLOAT> op, op_i;
+    Vector<RFLOAT> op, op_i;
     op.clear(); op_i.clear();
 
     if (angpix < 0.001)
@@ -442,7 +442,7 @@ void readRelionFormatMasksAndOperators(
 void readRelionFormatMasksWithoutOperators(
     FileName fn_info,
     std::vector<FileName>& fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
+    std::vector<std::vector<Vector<RFLOAT>>>& ops,
     std::vector<std::vector<FileName>>& op_masks,
     bool all_angular_search_ranges_are_global,
     bool verb
@@ -453,8 +453,8 @@ void readRelionFormatMasksWithoutOperators(
     long int id = 0, ide = 0;
     std::vector<long int> ids;
     std::vector<std::vector<FileName>> op_masks_tmp;
-    Matrix1D<RFLOAT> op_empty;
-    std::vector<Matrix1D<RFLOAT>> ops_empty;
+    Vector<RFLOAT> op_empty;
+    std::vector<Vector<RFLOAT>> ops_empty;
 
     // Initialisation
     fn_mask_list.clear();
@@ -578,7 +578,7 @@ void readRelionFormatMasksWithoutOperators(
 void writeRelionFormatMasksAndOperators(
     FileName fn_info,
     const std::vector<FileName>& fn_mask_list,
-    const std::vector<std::vector<Matrix1D<RFLOAT>>>& ops,
+    const std::vector<std::vector<Vector<RFLOAT>>>& ops,
     RFLOAT angpix
 ) {
     MetaDataTable MD;
@@ -621,7 +621,7 @@ void writeRelionFormatMasksAndOperators(
 
 void writeRelionFormatLocalSearchOperatorResults(
     FileName fn_out,
-    const std::vector<Matrix1D<RFLOAT>>& op_samplings,
+    const std::vector<Vector<RFLOAT>>& op_samplings,
     RFLOAT angpix
 ) {
     MetaDataTable MD;
@@ -660,7 +660,7 @@ void writeRelionFormatLocalSearchOperatorResults(
 
 void readDMFormatMasksAndOperators(FileName fn_info,
     std::vector<FileName>& fn_mask_list,
-    std::vector<std::vector<Matrix1D<RFLOAT>>>& op_list,
+    std::vector<std::vector<Vector<RFLOAT>>>& op_list,
     RFLOAT angpix,
     bool verb
 ) {
@@ -678,8 +678,8 @@ void readDMFormatMasksAndOperators(FileName fn_info,
     const std::string str_matrix = "ROTA MATRIX";
     const std::string str_omat = "OMAT";
     const std::string str_trans = "TRAN";
-    Matrix1D<RFLOAT> op, op_i;
-    std::vector<Matrix1D<RFLOAT>> ops;
+    Vector<RFLOAT> op, op_i;
+    std::vector<Vector<RFLOAT>> ops;
 
     int id_matrix_type = 0;
     RFLOAT a11 = 0.0, a12 = 0.0, a13 = 0.0, a21 = 0.0, a22 = 0.0, a23 = 0.0, a31 = 0.0, a32 = 0.0, a33 = 0.0;
@@ -832,7 +832,7 @@ void readDMFormatMasksAndOperators(FileName fn_info,
                     id_matrix_type == ROTA_MATRIX_TYPE ||
                     id_matrix_type == OMAT_TYPE
                 ) {
-                    Matrix2D<RFLOAT> A;
+                    Matrix<RFLOAT> A;
                     A.resize(3, 3);
 
                     A.at(0, 0) = a11; A.at(0, 1) = a12; A.at(0, 2) = a13;
@@ -929,7 +929,7 @@ void readDMFormatMasksAndOperators(FileName fn_info,
 void writeDMFormatMasksAndOperators(
     FileName fn_info,
     const std::vector<FileName> &fn_mask_list,
-    const std::vector<std::vector<Matrix1D<RFLOAT>>> &ops,
+    const std::vector<std::vector<Vector<RFLOAT>>> &ops,
     RFLOAT angpix
 ) {
     if (fn_info.getExtension() == "star")
@@ -973,7 +973,7 @@ void duplicateLocalSymmetry(
     MultidimArray<RFLOAT> &out_map,
     const MultidimArray<RFLOAT> &ori_map,
     const std::vector<FileName> &fn_masks,
-    const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
+    const std::vector<std::vector<Vector<RFLOAT>>> ops,
     bool duplicate_masks_only
 ) {
     out_map.clear();
@@ -1022,7 +1022,7 @@ void duplicateLocalSymmetry(
         if (ops[imask].size() < 1)
             REPORT_ERROR("ERROR: number of operators for mask " + std::string(fn_masks[imask]) + " is less than 1!");
         for (int iop = 0; iop < ops[imask].size(); iop++) {
-            Matrix2D<RFLOAT> op_mat;
+            Matrix<RFLOAT> op_mat;
             #ifdef NEW_APPLY_SYMMETRY_METHOD
             Localsym_operator2matrix(ops[imask][iop], op_mat);
 
@@ -1032,7 +1032,7 @@ void duplicateLocalSymmetry(
             );
             #else
             Localsym_angles2matrix(ops[imask][iop], op_mat);
-            Matrix1D<RFLOAT> trans_vec;
+            Vector<RFLOAT> trans_vec;
             Localsym_translations2vector(ops[imask][iop], trans_vec);
 
             MultidimArray<RFLOAT> vol1 = applyGeometry(
@@ -1050,13 +1050,13 @@ void applyLocalSymmetry(
     MultidimArray<RFLOAT> &sym_map,
     const MultidimArray<RFLOAT> &ori_map,
     const std::vector<FileName> &fn_masks,
-    const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
+    const std::vector<std::vector<Vector<RFLOAT>>> ops,
     RFLOAT radius, RFLOAT cosine_width_pix
 ) {
     MultidimArray<RFLOAT> w, vol1, vol2;
     Image<RFLOAT> mask;
-    Matrix1D<RFLOAT> trans_vec;
-    Matrix2D<RFLOAT> op_mat;
+    Vector<RFLOAT> trans_vec;
+    Matrix<RFLOAT> op_mat;
     RFLOAT mask_val = 0.0, sym_val = 0.0, radius2 = 0.0, radiusw2 = 0.0, dist2 = 0.0, xinit = 0.0, yinit = 0.0, zinit = 0.0;
 
     // Initialise the result
@@ -1226,7 +1226,7 @@ void applyLocalSymmetry(
 void applyLocalSymmetry(
     MultidimArray<RFLOAT> &map,
     const std::vector<FileName> &fn_masks,
-    const std::vector<std::vector<Matrix1D<RFLOAT>>> ops,
+    const std::vector<std::vector<Vector<RFLOAT>>> ops,
     RFLOAT radius, RFLOAT cosine_width_pix
 ) {
     MultidimArray<RFLOAT> vol;
@@ -1236,7 +1236,7 @@ void applyLocalSymmetry(
 
 void getMinCropSize(
     MultidimArray<RFLOAT> &vol,
-    Matrix1D<RFLOAT> &center,
+    Vector<RFLOAT> &center,
     long int& mindim,
     RFLOAT edge
 ) {
@@ -1244,7 +1244,7 @@ void getMinCropSize(
     RFLOAT xori = 0.0, yori = 0.0, zori = 0.0;
 
     mindim = -1;
-    Matrix1D<RFLOAT> new_center {0, 0, 0};
+    Vector<RFLOAT> new_center {0, 0, 0};
     center.resize(3);
     std::fill(center.begin(), center.end(), 0);
 
@@ -1281,14 +1281,14 @@ void getMinCropSize(
     mindim = 2 * (long int) ceil(dist2_max); // bestdim % 2 = 0
 }
 
-bool compareOperatorsByCC(const Matrix1D<RFLOAT> &lhs, const Matrix1D<RFLOAT> &rhs) {
+bool compareOperatorsByCC(const Vector<RFLOAT> &lhs, const Vector<RFLOAT> &rhs) {
     return lhs[CC_POS] < rhs[CC_POS];
 }
 
 void getLocalSearchOperatorSamplings(
-    const Matrix1D<RFLOAT> &op_old,
-    const Matrix1D<RFLOAT> &op_search_ranges,
-    std::vector<Matrix1D<RFLOAT>> &op_samplings,
+    const Vector<RFLOAT> &op_old,
+    const Vector<RFLOAT> &op_search_ranges,
+    std::vector<Vector<RFLOAT>> &op_samplings,
     RFLOAT ang_search_step, RFLOAT trans_search_step,
     bool use_healpix, bool verb
 ) {
@@ -1300,8 +1300,8 @@ void getLocalSearchOperatorSamplings(
     long int nr_dir = 0, nr_all_samplings = 0;
 
     std::vector<RFLOAT> aas, bbs, ggs, dxs, dys, dzs;
-    Matrix1D<RFLOAT> op_tmp;
-    Matrix2D<RFLOAT> op_mat;
+    Vector<RFLOAT> op_tmp;
+    Matrix<RFLOAT> op_mat;
 
     HealpixSampling sampling;
     std::vector<int> pointer_dir_nonzeroprior, pointer_psi_nonzeroprior;
@@ -1576,12 +1576,12 @@ void getLocalSearchOperatorSamplings(
 
 void calculateOperatorCC(
     const MultidimArray<RFLOAT> &src, const MultidimArray<RFLOAT> &dest, const MultidimArray<RFLOAT> &mask,
-    std::vector<Matrix1D<RFLOAT>>& op_samplings,
+    std::vector<Vector<RFLOAT>>& op_samplings,
     bool do_sort, bool verb
 ) {
     RFLOAT val = 0.0, mask_val = 0.0, mask_val_sum = 0.0, mask_val_ctr = 0.0, cc = 0.0;
     int barstep = 0, updatebar = 0, totalbar = 0;
-    Matrix2D<RFLOAT> op_mat;
+    Matrix<RFLOAT> op_mat;
     MultidimArray<RFLOAT> vol;
 
     if (op_samplings.size() < 1)
@@ -1650,8 +1650,8 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     RFLOAT x_angpix = 0.0, y_angpix = 0.0, z_angpix = 0.0;
     long int pos_val_ctr = 0, xx = 0, yy = 0, zz = 0;
     int id = 0;
-    std::queue<Matrix1D<int>> q;
-    Matrix1D<int> vec1;
+    std::queue<Vector<int>> q;
+    Vector<int> vec1;
     const int K_max = 999;
 
     // Check K
@@ -1783,11 +1783,11 @@ void separateMasksKMeans(
         int random_seed)
 {
     Image<RFLOAT> img, img_out;
-    std::vector<Matrix1D<RFLOAT>> ocen, ncen;
+    std::vector<Vector<RFLOAT>> ocen, ncen;
     std::vector<RFLOAT> wcen;
     std::vector<int> vec_rec;
-    Matrix1D<int> vec;
-    Matrix2D<RFLOAT> mat;
+    Vector<int> vec;
+    Matrix<RFLOAT> mat;
     RFLOAT a = 0., b = 0., g = 0., x = 0., y = 0., z = 0., val = 0., dist2 = 0, dist2_min = 0.0;
     RFLOAT x_angpix = 0., y_angpix = 0., z_angpix = 0.0;
     int best_cen = -1, pos_val_ctr = 0;
@@ -2068,7 +2068,7 @@ void local_symmetry_parameters::read(int argc, char **argv) {
 void local_symmetry_parameters::run() {
     bool do_sort = true, do_verb = true;
     std::vector<FileName> fn_mask_list;
-    std::vector<std::vector<Matrix1D<RFLOAT>>> op_list;
+    std::vector<std::vector<Vector<RFLOAT>>> op_list;
 
     // Check options
     int valid_options
@@ -2186,11 +2186,11 @@ void local_symmetry_parameters::run() {
         RFLOAT aa = 0, bb = 0, gg = 0.0, dx = 0.0, dy = 0.0, dz = 0.0, cc = 0.0, tmp_binning_factor = 1.0;
         RFLOAT mask_sum = 0.0, mask_ctr = 0.0, mask2_sum = 0.0, mask2_ctr = 0.0;
 
-        Matrix1D<RFLOAT> op_search_ranges, op, com0_int, com1_int, com1_float, com1_diff;
+        Vector<RFLOAT> op_search_ranges, op, com0_int, com1_int, com1_float, com1_diff;
         // std::vector<FileName> fn_mask_list;
-        // std::vector<std::vector<Matrix1D<RFLOAT>>> op_list;
+        // std::vector<std::vector<Vector<RFLOAT>>> op_list;
         std::vector<std::vector<FileName>> op_mask_list;
-        std::vector<Matrix1D<RFLOAT>> op_samplings;
+        std::vector<Vector<RFLOAT>> op_samplings;
         MultidimArray<RFLOAT> src_cropped, dest_cropped, mask_cropped;
 
         op_search_ranges.clear(); 
@@ -2507,7 +2507,7 @@ void local_symmetry_parameters::run() {
 
         auto img = Image<RFLOAT>::from_filename(fn_unsym);
         standardiseEulerAngles(rot, tilt, psi, rot, tilt, psi);
-        Matrix1D<RFLOAT> op;
+        Vector<RFLOAT> op;
         Localsym_composeOperator(op, rot, tilt, psi, xoff / angpix_image, yoff / angpix_image, zoff / angpix_image);
 
         std::cout << " Pixel size = " << angpix_image << " Angstrom(s)" << std::endl;
@@ -2515,7 +2515,7 @@ void local_symmetry_parameters::run() {
         Localsym_outputOperator(op, &std::cout, angpix_image);
         std::cout << std::endl;
 
-        Matrix2D<RFLOAT> op_mat;
+        Matrix<RFLOAT> op_mat;
         Localsym_operator2matrix(op, op_mat, LOCALSYM_OP_DONT_INVERT);
         img() = applyGeometry(img(), op_mat, IS_NOT_INV, DONT_WRAP);
         img.write(fn_sym);
@@ -2527,10 +2527,10 @@ void local_symmetry_parameters::run() {
 
         /*
         Image<RFLOAT> img1, img2;
-        std::vector<Matrix1D<RFLOAT>> op_samplings;
+        std::vector<Vector<RFLOAT>> op_samplings;
         RFLOAT aa = 0., bb = 0., gg = 0., dx = 0., dy = 0., dz = 0.0;
-        Matrix2D<RFLOAT> op_mat1, op_mat2;
-        Matrix1D<RFLOAT> op_old, op_search_ranges, op_new, trans_vec1, trans_vec2;
+        Matrix<RFLOAT> op_mat1, op_mat2;
+        Vector<RFLOAT> op_old, op_search_ranges, op_new, trans_vec1, trans_vec2;
 
         img1.read(fn_unsym);
         img2.read(fn_mask);

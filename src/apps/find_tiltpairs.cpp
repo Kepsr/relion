@@ -41,7 +41,7 @@ class angular_error_parameters {
     bool do_opt;
     RFLOAT best_rot, best_tilt;
     int best_x, best_y;
-    Matrix2D<RFLOAT> Pass;
+    Matrix<RFLOAT> Pass;
     std::vector<int> p_unt, p_til, p_map, pairs_t2u;
     // I/O Parser
     IOParser parser;
@@ -289,8 +289,8 @@ class angular_error_parameters {
 
     void optimiseTransformationMatrixContinuous() {
         // Get coordinates of all pairs:
-        Matrix2D<RFLOAT> Au = Matrix2D<RFLOAT>::zeros(3, 3);
-        Matrix2D<RFLOAT> Bt = Matrix2D<RFLOAT>::zeros(3, 3);
+        Matrix<RFLOAT> Au = Matrix<RFLOAT>::zeros(3, 3);
+        Matrix<RFLOAT> Bt = Matrix<RFLOAT>::zeros(3, 3);
         Pass.resize(4, 4);
         std::fill(Pass.begin(), Pass.end(), 0);
 

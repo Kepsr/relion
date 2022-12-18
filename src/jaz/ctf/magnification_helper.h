@@ -32,70 +32,69 @@
 
 #include "equation2x2.h"
 
-class MagnificationHelper
-{
-	public:
+namespace MagnificationHelper {
 
-		static Matrix2D<RFLOAT> polarToMatrix(
-						double scaleMajor = 1.0,
-						double scaleMinor = 1.0,
-						double angleDeg = 0.0);
+    Matrix<RFLOAT> polarToMatrix(
+        double scaleMajor = 1.0,
+        double scaleMinor = 1.0,
+        double angleDeg = 0.0);
 
-		static void matrixToPolar(
-						const Matrix2D<RFLOAT> &mat,
-						RFLOAT &scaleMajor,
-						RFLOAT &scaleMinor,
-						RFLOAT &angleDeg);
+    void matrixToPolar(
+        const Matrix<RFLOAT> &mat,
+        RFLOAT &scaleMajor,
+        RFLOAT &scaleMinor,
+        RFLOAT &angleDeg);
 
-		static void matrixToPolar(
-						const gravis::d2Matrix &mat,
-						RFLOAT &scaleMajor,
-						RFLOAT &scaleMinor,
-						RFLOAT &angleDeg);
+    void matrixToPolar(
+        const gravis::d2Matrix &mat,
+        RFLOAT &scaleMajor,
+        RFLOAT &scaleMinor,
+        RFLOAT &angleDeg);
 
-		static void updateScaleFreq(
-						const Image<Complex> &prediction,
-						const Volume<gravis::t2Vector<Complex>> &predGradient,
-						const Image<Complex> &observation,
-						CTF &ctf, ObservationModel *obsModel,
-						double angpix,
-						Volume<Equation2x2> &eqs,
-						bool do_ctf_padding = false);
+    void updateScaleFreq(
+        const Image<Complex> &prediction,
+        const Volume<gravis::t2Vector<Complex>> &predGradient,
+        const Image<Complex> &observation,
+        CTF &ctf, ObservationModel *obsModel,
+        double angpix,
+        Volume<Equation2x2> &eqs,
+        bool do_ctf_padding = false);
 
-		static void updateScaleReal(
-						const Image<Complex> &prediction,
-						const Image<Complex> &observation,
-						const Image<RFLOAT> &snr,
-						CTF &ctf, ObservationModel *obsModel,
-						double angpix,
-						Volume<Equation2x2> &eqs,
-						bool do_ctf_padding = false);
+    void updateScaleReal(
+        const Image<Complex> &prediction,
+        const Image<Complex> &observation,
+        const Image<RFLOAT> &snr,
+        CTF &ctf, ObservationModel *obsModel,
+        double angpix,
+        Volume<Equation2x2> &eqs,
+        bool do_ctf_padding = false);
 
-		static void solvePerPixel(
-						const Volume<Equation2x2> &eqs,
-						Image<RFLOAT> &vx, Image<RFLOAT> &vy);
+    void solvePerPixel(
+        const Volume<Equation2x2> &eqs,
+        Image<RFLOAT> &vx, Image<RFLOAT> &vy);
 
-		static Matrix2D<RFLOAT> solveLinearlyFreq(
-						const Volume<Equation2x2> &eqs,
-						const Image<RFLOAT> &snr,
-						Image<RFLOAT> &vx, Image<RFLOAT> &vy);
+    Matrix<RFLOAT> solveLinearlyFreq(
+        const Volume<Equation2x2> &eqs,
+        const Image<RFLOAT> &snr,
+        Image<RFLOAT> &vx, Image<RFLOAT> &vy);
 
-		static void readEQs(std::string path, Volume<Equation2x2> &eqs);
-		static void writeEQs(const Volume<Equation2x2> &eqs, std::string path);
+    void readEQs(std::string path, Volume<Equation2x2> &eqs);
+    void writeEQs(const Volume<Equation2x2> &eqs, std::string path);
 
-		static void updatePowSpec(
-						const Image<Complex> &prediction,
-						const Image<Complex> &observation,
-						CTF &ctf, ObservationModel *obsModel,
-						double angpix,
-						Image<RFLOAT> &powSpecPred,
-						Image<RFLOAT> &powSpecObs,
-						bool do_ctf_padding = false);
+    void updatePowSpec(
+        const Image<Complex> &prediction,
+        const Image<Complex> &observation,
+        CTF &ctf, ObservationModel *obsModel,
+        double angpix,
+        Image<RFLOAT> &powSpecPred,
+        Image<RFLOAT> &powSpecObs,
+        bool do_ctf_padding = false);
 
-		static void adaptAstigmatism(
-						const std::vector<Matrix2D<RFLOAT>> &dMs,
-						std::vector<MetaDataTable> &partMdts,
-						bool perParticle, ObservationModel* obsModel);
+    void adaptAstigmatism(
+        const std::vector<Matrix<RFLOAT>> &dMs,
+        std::vector<MetaDataTable> &partMdts,
+        bool perParticle, ObservationModel* obsModel);
+
 };
 
 #endif

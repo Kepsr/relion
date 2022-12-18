@@ -181,11 +181,11 @@ class BackProjector: public Projector {
     */
     void set2DFourierTransform(
         const MultidimArray<Complex> &img_in,
-        const Matrix2D<RFLOAT> &A,
+        const Matrix<RFLOAT> &A,
         const MultidimArray<RFLOAT> *Mweight = nullptr,
         RFLOAT r_ewald_sphere = -1.0,
         RFLOAT curvature = +1.0,
-        Matrix2D<RFLOAT> *magMatrix = 0
+        Matrix<RFLOAT> *magMatrix = 0
     ) {
         // Back-rotation of a 3D Fourier Transform
         if (img_in.getDim() == 3) {
@@ -221,9 +221,9 @@ class BackProjector: public Projector {
     */
     void backrotate2D(
         const MultidimArray<Complex> &img_in,
-        const Matrix2D<RFLOAT> &A,
+        const Matrix<RFLOAT> &A,
         const MultidimArray<RFLOAT> *Mweight = nullptr,
-        Matrix2D<RFLOAT>* magMatrix = 0
+        Matrix<RFLOAT>* magMatrix = 0
     );
 
     /*
@@ -232,7 +232,7 @@ class BackProjector: public Projector {
     */
     void backrotate3D(
         const MultidimArray<Complex> &img_in,
-        const Matrix2D<RFLOAT> &A,
+        const Matrix<RFLOAT> &A,
         const MultidimArray<RFLOAT> *Mweight = nullptr
     );
 
@@ -242,11 +242,11 @@ class BackProjector: public Projector {
     */
     void backproject2Dto3D(
         const MultidimArray<Complex> &img_in,
-        const Matrix2D<RFLOAT> &A,
+        const Matrix<RFLOAT> &A,
         const MultidimArray<RFLOAT> *Mweight = nullptr,
         RFLOAT r_ewald_sphere = -1.0,
         RFLOAT curvature = +1.0,
-        Matrix2D<RFLOAT> *magMatrix = 0
+        Matrix<RFLOAT> *magMatrix = 0
     );
 
     /*
@@ -255,7 +255,7 @@ class BackProjector: public Projector {
     */
     void backproject1Dto2D(
         const MultidimArray<Complex> &img_in,
-        const Matrix2D<RFLOAT> &A,
+        const Matrix<RFLOAT> &A,
         const MultidimArray<RFLOAT> *Mweight = nullptr
     );
 

@@ -71,7 +71,7 @@ const bool WRAP = true;
  * m = rotation2DMatrix(60);
  * @endcode
  */
-Matrix2D<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous=true);
+Matrix<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous=true);
 
 /** Creates a translational matrix (3x3) for images
  * @ingroup GeometricalTransformations
@@ -84,7 +84,7 @@ Matrix2D<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous=true);
  * m = translation2DMatrix(vectorR2(1, 0));
  * @endcode
  */
-Matrix2D<RFLOAT> translation2DMatrix(const Matrix1D<RFLOAT> &v);
+Matrix<RFLOAT> translation2DMatrix(const Vector<RFLOAT> &v);
 
 /** Creates a rotational matrix (4x4) for volumes around system axis
  * @ingroup GeometricalTransformations
@@ -118,7 +118,7 @@ Matrix2D<RFLOAT> translation2DMatrix(const Matrix1D<RFLOAT> &v);
  * m = rotation3DMatrix(60, 'X');
  * @endcode
  */
-Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT ang, char axis, bool homogeneous=true);
+Matrix<RFLOAT> rotation3DMatrix(RFLOAT ang, char axis, bool homogeneous=true);
 
 /** Creates a rotational matrix (4x4) for volumes around any axis
  * @ingroup GeometricalTransformations
@@ -131,7 +131,7 @@ Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT ang, char axis, bool homogeneous=true);
  * m = rotation3DMatrix(60, vectorR3(1, 1, 1));
  * @endcode
  */
-Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT ang, const Matrix1D<RFLOAT> &axis, bool homogeneous=true);
+Matrix<RFLOAT> rotation3DMatrix(RFLOAT ang, const Vector<RFLOAT> &axis, bool homogeneous=true);
 
 /** Matrix which transforms the given axis into Z
  * @ingroup GeometricalTransformations
@@ -141,14 +141,14 @@ Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT ang, const Matrix1D<RFLOAT> &axis, bool
  * order to produce rotational matrices, for instance, around any axis.
  *
  * @code
- * Matrix2D<RFLOAT> A = alignWithZ(axis);
+ * Matrix<RFLOAT> A = alignWithZ(axis);
  * return A.transpose() * rotation3DMatrix(ang, 'Z') * A;
  * @endcode
  *
  * The returned matrix is such that A*axis=Z, where Z and axis are column
  * vectors.
  */
-void alignWithZ(const Matrix1D<RFLOAT> &axis, Matrix2D<RFLOAT> &m, bool homogeneous=true);
+void alignWithZ(const Vector<RFLOAT> &axis, Matrix<RFLOAT> &m, bool homogeneous=true);
 
 /** Creates a translational matrix (4x4) for volumes
  * @ingroup GeometricalTransformations
@@ -161,7 +161,7 @@ void alignWithZ(const Matrix1D<RFLOAT> &axis, Matrix2D<RFLOAT> &m, bool homogene
  * m = translation3DMatrix(vectorR3(0, 0, 2));
  * @endcode
  */
-Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v);
+Matrix<RFLOAT> translation3DMatrix(const Vector<RFLOAT> &v);
 
 /** Creates a scaling matrix (4x4) for volumes
  * @ingroup GeometricalTransformations
@@ -169,7 +169,7 @@ Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v);
  * The scaling factors for the different axis must be given as a vector. So
  * that, XX(sc)=scale for X axis, YY(sc)=...
  */
-Matrix2D<RFLOAT> scale3DMatrix(const Matrix1D<RFLOAT> &sc, bool homogeneous=true);
+Matrix<RFLOAT> scale3DMatrix(const Vector<RFLOAT> &sc, bool homogeneous=true);
 
 /** Applies a geometrical transformation.
  * @ingroup GeometricalTransformations
@@ -239,14 +239,14 @@ Matrix2D<RFLOAT> scale3DMatrix(const Matrix1D<RFLOAT> &sc, bool homogeneous=true
  * Although you can also use the constants IS_INV, or WRAP.
  *
  * @code
- * Matrix2D<RFLOAT> A = Matrix2D<RFLOAT>::identity(4);
+ * Matrix<RFLOAT> A = Matrix<RFLOAT>::identity(4);
  * A = applyGeometry(A, V);
  * @endcode
  */
 template<typename T>
 MultidimArray<T> applyGeometry(
     const MultidimArray<T> &V,
-    const Matrix2D<RFLOAT> A,
+    const Matrix<RFLOAT> A,
     bool inv, bool do_wrap,
     T outside = 0
 ) {
@@ -266,13 +266,13 @@ MultidimArray<T> applyGeometry(
     MultidimArray<RFLOAT> result;
     result.resize(V);
 
-    Matrix2D<RFLOAT> Ainv;
-    const Matrix2D<RFLOAT> *Aptr = &A;
+    Matrix<RFLOAT> Ainv;
+    const Matrix<RFLOAT> *Aptr = &A;
     if (!inv) {
         Ainv = A.inv();
         Aptr = &Ainv;
     }
-    const Matrix2D<RFLOAT> &Aref = *Aptr;
+    const Matrix<RFLOAT> &Aref = *Aptr;
 
     // For scalings the output matrix is resized outside to the final
     // size instead of being resized inside the routine with the
@@ -495,7 +495,7 @@ MultidimArray<T> rotate(
     RFLOAT ang, char axis = 'Z',
     bool do_wrap = DONT_WRAP, T outside = 0
 ) {
-    Matrix2D<RFLOAT> m;
+    Matrix<RFLOAT> m;
     switch (V.getDim()) {
         case 2: m = rotation2DMatrix(ang); break;  // axis is irrelevant
         case 3: m = rotation3DMatrix(ang, axis); break;
@@ -518,10 +518,10 @@ MultidimArray<T> rotate(
 template<typename T>
 MultidimArray<T> translate(
     const MultidimArray<T> &V,
-    const Matrix1D<RFLOAT> &v,
+    const Vector<RFLOAT> &v,
     bool do_wrap = WRAP, T outside = 0
 ) {
-    Matrix2D<RFLOAT> m;
+    Matrix<RFLOAT> m;
     switch (V.getDim()) {
         case 2: m = translation2DMatrix(v); break;
         case 3: m = translation3DMatrix(v); break;
@@ -544,7 +544,7 @@ MultidimArray<T> translateCenterOfMassToCenter(
 ) {
     MultidimArray<T> V2 = V;
     V2.setXmippOrigin();
-    Matrix1D<RFLOAT> center;
+    Vector<RFLOAT> center;
     V2.centerOfMass(center);
     if (verb) {
     	std::cout << " Center of mass: x= " << XX(center) << " y= " << YY(center) << " z= " << ZZ(center) << std::endl;
@@ -569,7 +569,7 @@ MultidimArray<T> scaleToSize(
     int Xdim, int Ydim, int Zdim = 1
 ) {
 
-    Matrix2D<RFLOAT> tmp;
+    Matrix<RFLOAT> tmp;
     switch (V.getDim()) {
 
         case 2:
@@ -618,7 +618,7 @@ MultidimArray<T> scaleToSize(
 template<typename T>
 void radialAverage(
     const MultidimArray<T> &m,
-    Matrix1D<int> &center_of_rot,
+    Vector<int> &center_of_rot,
     MultidimArray<T> &radial_mean,
     MultidimArray<int> &radial_count,
     bool rounding = false
@@ -666,7 +666,7 @@ void radialAverage(
     radial_count.resize(dim);
     radial_count.initZeros();
 
-    Matrix1D<RFLOAT> idx(3);
+    Vector<RFLOAT> idx(3);
     // Perform the radial sum and count pixels that contribute to every distance
     FOR_ALL_ELEMENTS_IN_ARRAY3D(m, i, j, k) {
         XX(idx) = i - XX(center_of_rot);

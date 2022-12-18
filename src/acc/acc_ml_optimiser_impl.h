@@ -28,11 +28,11 @@ void getFourierTransformsAndCtfs(
 
     for (int img_id = 0; img_id < sp.nr_images; img_id++) {
         int icol_rot, icol_tilt, icol_psi, icol_xoff, icol_yoff, icol_zoff;
-        Matrix1D<RFLOAT> my_old_offset, my_prior, my_old_offset_ori;
+        Vector<RFLOAT> my_old_offset, my_prior, my_old_offset_ori;
         Image<RFLOAT> img, rec_img;
         MultidimArray<RFLOAT> Fctf;
-        Matrix2D<RFLOAT> Aori;
-        Matrix1D<RFLOAT> my_projected_com(baseMLO->mymodel.data_dim), my_refined_ibody_offset(baseMLO->mymodel.data_dim);
+        Matrix<RFLOAT> Aori;
+        Vector<RFLOAT> my_projected_com(baseMLO->mymodel.data_dim), my_refined_ibody_offset(baseMLO->mymodel.data_dim);
         int my_metadata_offset, optics_group, group_id;
         RFLOAT my_pixel_size, normcorr;
         FileName fn_img;
@@ -357,7 +357,7 @@ void getFourierTransformsAndCtfs(
         // ------------------------------------------------------------------------------------------
 
         RFLOAT rot_deg, tilt_deg, psi_deg;
-        Matrix1D<RFLOAT> my_old_offset_helix_coords;
+        Vector<RFLOAT> my_old_offset_helix_coords;
         CTICTOC(accMLO->timer, "HelicalPrep", ({
 
         /* FIXME :  For some reason the device-allocation inside "selfTranslate" takes a much longer time than expected.
@@ -757,13 +757,13 @@ void getFourierTransformsAndCtfs(
                     // int ocol_norm = 6 + METADATA_LINE_LENGTH_BEFORE_BODIES + obody * METADATA_NR_BODY_PARAMS;
 
                     // Aresi is the residual orientation for this obody
-                    Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(
+                    Matrix<RFLOAT> Aresi = Euler::angles2matrix(
                         direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_rot),
                         direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_tilt),
                         direct::elem(baseMLO->exp_metadata, my_metadata_offset, ocol_psi)
                     );
                     // The real orientation to be applied is the obody transformation applied and the original one
-                    Matrix2D<RFLOAT> Abody = Aori
+                    Matrix<RFLOAT> Abody = Aori
                         .matmul(baseMLO->mymodel.orient_bodies[obody].transpose())
                         .matmul(baseMLO->A_rot90)
                         .matmul(Aresi)
@@ -788,7 +788,7 @@ void getFourierTransformsAndCtfs(
 
                     // 17May2017: Body is centered at its own COM
                     // move it back to its place in the original particle image
-                    Matrix1D<RFLOAT> other_projected_com(baseMLO->mymodel.data_dim);
+                    Vector<RFLOAT> other_projected_com(baseMLO->mymodel.data_dim);
 
                     // Projected COM for this body (using Aori, just like above for ibody and my_projected_com!!!)
                     other_projected_com = matmul(Aori, baseMLO->mymodel.com_bodies[obody]);
@@ -923,14 +923,14 @@ void getAllSquaredDifferencesCoarse(
 
         for (unsigned long iclass = sp.iclass_min; iclass <= sp.iclass_max; iclass++) {
             if (baseMLO->mymodel.pdf_class[iclass] > 0.0) {
-                Matrix2D<RFLOAT> MBL, MBR;
+                Matrix<RFLOAT> MBL, MBR;
 
                 if (baseMLO->mymodel.nr_bodies > 1) {
                     // img_id=0 because in multi-body refinement we do not do movie frames!
                     RFLOAT rot_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
                     RFLOAT tilt_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_TILT);
                     RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
-                    Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
+                    Matrix<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
                     MBL = Aori
                         .matmul(baseMLO->mymodel.orient_bodies[ibody].transpose())
@@ -939,7 +939,7 @@ void getAllSquaredDifferencesCoarse(
                 }
 
                 int optics_group = baseMLO->mydata.getOpticsGroup(op.part_id, 0); // get optics group of first image for this particle...
-                Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+                Matrix<RFLOAT> mag = Matrix<RFLOAT>::identity(3);
                 if (baseMLO->mydata.obsModel.hasMagMatrices) {
                     mag = mag.matmul(baseMLO->mydata.obsModel.anisoMag(optics_group));
                 }
@@ -1391,13 +1391,13 @@ void getAllSquaredDifferencesFine(
                 bundleD2[img_id].pack(FPCMasks[img_id][exp_iclass].jobExtent);
                 }))
 
-                Matrix2D<RFLOAT> MBL, MBR;
+                Matrix<RFLOAT> MBL, MBR;
 
                 if (baseMLO->mymodel.nr_bodies > 1) {
                     RFLOAT rot_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
                     RFLOAT tilt_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_TILT);
                     RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
-                    Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
+                    Matrix<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
                     MBL = Aori
                         .matmul(baseMLO->mymodel.orient_bodies[ibody].transpose())
@@ -1409,7 +1409,7 @@ void getAllSquaredDifferencesFine(
                 eulers[exp_iclass - sp.iclass_min].setSize(9 * FineProjectionData[img_id].class_entries[exp_iclass]);
                 eulers[exp_iclass - sp.iclass_min].hostAlloc();
 
-                Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+                Matrix<RFLOAT> mag = Matrix<RFLOAT>::identity(3);
                 if (baseMLO->mydata.obsModel.hasMagMatrices) {
                     mag = mag.matmul(baseMLO->mydata.obsModel.anisoMag(optics_group));
                 }
@@ -2408,7 +2408,7 @@ void storeWeightedSums(
         RFLOAT old_psi = direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_psi);
         direct::elem(baseMLO->exp_metadata, my_metadata_offset, icol_psi) = psi;
 
-        Matrix1D<RFLOAT> shifts(baseMLO->mymodel.data_dim);
+        Vector<RFLOAT> shifts(baseMLO->mymodel.data_dim);
 
         shifts[0] = op.old_offset[img_id][1] + oversampled_translations_x[op.max_index[img_id].iovertrans];
         shifts[1] = op.old_offset[img_id][1] + oversampled_translations_y[op.max_index[img_id].iovertrans];
@@ -2655,13 +2655,13 @@ void storeWeightedSums(
             ======================================================*/
 
 
-            Matrix2D<RFLOAT> MBL, MBR;
+            Matrix<RFLOAT> MBL, MBR;
 
             if (baseMLO->mymodel.nr_bodies > 1) {
                 RFLOAT rot_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_ROT);
                 RFLOAT tilt_ori = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_TILT);
                 RFLOAT psi_ori  = direct::elem(baseMLO->exp_metadata, op.metadata_offset, METADATA_PSI);
-                Matrix2D<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
+                Matrix<RFLOAT> Aori = Euler::angles2matrix(rot_ori, tilt_ori, psi_ori);
 
                 MBL = Aori
                     .matmul(baseMLO->mymodel.orient_bodies[ibody].transpose())
@@ -2675,7 +2675,7 @@ void storeWeightedSums(
 
             CTICTOC(accMLO->timer, "generateEulerMatricesProjector", ({
 
-            Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+            Matrix<RFLOAT> mag = Matrix<RFLOAT>::identity(3);
             if (baseMLO->mydata.obsModel.hasMagMatrices) {
                 mag = mag.matmul(baseMLO->mydata.obsModel.anisoMag(optics_group));
             }

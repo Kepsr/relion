@@ -180,7 +180,7 @@ struct blobtype
     \\ Ex:
     @code
     struct blobtype blob; blob.radius = 2; blob.order = 2; blob.alpha = 3.6;
-    Matrix1D<RFLOAT> v=vectorR3(1,1,1);
+    Vector<RFLOAT> v=vectorR3(1,1,1);
     std::cout << "Blob value at (1,1,1) = " << blob_val(v.mod(),blob) << std::endl;
     @endcode */
 #define blob_val(r, blob) kaiser_value(r, blob.radius, blob.alpha, blob.order)
@@ -201,7 +201,7 @@ RFLOAT kaiser_value(RFLOAT r, RFLOAT a, RFLOAT alpha, int m);
     \\ Ex:
     @code
     struct blobtype blob; blob.radius = 2; blob.order = 2; blob.alpha = 3.6;
-    Matrix1D<RFLOAT> v=vectorR3(1,1,1);
+    Vector<RFLOAT> v=vectorR3(1,1,1);
     std::cout << "Blob line integral through (1,1,1) = " << blob_proj(v.mod(),blob)
          << std::endl;
     @endcode */

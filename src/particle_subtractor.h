@@ -86,9 +86,9 @@ public:
 	// subtract one particle
 	void subtractOneParticle(long int part_id, long int imgno, long int counter);
 
-private:
+	private:
 	// Pre-calculated rotation matrix for (0,90,0) rotation, and its transpose, for multi-body orientations
-	Matrix2D<RFLOAT> A_rot90, A_rot90T;
+	Matrix<RFLOAT> A_rot90, A_rot90T;
 
 	// Which orientations/masks to use for the subtraction, i.e. relative to which body?
 	int subtract_body;
@@ -103,7 +103,7 @@ private:
 	bool ignore_class;
 
 	// User-provided 3D-center (in pixels), which will be projected to provide the 2D centre of the subtracted particle images
-	Matrix1D<RFLOAT> new_center;
+	Vector<RFLOAT> new_center;
 
 	// For division of labour
 	long int my_first_part_id, my_last_part_id;

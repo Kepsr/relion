@@ -70,7 +70,7 @@ void MlModel::initialise(bool do_sgd) {
     helical_rise .resize(nr_classes, 0);
 
     if (ref_dim == 2) {
-        Matrix1D<RFLOAT> empty (2);
+        Vector<RFLOAT> empty (2);
         prior_offset_class.resize(nr_classes * nr_bodies, empty);
     }
     // These arrays will be resized when they are filled
@@ -823,7 +823,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
         Imask.setSamplingRateInHeader(pixel_size);
         // For rotations, find center-of-mass (com)
         int mydim = Imask().getDim();
-        Matrix1D<RFLOAT> com(mydim);
+        Vector<RFLOAT> com(mydim);
         Imask().centerOfMass(com);
         com_bodies[nr_bodies].resize(3);
         for (int i = 0; i < 3; i++) {
@@ -854,7 +854,7 @@ void MlModel::initialiseBodies(FileName fn_masks, FileName fn_root_out, bool als
             MD.containsLabel(EMDL::BODY_ROTATE_DIRECTION_Z)
         ) {
             has_rotate_directions = true;
-            Matrix1D<RFLOAT> body_rotate_direction (3);
+            Vector<RFLOAT> body_rotate_direction (3);
             XX(body_rotate_direction) = MD.getValue<RFLOAT>(EMDL::BODY_ROTATE_DIRECTION_X, i);
             YY(body_rotate_direction) = MD.getValue<RFLOAT>(EMDL::BODY_ROTATE_DIRECTION_Y, i);
             ZZ(body_rotate_direction) = MD.getValue<RFLOAT>(EMDL::BODY_ROTATE_DIRECTION_Z, i);

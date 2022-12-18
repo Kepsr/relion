@@ -186,11 +186,11 @@ void generateEulerMatrices(
     ProjectionParams &ProjectionData,
     XFLOAT *eulers,
     bool inverse,
-    Matrix2D<RFLOAT> &L,
-    Matrix2D<RFLOAT> &R
+    Matrix<RFLOAT> &L,
+    Matrix<RFLOAT> &R
 ) {
 
-    Matrix2D<RFLOAT> A (3, 3);
+    Matrix<RFLOAT> A (3, 3);
 
     bool doL = L.ncols() == 3 && L.nrows() == 3;
     bool doR = R.ncols() == 3 && R.nrows() == 3;

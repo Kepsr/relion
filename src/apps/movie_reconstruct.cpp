@@ -447,14 +447,14 @@ void MovieReconstructor::backproject(int rank, int size) {
 
 void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, MultidimArray<Complex> &F2D, int this_subset) {
     RFLOAT fom, r_ewald_sphere;
-    Matrix1D<RFLOAT> trans(2);
+    Vector<RFLOAT> trans(2);
     FourierTransformer transformer;
 
     // Rotations
     RFLOAT rot  = mdt.getValue<RFLOAT>(EMDL::ORIENT_ROT,  p);
     RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, p);
     RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI,  p);
-    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+    Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     // If we are considering Ewald sphere curvature, the mag. matrix
     // has to be provided to the backprojector explicitly
@@ -536,9 +536,9 @@ void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, 
         direct::elem(F2D, 0, 0) = 0.0;
 
         if (do_ewald) {
-            Matrix2D<RFLOAT> magMat = obsModel.hasMagMatrices ?
+            Matrix<RFLOAT> magMat = obsModel.hasMagMatrices ?
                 obsModel.getMagMatrix(opticsGroup) :
-                Matrix2D<RFLOAT>::identity(2);
+                Matrix<RFLOAT>::identity(2);
 
             backprojector[this_subset - 1].set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, +1.0, &magMat);
             backprojector[this_subset - 1].set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, -1.0, &magMat);

@@ -49,12 +49,12 @@
 #include "src/funcs.h"
 
 /* Euler angles --> matrix ------------------------------------------------- */
-Matrix2D<RFLOAT> Euler::angles2matrix(
+Matrix<RFLOAT> Euler::angles2matrix(
     RFLOAT alpha, RFLOAT beta, RFLOAT gamma,
     bool homogeneous
 ) {
 
-    Matrix2D<RFLOAT> A;
+    Matrix<RFLOAT> A;
 
     if (homogeneous) {
         A.resize(4, 4);
@@ -91,7 +91,7 @@ Matrix2D<RFLOAT> Euler::angles2matrix(
 }
 
 /* Euler direction --------------------------------------------------------- */
-Matrix1D<RFLOAT> Euler::angles2direction(RFLOAT alpha, RFLOAT beta) {
+Vector<RFLOAT> Euler::angles2direction(RFLOAT alpha, RFLOAT beta) {
 
     alpha = radians(alpha);
     beta  = radians(beta);
@@ -108,13 +108,13 @@ Matrix1D<RFLOAT> Euler::angles2direction(RFLOAT alpha, RFLOAT beta) {
 //gamma is useless but I keep it for simmetry
 //with Euler::direction
 void Euler::direction2angles(
-    Matrix1D<RFLOAT> &v0,
+    Vector<RFLOAT> &v0,
     RFLOAT &alpha, RFLOAT &beta
 ) {
 	// Aug25,2015 - Shaoda
 	// This function can recover tilt (b) as small as 0.0001 degrees
 	// It replaces a more complicated version in the code before Aug2015
-    Matrix1D<RFLOAT> v;
+    Vector<RFLOAT> v;
 
     // Make sure the vector is normalised
     v.resize(3);
@@ -136,7 +136,7 @@ void Euler::direction2angles(
 /* Matrix --> Euler angles ------------------------------------------------- */
 #define CHECK
 // #define DEBUG_EULER
-angles_t Euler::matrix2angles(const Matrix2D<RFLOAT> &A) {
+angles_t Euler::matrix2angles(const Matrix<RFLOAT> &A) {
 
     if (A.ncols() != 3 || A.nrows() != 3)
         REPORT_ERROR("Euler::matrix2angles: The Euler matrix is not 3×3");
@@ -191,7 +191,7 @@ angles_t Euler::matrix2angles(const Matrix2D<RFLOAT> &A) {
 #ifdef NEVERDEFINED
 // Michael's method
 void Euler::matrix2angles(
-    Matrix2D<RFLOAT> A, 
+    Matrix<RFLOAT> A, 
     RFLOAT *alpha, RFLOAT *beta, RFLOAT *gamma
 ) {
 
@@ -249,14 +249,14 @@ angles_t Euler::mirrorXY(RFLOAT rot, RFLOAT tilt, RFLOAT psi) {
 
 /* Apply a transformation matrix to Euler angles --------------------------- */
 angles_t Euler::apply_transf(
-    const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R,
+    const Matrix<RFLOAT> &L, const Matrix<RFLOAT> &R,
     RFLOAT rot, RFLOAT tilt, RFLOAT psi
 ) {
-    Matrix2D<RFLOAT> euler = Euler::angles2matrix(rot, tilt, psi);
+    Matrix<RFLOAT> euler = Euler::angles2matrix(rot, tilt, psi);
     return Euler::matrix2angles(L.matmul(euler).matmul(R));
 }
 
 /* Rotate (3D) MultidimArray with 3 Euler angles ------------------------------------- */
-Matrix2D<RFLOAT> Euler::rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi) {
+Matrix<RFLOAT> Euler::rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi) {
     return Euler::angles2matrix(rot, tilt, psi, true);
 }

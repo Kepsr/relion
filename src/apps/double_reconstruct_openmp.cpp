@@ -344,7 +344,7 @@ class reconstruct_parameters {
                             //std::cout << rnd_gaus(0.0, angular_error) << std::endl;
                         }
 
-                        Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+                        Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
                         int opticsGroup = obsModel.getOpticsGroup(table, p);
                         double pixelsize = angpix[opticsGroup];
@@ -360,7 +360,7 @@ class reconstruct_parameters {
                         A3D /= padding_factor_2D;
 
                         // Translations (either through phase-shifts or in real space
-                        Matrix1D<RFLOAT> trans (2 + do_3d_rot);
+                        Vector<RFLOAT> trans (2 + do_3d_rot);
                         std::fill(trans.begin(), trans.end(), 0);
                         XX(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p) / pixelsize;
                         YY(trans) = table.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p) / pixelsize;
@@ -473,9 +473,9 @@ class reconstruct_parameters {
 
                             if (do_ewald) {
 
-                                Matrix2D<RFLOAT> magMat = obsModel.hasMagMatrices && !Ewald_ellipsoid ?
+                                Matrix<RFLOAT> magMat = obsModel.hasMagMatrices && !Ewald_ellipsoid ?
                                     obsModel.getMagMatrix(opticsGroup) :
-                                    Matrix2D<RFLOAT>::identity(2);
+                                    Matrix<RFLOAT>::identity(2);
 
                                 backproj.set2DFourierTransform(
                                     F2DP, A3D, &Fctf, r_ewald_sphere, true, &magMat

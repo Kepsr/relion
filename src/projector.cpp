@@ -47,7 +47,7 @@ int TIMING_INIT2  = proj_timer.setNew("PROJECTOR - init2");
 using namespace gravis;
 
 template <typename T>
-inline std::array<T, 2> matmul1_2(const Matrix2D<T> &A, T x) {
+inline std::array<T, 2> matmul1_2(const Matrix<T> &A, T x) {
     return {
         A(0, 0) * x,
         A(1, 0) * x,
@@ -55,7 +55,7 @@ inline std::array<T, 2> matmul1_2(const Matrix2D<T> &A, T x) {
 }
 
 template <typename T>
-inline std::array<T, 2> matmul2_2(const Matrix2D<T> &A, T x, T y) {
+inline std::array<T, 2> matmul2_2(const Matrix<T> &A, T x, T y) {
     return {
         A(0, 0) * x + A(0, 1) * y,
         A(1, 0) * x + A(1, 1) * y,
@@ -63,7 +63,7 @@ inline std::array<T, 2> matmul2_2(const Matrix2D<T> &A, T x, T y) {
 }
 
 template <typename T>
-inline std::array<T, 3> matmul2_3(const Matrix2D<T> &A, T x, T y) {
+inline std::array<T, 3> matmul2_3(const Matrix<T> &A, T x, T y) {
     return {
         A(0, 0) * x + A(0, 1) * y,
         A(1, 0) * x + A(1, 1) * y,
@@ -72,7 +72,7 @@ inline std::array<T, 3> matmul2_3(const Matrix2D<T> &A, T x, T y) {
 }
 
 template <typename T>
-inline std::array<T, 3> matmul3_3(const Matrix2D<T> &A, T x, T y, T z) {
+inline std::array<T, 3> matmul3_3(const Matrix<T> &A, T x, T y, T z) {
     return {
         A(0, 0) * x + A(0, 1) * y + A(0, 2) * z,
         A(1, 0) * x + A(1, 1) * y + A(1, 2) * z,
@@ -204,7 +204,7 @@ struct Trilinear {
 
     static t2Vector<Complex> interpolate(
         const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp, RFLOAT zp,
-        const Matrix2D<RFLOAT> &Ainv
+        const Matrix<RFLOAT> &Ainv
     ) {
         // Only asymmetric half is stored
         const bool is_neg_x = xp < 0;
@@ -849,7 +849,7 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
     }
 }
 
-MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const {
+MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix<RFLOAT> &A) const {
 
     auto f2d = MultidimArray<Complex>::zeros(xdim, ydim);
     // Use the inverse matrix
@@ -913,7 +913,7 @@ MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix2D<RFL
 }
 
 
-Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix2D<RFLOAT>& A) {
+Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix<RFLOAT>& A) {
 
     Volume<t2Vector<Complex>> img_out (sh, s, 1);
     const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
@@ -938,7 +938,7 @@ Volume<t2Vector<Complex>> Projector::projectGradient(int sh, int s, const Matrix
     return img_out;
 }
 
-MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix2D<RFLOAT> &A) const {
+MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix<RFLOAT> &A) const {
 
     auto f1d = MultidimArray<Complex>::zeros(xdim);
     const auto Ainv = A.inv() * (RFLOAT) padding_factor;  // Take scaling directly into account
@@ -970,7 +970,7 @@ MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix2D<RFLOAT>
     return f1d;
 }
 
-MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const {
+MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix<RFLOAT> &A) const {
 
     auto f2d = MultidimArray<Complex>::zeros(xdim, ydim);
     // Use the inverse matrix
@@ -1023,7 +1023,7 @@ MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix2D<RF
 }
 
 
-MultidimArray<Complex> Projector::rotate3D(int xdim, int ydim, int zdim, const Matrix2D<RFLOAT> &A) const {
+MultidimArray<Complex> Projector::rotate3D(int xdim, int ydim, int zdim, const Matrix<RFLOAT> &A) const {
 
     auto f3d = MultidimArray<Complex>::zeros(xdim, ydim, zdim);
 

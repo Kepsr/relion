@@ -440,14 +440,14 @@ void basisViewerCanvas::fill(
 
                 if (_do_apply_orient) {
                     if (have_optics_group) {
-                        Matrix1D<RFLOAT> offset (3);
+                        Vector<RFLOAT> offset (3);
                         XX(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, my_ipos);
                         YY(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, my_ipos);
                         if (img().getDim() == 3)
                         ZZ(offset) = MDin.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, my_ipos);
                         offset /= angpix;
                         const RFLOAT psi = MDin.getValue<RFLOAT>(EMDL::ORIENT_PSI, my_ipos);
-                        Matrix2D<RFLOAT> A;
+                        Matrix<RFLOAT> A;
                         if (img().getDim() == 2) {
                             A = rotation2DMatrix(psi);
                             for (const int i : {0, 1})
@@ -461,7 +461,7 @@ void basisViewerCanvas::fill(
                         }
                         img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);
                     } else if (MDin.containsLabel(EMDL::MLMODEL_IS_HELIX) && img().getDim() == 3) {
-                        Matrix2D<RFLOAT> A = Euler::rotation3DMatrix(0, 90, 0);
+                        Matrix<RFLOAT> A = Euler::rotation3DMatrix(0, 90, 0);
                         for (int i : {0, 1, 2})
                             A.at(i, 3) = A.at(i, 0) + A.at(i, 1) + A.at(i, 2);
                         img() = applyGeometry(img(), A, IS_NOT_INV, DONT_WRAP);

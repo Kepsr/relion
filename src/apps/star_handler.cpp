@@ -720,7 +720,7 @@ class star_handler_parameters {
             REPORT_ERROR("ERROR: input STAR file does not contain rlnOriginX/Y for re-centering.");
         }
 
-        Matrix1D<RFLOAT> my_center {center_X, center_Y, center_Z};
+        Vector<RFLOAT> my_center {center_X, center_Y, center_Z};
 
         for (long int i: MD) {
 
@@ -739,8 +739,8 @@ class star_handler_parameters {
             RFLOAT psi  = MD.getValue<RFLOAT>(EMDL::ORIENT_PSI,  i);
 
             // Project the center-coordinates
-            Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-            Matrix1D<RFLOAT> my_projected_center = matmul(A3D, my_center);
+            Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+            Vector<RFLOAT> my_projected_center = matmul(A3D, my_center);
 
             xoff -= my_projected_center[0];
             yoff -= my_projected_center[1];

@@ -160,7 +160,7 @@ class MlOptimiser {
     bool do_reconstruct_subtracted_bodies;
 
     // Precalculated rotation matrix for (0,90,0) rotation, and its transpose
-    Matrix2D<RFLOAT> A_rot90, A_rot90T;
+    Matrix<RFLOAT> A_rot90, A_rot90T;
 
     // Flag to keep tau-spectrum constant
     bool fix_tau;
@@ -633,7 +633,7 @@ class MlOptimiser {
     std::vector<FileName> fn_local_symmetry_masks;
 
     // Local symmetry - list of operators
-    std::vector<std::vector<Matrix1D<RFLOAT> > > fn_local_symmetry_operators;
+    std::vector<std::vector<Vector<RFLOAT>>> fn_local_symmetry_operators;
 
     //Maximum number of particles permitted to be drop, due to zero sum of weights, before exiting with an error (GPU only).
     int failsafe_threshold;
@@ -918,8 +918,8 @@ class MlOptimiser {
             std::vector<MultidimArray<Complex > > &exp_Fimg,
             std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
             std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-            std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
-            std::vector<Matrix1D<RFLOAT> > &exp_prior,
+            std::vector<Vector<RFLOAT> > &exp_old_offset,
+            std::vector<Vector<RFLOAT> > &exp_prior,
             std::vector<MultidimArray<RFLOAT> > &exp_power_img,
             std::vector<RFLOAT> &exp_highres_Xi2_img,
             std::vector<int> &exp_pointer_dir_nonzeroprior,
@@ -972,7 +972,7 @@ class MlOptimiser {
             int exp_itrans_min, int exp_itrans_max, int my_iclass_min, int my_iclass_max,
             MultidimArray<RFLOAT> &exp_Mweight, MultidimArray<bool> &exp_Mcoarse_significant,
             std::vector<RFLOAT> &exp_significant_weight, std::vector<RFLOAT> &exp_sum_weight,
-            std::vector<Matrix1D<RFLOAT> > &exp_old_offset, std::vector<Matrix1D<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
+            std::vector<Vector<RFLOAT> > &exp_old_offset, std::vector<Vector<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
             std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
             std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior);
 
@@ -987,8 +987,8 @@ class MlOptimiser {
             std::vector<MultidimArray<Complex > > &exp_Fimg_nomask,
             std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
             std::vector<MultidimArray<RFLOAT> > &exp_power_img,
-            std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
-            std::vector<Matrix1D<RFLOAT> > &exp_prior,
+            std::vector<Vector<RFLOAT> > &exp_old_offset,
+            std::vector<Vector<RFLOAT> > &exp_prior,
             MultidimArray<RFLOAT> &exp_Mweight,
             MultidimArray<bool> &exp_Mcoarse_significant,
             std::vector<RFLOAT> &exp_significant_weight,

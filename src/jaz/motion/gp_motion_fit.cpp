@@ -48,7 +48,7 @@ GpMotionFit::GpMotionFit(
     positions(positions),
     perFrameOffsets(perFrameOffsets)
 {
-    Matrix2D<RFLOAT> A(pc,pc);
+    Matrix<RFLOAT> A (pc, pc);
 
     const double sv2 = sig_vel_px * sig_vel_px;
     const double sd2 = sig_div_px * sig_div_px;
@@ -62,9 +62,8 @@ GpMotionFit::GpMotionFit(
         A(j,i) = k;
     }
 
-    Matrix2D<RFLOAT> U, Vt;
-    Matrix1D<RFLOAT> S;
-
+    Matrix<RFLOAT> U, Vt;
+    Vector<RFLOAT> S;
     SvdHelper::decompose(A, U, S, Vt);
 
     dc = maxDims < 0 || maxDims > pc ? pc : maxDims;
@@ -79,7 +78,7 @@ GpMotionFit::GpMotionFit(
         }
     }
 
-    basis = Matrix2D<RFLOAT>(pc,dc);
+    basis = Matrix<RFLOAT>(pc, dc);
 
     for (int d = 0; d < dc; d++) {
         const double l = sqrt(S[d]);
@@ -90,12 +89,9 @@ GpMotionFit::GpMotionFit(
     }
 
     eigenVals = std::vector<double>(dc);
+    std::copy_n(S.begin(), dc, eigenVals.begin());
 
-    for (int d = 0; d < dc; d++) {
-        eigenVals[d] = S[d];
-    }
 }
-
 
 double GpMotionFit::f(const std::vector<double> &x) const {
     std::vector<std::vector<d2Vector>> pos(pc, std::vector<d2Vector>(fc));

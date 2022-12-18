@@ -81,7 +81,7 @@ class particle_symmetry_expand_parameters {
 
     void run() {
         MetaDataTable DFi, DFo;
-        Matrix2D<RFLOAT> L(3,3), R(3,3); // A matrix from the list
+        Matrix<RFLOAT> L (3, 3), R (3, 3); // A matrix from the list
         RFLOAT z_start, z_stop, z_step; // for helices
         SymList SL;
 

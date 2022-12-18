@@ -426,8 +426,8 @@ void ParticleSubtractor::subtractOneParticle(
     // Get the consensus class, orientational parameters and norm (if present)
     RFLOAT my_pixel_size = opt.mydata.getImagePixelSize(part_id, 0);
     RFLOAT remap_image_sizes = (opt.mymodel.ori_size * opt.mymodel.pixel_size) / (Xsize(img()) * my_pixel_size);
-    Matrix1D<RFLOAT> my_old_offset(3), my_residual_offset(3), centering_offset(3);
-    Matrix2D<RFLOAT> Aori;
+    Vector<RFLOAT> my_old_offset (3), my_residual_offset (3), centering_offset (3);
+    Matrix<RFLOAT> Aori;
     RFLOAT xoff, yoff, zoff, mynorm, scale;
     int myclass = 0;
     if (!ignore_class && opt.mydata.MDimg.containsLabel(EMDL::PARTICLE_CLASS)) {
@@ -458,7 +458,7 @@ void ParticleSubtractor::subtractOneParticle(
     if (opt.do_norm_correction) 
         img() *= opt.mymodel.avg_norm_correction / mynorm;
 
-    Matrix1D<RFLOAT> my_projected_com (3), my_refined_ibody_offset (3);
+    Vector<RFLOAT> my_projected_com (3), my_refined_ibody_offset (3);
     if (opt.fn_body_masks != "None") {
         // 17May2017: Shift image to the projected COM for this body!
         // Aori is the original transformation matrix of the consensus refinement
@@ -515,11 +515,11 @@ void ParticleSubtractor::subtractOneParticle(
 
     if (opt.fn_body_masks != "None") {
         // For multi-body refinement
-        Matrix2D<RFLOAT> Aresi_subtract;
+        Matrix<RFLOAT> Aresi_subtract;
         for (int obody = 0; obody < opt.mymodel.nr_bodies; obody++) {
             // Unlike getFourierTransformsAndCtfs, no check for ibody==obody: also subtract rest of subtract_body!
 
-            Matrix1D<RFLOAT> body_offset(3);
+            Vector<RFLOAT> body_offset(3);
             RFLOAT body_rot  = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_ROT,               ori_img_id);
             RFLOAT body_tilt = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_TILT,              ori_img_id);
             RFLOAT body_psi  = opt.mydata.MDbodies[obody].getValue<RFLOAT>(EMDL::ORIENT_PSI,               ori_img_id);
@@ -532,10 +532,10 @@ void ParticleSubtractor::subtractOneParticle(
             body_offset /= my_pixel_size;
 
             // Aresi is the residual orientation for this obody
-            Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
+            Matrix<RFLOAT> Aresi = Euler::angles2matrix(body_rot, body_tilt, body_psi);
             if (obody == subtract_body) { Aresi_subtract = Aresi; }
             // The real orientation to be applied is the obody transformation applied and the original one
-            Matrix2D<RFLOAT> Abody = Aori
+            Matrix<RFLOAT> Abody = Aori
                 .matmul(opt.mymodel.orient_bodies[obody].transpose())
                 .matmul(A_rot90)
                 .matmul(Aresi)
@@ -554,7 +554,7 @@ void ParticleSubtractor::subtractOneParticle(
             // Body is centered at its own COM: move it back to its place in the original particle image
 
             // Projected COM for this body (using Aori, just like above for ibody and my_projected_com!!!)
-            Matrix1D<RFLOAT> other_projected_com = matmul(Aori, opt.mymodel.com_bodies[obody]);
+            Vector<RFLOAT> other_projected_com = matmul(Aori, opt.mymodel.com_bodies[obody]);
 
             // Subtract refined obody-displacement
             other_projected_com -= body_offset;
@@ -574,7 +574,7 @@ void ParticleSubtractor::subtractOneParticle(
         // Set orientations back into the original RELION system of coordinates
 
         // Write out the rot, tilt, psi as the combination of Aori and Aresi!! So get rid of the rotations around the tilt=90 axes,
-        Matrix2D<RFLOAT> Abody = Aori
+        Matrix<RFLOAT> Abody = Aori
             .matmul(opt.mymodel.orient_bodies[subtract_body].transpose())
             .matmul(A_rot90)
             .matmul(Aresi_subtract)

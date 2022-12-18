@@ -2234,7 +2234,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
                     std::cerr << "         iclass = " << iclass << " nr_classes = " << mymodel.nr_classes << " sizeof(RFLOAT) = " << sizeof(RFLOAT) << std::endl;
                     iclass = mymodel.nr_classes - 1;
                 }
-                Matrix2D<RFLOAT> A = Euler::angles2matrix(rot, tilt, psi);
+                Matrix<RFLOAT> A = Euler::angles2matrix(rot, tilt, psi);
 
                 // At this point anisotropic magnification shouldn't matter
                 // Also: dont apply scaleDifference, as img() was rescaled to mymodel.ori_size and mymodel.pixel_size
@@ -3434,7 +3434,7 @@ void MlOptimiser::expectationOneParticle(long int part_id_sorted, int thread_id)
         MultidimArray<bool> exp_Mcoarse_significant;
         // And from storeWeightedSums
         std::vector<RFLOAT> exp_sum_weight, exp_significant_weight, exp_max_weight;
-        std::vector<Matrix1D<RFLOAT> > exp_old_offset, exp_prior;
+        std::vector<Vector<RFLOAT> > exp_old_offset, exp_prior;
         std::vector<RFLOAT> exp_wsum_norm_correction;
         std::vector<MultidimArray<RFLOAT> > exp_power_imgs;
 
@@ -4446,8 +4446,8 @@ void MlOptimiser::getFourierTransformsAndCtfs(
     std::vector<MultidimArray<Complex> > &exp_Fimg,
     std::vector<MultidimArray<Complex> > &exp_Fimg_nomask,
     std::vector<MultidimArray<RFLOAT> > &exp_Fctf,
-    std::vector<Matrix1D<RFLOAT> > &exp_old_offset,
-    std::vector<Matrix1D<RFLOAT> > &exp_prior,
+    std::vector<Vector<RFLOAT> > &exp_old_offset,
+    std::vector<Vector<RFLOAT> > &exp_prior,
     std::vector<MultidimArray<RFLOAT> > &exp_power_img,
     std::vector<RFLOAT> &exp_highres_Xi2_img,
     std::vector<int> &exp_pointer_dir_nonzeroprior,
@@ -4460,8 +4460,8 @@ void MlOptimiser::getFourierTransformsAndCtfs(
     for (int img_id = 0; img_id < mydata.numberOfImagesInParticle(part_id); img_id++) {
         Image<RFLOAT> img, rec_img;
         MultidimArray<RFLOAT> Fctf;
-        Matrix2D<RFLOAT> Aori;
-        Matrix1D<RFLOAT> my_projected_com(mymodel.data_dim), my_refined_ibody_offset(mymodel.data_dim);
+        Matrix<RFLOAT> Aori;
+        Vector<RFLOAT> my_projected_com(mymodel.data_dim), my_refined_ibody_offset(mymodel.data_dim);
 
         // To which group do I belong?
         int group_id = mydata.getGroupId(part_id, img_id);
@@ -4487,7 +4487,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
         // Get the old offsets and the priors on the offsets
         // Sjors 5mar18: it is very important that my_old_offset has baseMLO->mymodel.data_dim and not just (3), as transformCartesianAndHelicalCoords will give different results!!!
-        Matrix1D<RFLOAT> my_old_offset(mymodel.data_dim), my_prior(mymodel.data_dim), my_old_offset_ori;
+        Vector<RFLOAT> my_old_offset(mymodel.data_dim), my_prior(mymodel.data_dim), my_old_offset_ori;
 
         my_old_offset[0] = direct::elem(exp_metadata, my_metadata_offset, METADATA_XOFF);
         my_prior[0]      = direct::elem(exp_metadata, my_metadata_offset, METADATA_XOFF_PRIOR);
@@ -4729,7 +4729,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
 
         // Helical reconstruction: calculate old_offset in the system of coordinates of the helix, i.e. parallel & perpendicular, depending on psi-angle!
         // For helices do NOT apply old_offset along the direction of the helix!!
-        Matrix1D<RFLOAT> my_old_offset_helix_coords;
+        Vector<RFLOAT> my_old_offset_helix_coords;
         RFLOAT rot_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_ROT);
         RFLOAT tilt_deg = direct::elem(exp_metadata, my_metadata_offset, METADATA_TILT);
         RFLOAT psi_deg  = direct::elem(exp_metadata, my_metadata_offset, METADATA_PSI);
@@ -5070,13 +5070,13 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     int ocol_norm = 6 + METADATA_LINE_LENGTH_BEFORE_BODIES + obody * METADATA_NR_BODY_PARAMS;
 
                     // Aresi is the residual orientation for this obody
-                    Matrix2D<RFLOAT> Aresi = Euler::angles2matrix(
+                    Matrix<RFLOAT> Aresi = Euler::angles2matrix(
                         direct::elem(exp_metadata, my_metadata_offset, ocol_rot),
                         direct::elem(exp_metadata, my_metadata_offset, ocol_tilt),
                         direct::elem(exp_metadata, my_metadata_offset, ocol_psi)
                     );
                     // The real orientation to be applied is the obody transformation applied and the original one
-                    Matrix2D<RFLOAT> Abody = Aori
+                    Matrix<RFLOAT> Abody = Aori
                         .matmul(mymodel.orient_bodies[obody].transpose())
                         .matmul(A_rot90)
                         .matmul(Aresi)
@@ -5098,7 +5098,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                         /*
                         for (int j = 0; j < Xsize(exp_metadata); j++)
                             std::cerr << " j= " << j << " direct::elem(exp_metadata, my_metadata_offset, j)= " << direct::elem(exp_metadata, my_metadata_offset, j) << std::endl;
-                        Matrix2D<RFLOAT> B;
+                        Matrix<RFLOAT> B;
                         B = (mymodel.orient_bodies[obody]).transpose() * Aresi * mymodel.orient_bodies[obody];
                         std::cerr << " B= " << B << std::endl;
                         std::cerr << " Aresi= " << Aresi << std::endl;
@@ -5125,7 +5125,7 @@ void MlOptimiser::getFourierTransformsAndCtfs(
                     // 17May2017: Body is centered at its own COM
                     // move it back to its place in the original particle image
                     // Projected COM for this body (using Aori, just like above for ibody and my_projected_com!!!)
-                    Matrix1D<RFLOAT> other_projected_com = matmul(Aori, mymodel.com_bodies[obody]);
+                    Vector<RFLOAT> other_projected_com = matmul(Aori, mymodel.com_bodies[obody]);
                     // This will have made other_projected_com of size 3! resize to mymodel.data_dim
                     other_projected_com.resize(mymodel.data_dim);
 
@@ -5589,7 +5589,7 @@ void MlOptimiser::getAllSquaredDifferences(
             std::vector<RFLOAT> oversampled_rot, oversampled_tilt, oversampled_psi;
             std::vector<RFLOAT> oversampled_translations_x, oversampled_translations_y, oversampled_translations_z;
             RFLOAT *Minvsigma2;
-            Matrix2D<RFLOAT> Abody, Aori;
+            Matrix<RFLOAT> Abody, Aori;
 
             if (mymodel.nr_bodies > 1) {
                 // ipart=0 because in multi-body refinement we do not do movie frames!
@@ -5652,7 +5652,7 @@ void MlOptimiser::getAllSquaredDifferences(
                             bool ctf_premultiplied = mydata.obsModel.getCtfPremultiplied(optics_group);
 
                             // Get the Euler matrix
-                            Matrix2D<RFLOAT> A = Euler::angles2matrix(
+                            Matrix<RFLOAT> A = Euler::angles2matrix(
                                 oversampled_rot[iover_rot],
                                 oversampled_tilt[iover_rot],
                                 oversampled_psi[iover_rot]
@@ -6034,7 +6034,7 @@ void MlOptimiser::convertAllSquaredDifferencesToWeights(
     int exp_itrans_min, int exp_itrans_max, int exp_iclass_min, int exp_iclass_max,
     MultidimArray<RFLOAT> &exp_Mweight, MultidimArray<bool> &exp_Mcoarse_significant,
     std::vector<RFLOAT> &exp_significant_weight, std::vector<RFLOAT> &exp_sum_weight,
-    std::vector<Matrix1D<RFLOAT> > &exp_old_offset, std::vector<Matrix1D<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
+    std::vector<Vector<RFLOAT> > &exp_old_offset, std::vector<Vector<RFLOAT> > &exp_prior, std::vector<RFLOAT> &exp_min_diff2,
     std::vector<int> &exp_pointer_dir_nonzeroprior, std::vector<int> &exp_pointer_psi_nonzeroprior,
     std::vector<RFLOAT> &exp_directions_prior, std::vector<RFLOAT> &exp_psi_prior
 ) {
@@ -6495,8 +6495,8 @@ void MlOptimiser::storeWeightedSums(
     std::vector<MultidimArray<Complex>> &exp_Fimg_nomask,
     std::vector<MultidimArray<RFLOAT>> &exp_Fctf,
     std::vector<MultidimArray<RFLOAT>> &exp_power_img,
-    std::vector<Matrix1D<RFLOAT>> &exp_old_offset,
-    std::vector<Matrix1D<RFLOAT>> &exp_prior,
+    std::vector<Vector<RFLOAT>> &exp_old_offset,
+    std::vector<Vector<RFLOAT>> &exp_prior,
     MultidimArray<RFLOAT> &exp_Mweight,
     MultidimArray<bool> &exp_Mcoarse_significant,
     std::vector<RFLOAT> &exp_significant_weight,
@@ -6570,7 +6570,7 @@ void MlOptimiser::storeWeightedSums(
 
     std::vector<RFLOAT> oversampled_rot, oversampled_tilt, oversampled_psi;
     std::vector<RFLOAT> oversampled_translations_x, oversampled_translations_y, oversampled_translations_z;
-    Matrix2D<RFLOAT> A, Abody, Aori;
+    Matrix<RFLOAT> A, Abody, Aori;
     MultidimArray<Complex> Fimg, Fref, Frefctf, Fimg_otfshift, Fimg_otfshift_nomask, Fimg_store_sgd;
     MultidimArray<RFLOAT> Minvsigma2, Mctf, Fweight;
     RFLOAT rot, tilt, psi;
@@ -7019,7 +7019,7 @@ void MlOptimiser::storeWeightedSums(
                                     RFLOAT old_tilt = update_and_remember(direct::elem(exp_metadata, my_metadata_offset, icol_tilt), tilt);
                                     RFLOAT old_psi  = update_and_remember(direct::elem(exp_metadata, my_metadata_offset, icol_psi),  psi);
 
-                                    Matrix1D<RFLOAT> shifts(mymodel.data_dim);
+                                    Vector<RFLOAT> shifts(mymodel.data_dim);
                                     // include old_offsets for normal refinement (i.e. non multi-body)
                                     shifts[0] = exp_old_offset[img_id][0] + oversampled_translations_x[iover_trans];
                                     shifts[1] = exp_old_offset[img_id][1] + oversampled_translations_y[iover_trans];
@@ -7588,7 +7588,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
                         RFLOAT zoff1 = 0.0;
 
                         // Get the FT of the first image
-                        Matrix2D<RFLOAT> A1 = Euler::angles2matrix(rot1, tilt1, psi1);
+                        Matrix<RFLOAT> A1 = Euler::angles2matrix(rot1, tilt1, psi1);
                         if (mydata.obsModel.hasMagMatrices)
                             A1 = A1.matmul(mydata.obsModel.anisoMag(optics_group));
                         A1 *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);
@@ -7647,7 +7647,7 @@ void MlOptimiser::calculateExpectedAngularErrors(long int my_first_part_id, long
 
                         if (imode == 0) {
                             // Get new rotated version of reference
-                            Matrix2D<RFLOAT> A2 = Euler::angles2matrix(rot2, tilt2, psi2);
+                            Matrix<RFLOAT> A2 = Euler::angles2matrix(rot2, tilt2, psi2);
                             if (mydata.obsModel.hasMagMatrices)
                                 A2 = A2.matmul(mydata.obsModel.anisoMag(optics_group));
                             A2 *= mydata.obsModel.scaleDifference(optics_group, mymodel.ori_size, mymodel.pixel_size);

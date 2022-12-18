@@ -51,7 +51,7 @@ class ObservationModel {
     MetaDataTable opticsMdt;
     bool hasEvenZernike, hasOddZernike, hasMagMatrices, hasBoxSizes, hasMultipleMtfs;
 
-    void magnify(RFLOAT &X, RFLOAT &Y, const Matrix2D<RFLOAT> &M) {
+    void magnify(RFLOAT &X, RFLOAT &Y, const Matrix<RFLOAT> &M) {
         if (hasMagMatrices) {
             RFLOAT Xd = M(0, 0) * X + M(0, 1) * Y;
             RFLOAT Yd = M(1, 0) * X + M(1, 1) * Y;
@@ -68,7 +68,7 @@ class ObservationModel {
     std::vector<int> boxSizes;
     std::vector<bool> CtfPremultiplied;
     std::vector<std::vector<double>> evenZernikeCoeffs, oddZernikeCoeffs;
-    std::vector<Matrix2D<RFLOAT>> magMatrices;
+    std::vector<Matrix<RFLOAT>> magMatrices;
     std::vector<std::string> fnMtfs, groupNames;
 
     // cached aberration effects for a set of given image sizes
@@ -152,11 +152,11 @@ class ObservationModel {
     void setBoxSize(int opticsGroup, int newBoxSize);
     void setPixelSize(int opticsGroup, RFLOAT newPixelSize);
 
-    Matrix2D<RFLOAT> getMagMatrix(int opticsGroup) const;
-    std::vector<Matrix2D<RFLOAT>> getMagMatrices() const;
-    void setMagMatrix(int opticsGroup, const Matrix2D<RFLOAT>& M);
+    Matrix<RFLOAT> getMagMatrix(int opticsGroup) const;
+    std::vector<Matrix<RFLOAT>> getMagMatrices() const;
+    void setMagMatrix(int opticsGroup, const Matrix<RFLOAT>& M);
 
-    Matrix2D<RFLOAT> anisoMag(int opticsGroup) const;
+    Matrix<RFLOAT> anisoMag(int opticsGroup) const;
 
     // 0-indexed
     int getOpticsGroup(const MetaDataTable &particlesMdt, long int particle = -1) const;

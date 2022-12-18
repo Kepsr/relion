@@ -30,7 +30,7 @@ class align_symmetry {
 
     private:
 
-    Matrix2D<RFLOAT> A3D;
+    Matrix<RFLOAT> A3D;
     MultidimArray<RFLOAT> rotated, symmetrised, dummy;
     FourierTransformer transformer;
 

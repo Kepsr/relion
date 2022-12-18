@@ -31,7 +31,7 @@ void LegacyObservationModel::predictObservation(
     double tilt = mdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = mdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+    Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     dest = proj.get2DFourierTransform(sh, s, 1, A3D);
 
@@ -71,10 +71,9 @@ Image<Complex> LegacyObservationModel::predictObservation(
     Projector& proj, const MetaDataTable &mdt, int particle,
     bool applyCtf, bool applyTilt, bool applyShift
 ) const {
-    Image<Complex> pred;
-
-    predictObservation(proj, mdt, particle, pred.data, applyCtf, applyTilt, applyShift);
-    return pred;
+    MultidimArray<Complex> pred;
+    predictObservation(proj, mdt, particle, pred, applyCtf, applyTilt, applyShift);
+    return Image<Complex>(pred);
 }
 
 std::vector<Image<Complex>> LegacyObservationModel::predictObservations(
@@ -82,7 +81,7 @@ std::vector<Image<Complex>> LegacyObservationModel::predictObservations(
     bool applyCtf, bool applyTilt, bool applyShift
 ) const {
     const int pc = mdt.size();
-    std::vector<Image<Complex>> out(pc);
+    std::vector<Image<Complex>> out (pc);
 
     #pragma omp parallel for num_threads(threads)
     for (int p = 0; p < pc; p++) {
@@ -97,14 +96,13 @@ void LegacyObservationModel::insertObservation(
     const MetaDataTable &mdt, int particle,
     bool applyCtf, bool applyTilt, double shift_x, double shift_y
 ) {
-    const int sh = img.data.xdim;
-    const int s  = img.data.ydim;
+    const int sh = img.data.xdim, s = img.data.ydim;
 
     const RFLOAT rot  = mdt.getValue<RFLOAT>(EMDL::ORIENT_ROT,  particle);
     const RFLOAT tilt = mdt.getValue<RFLOAT>(EMDL::ORIENT_TILT, particle);
     const RFLOAT psi  = mdt.getValue<RFLOAT>(EMDL::ORIENT_PSI,  particle);
 
-    const Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+    const Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     double tx = 0.0, ty = 0.0;
     tx = mdt.getValue<double>(EMDL::ORIENT_ORIGIN_X, particle) + shift_x;
@@ -156,12 +154,10 @@ double LegacyObservationModel::pixToAng(double p, int s) {
 }
 
 bool LegacyObservationModel::containsAllNeededColumns(const MetaDataTable &mdt) {
-    return (
-        mdt.containsLabel(EMDL::ORIENT_ORIGIN_X) &&
-        mdt.containsLabel(EMDL::ORIENT_ORIGIN_Y) &&
-        mdt.containsLabel(EMDL::ORIENT_ROT) &&
-        mdt.containsLabel(EMDL::ORIENT_TILT) &&
-        mdt.containsLabel(EMDL::ORIENT_PSI) &&
-        mdt.containsLabel(EMDL::PARTICLE_RANDOM_SUBSET)
-    );
+    return mdt.containsLabel(EMDL::ORIENT_ORIGIN_X) &&
+           mdt.containsLabel(EMDL::ORIENT_ORIGIN_Y) &&
+           mdt.containsLabel(EMDL::ORIENT_ROT) &&
+           mdt.containsLabel(EMDL::ORIENT_TILT) &&
+           mdt.containsLabel(EMDL::ORIENT_PSI) &&
+           mdt.containsLabel(EMDL::PARTICLE_RANDOM_SUBSET);
 }

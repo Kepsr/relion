@@ -151,7 +151,7 @@ void MagnificationEstimator::parametricFit(
                        && optOut.containsLabel(EMDL::IMAGE_MAG_MATRIX_10)
                        && optOut.containsLabel(EMDL::IMAGE_MAG_MATRIX_11);
 
-    std::vector<Matrix2D<RFLOAT>> mat_by_optGroup(ogc);
+    std::vector<Matrix<RFLOAT>> mat_by_optGroup(ogc);
 
     #pragma omp parallel for num_threads(nr_omp_threads)
     for (int og = 0; og < ogc; og++) {
@@ -182,7 +182,7 @@ void MagnificationEstimator::parametricFit(
         }
 
         if (!groupPresent) {
-            mat_by_optGroup[og] = Matrix2D<RFLOAT>::identity(2);
+            mat_by_optGroup[og] = Matrix<RFLOAT>::identity(2);
             continue;
         }
 
@@ -211,7 +211,7 @@ void MagnificationEstimator::parametricFit(
 
         Image<RFLOAT> freqWght = reference->getHollowWeight(kmin, s[og], angpix[og]);
 
-        Matrix2D<RFLOAT> mat = MagnificationHelper::solveLinearlyFreq(magEqs, freqWght, flowx, flowy);
+        Matrix<RFLOAT> mat = MagnificationHelper::solveLinearlyFreq(magEqs, freqWght, flowx, flowy);
 
         FftwHelper::decenterUnflip2D(flowx.data, flowxFull.data);
         FftwHelper::decenterUnflip2D(flowy.data, flowyFull.data);
@@ -236,11 +236,11 @@ void MagnificationEstimator::parametricFit(
         #endif
         mat_by_optGroup[og] = mat;
 
-        Matrix2D<RFLOAT> mat0 = obsModel->getMagMatrix(og);
-        Matrix2D<RFLOAT> mat1 = mat.matmul(mat0);
+        Matrix<RFLOAT> mat0 = obsModel->getMagMatrix(og);
+        Matrix<RFLOAT> mat1 = mat.matmul(mat0);
 
-        Matrix2D<RFLOAT> u, vh;
-        Matrix1D<RFLOAT> eig;
+        Matrix<RFLOAT> u, vh;
+        Vector<RFLOAT> eig;
         svdcmp(mat1, u, eig, vh);
         const RFLOAT mean_mag = (eig[0] + eig[1]) / 2;
         const RFLOAT aniso_mag = fabs(eig[0] - eig[1]);// / mean_mag;

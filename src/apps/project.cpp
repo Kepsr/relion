@@ -205,7 +205,7 @@ class project_parameters {
             F2D = projector.get2DFourierTransform(
                 Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
             if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
-                Matrix1D<RFLOAT> shift(2);
+                Vector<RFLOAT> shift(2);
                 XX(shift) = -xoff;
                 YY(shift) = -yoff;
                 if (do_3d_rot) {
@@ -271,7 +271,7 @@ class project_parameters {
                     Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
 
                 if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
-                    Matrix1D<RFLOAT> shift(2);
+                    Vector<RFLOAT> shift(2);
                     XX(shift) = -xoff;
                     YY(shift) = -yoff;
 
@@ -409,12 +409,12 @@ class project_parameters {
                         zoff = MDang_sim.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Z_ANGSTROM, imgno) / angpix;
                     }
 
-                    Matrix2D<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
+                    Matrix<RFLOAT> A3D = Euler::rotation3DMatrix(rot, tilt, psi);
                     F2D = projector.get2DFourierTransform(
                         Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
 
                     if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
-                        Matrix1D<RFLOAT> shift(2);
+                        Vector<RFLOAT> shift (2);
                         XX(shift) = -xoff;
                         YY(shift) = -yoff;
 

@@ -265,7 +265,7 @@ void FrameRecombiner::process(
 
         for (int p = 0; do_recenter && p < pc; p++) {
             // FIXME: code duplication from preprocess.cpp
-            Matrix1D<RFLOAT> my_projected_center {0, 0, 0};
+            Vector<RFLOAT> my_projected_center {0, 0, 0};
 
             RFLOAT xoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, p);  // in A
             RFLOAT yoff = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, p);
@@ -283,8 +283,8 @@ void FrameRecombiner::process(
                 RFLOAT psi  = mdtOut.getValue<RFLOAT>(EMDL::ORIENT_PSI,  p);
 
                 // Project the center-coordinates
-                Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
-                my_projected_center = matmul(A3D, Matrix1D<RFLOAT>({recenter_x, recenter_y, recenter_z}));  // in reference pixels
+                Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+                my_projected_center = matmul(A3D, Vector<RFLOAT>({recenter_x, recenter_y, recenter_z}));  // in reference pixels
             }
 
             xoff -= my_projected_center[0];

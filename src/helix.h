@@ -163,8 +163,8 @@ void createCylindricalReferenceWithPolarity(
 		RFLOAT cosine_width = 5.);
 
 void transformCartesianAndHelicalCoords(
-		Matrix1D<RFLOAT>& in,
-		Matrix1D<RFLOAT>& out,
+		Vector<RFLOAT>& in,
+		Vector<RFLOAT>& out,
 		RFLOAT rot_deg,
 		RFLOAT tilt_deg,
 		RFLOAT psi_deg,
@@ -543,7 +543,7 @@ void Interpolate3DCurves(
 		bool bimodal_angular_priors = true);
 
 void estimateTiltPsiPriors(
-		Matrix1D<RFLOAT>& dr,
+		Vector<RFLOAT>& dr,
 		RFLOAT& tilt_deg,
 		RFLOAT& psi_deg);
 

@@ -248,7 +248,7 @@ class Projector {
     * Get a 2D Fourier Transform from the 2D or 3D data array
     * Depending on the dimension of the map, this will be a projection or a rotation operation
     */
-    MultidimArray<Complex> get2DFourierTransform(int xdim, int ydim, int zdim, const Matrix2D<RFLOAT> &A) const {
+    MultidimArray<Complex> get2DFourierTransform(int xdim, int ydim, int zdim, const Matrix<RFLOAT> &A) const {
         // Rotation of a 3D Fourier Transform
         if (data_dim == 3) {
             if (ref_dim != 3)
@@ -276,7 +276,7 @@ class Projector {
     /*
     * Get a 2D slice from the 3D map (forward projection)
     */
-    MultidimArray<Complex> project(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> project(int xdim, int ydim, const Matrix<RFLOAT> &A) const;
 
     /*
     * Get the two gradients (real and imaginary) of that slice.
@@ -284,22 +284,22 @@ class Projector {
     * Computing the gradient from a 2D projection would systematically
     * underestimate the magnitude of the gradient.
     */
-    Volume<gravis::t2Vector<Complex>> projectGradient(int sh, int s, const Matrix2D<RFLOAT> &A);
+    Volume<gravis::t2Vector<Complex>> projectGradient(int sh, int s, const Matrix<RFLOAT> &A);
 
     /*
     * Get a 1D slice from the 2D map (forward projection)
     */
-    MultidimArray<Complex> project2Dto1D(int xdim, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> project2Dto1D(int xdim, const Matrix<RFLOAT> &A) const;
 
     /*
     * Get an in-plane rotated version of the 2D map (mere interpolation)
     */
-    MultidimArray<Complex> rotate2D(int xdim, int ydim, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> rotate2D(int xdim, int ydim, const Matrix<RFLOAT> &A) const;
 
     /*
     * Get a rotated version of the 3D map (mere interpolation)
     */
-    MultidimArray<Complex> rotate3D(int xdim, int ydim, int zdim, const Matrix2D<RFLOAT> &A) const;
+    MultidimArray<Complex> rotate3D(int xdim, int ydim, int zdim, const Matrix<RFLOAT> &A) const;
 
 };
 #endif

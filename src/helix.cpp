@@ -1028,7 +1028,7 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     RFLOAT sphere_radius_pix, sphere_radius2_pix, cyl_radius_pix, r2, x, y, xp, yp, sum, sum2, nr, val;
     int x0, y0, vec_id, vec_len, half_box_len, box_len;
     std::vector<RFLOAT> sum_list, pix_list;
-    Matrix2D<RFLOAT> R;
+    Matrix<RFLOAT> R;
 
     if (pixel_size_A < 0.001)
         REPORT_ERROR("helix.cpp::calcCCofPsiFor2DHelicalSegment(): Pixel size (in Angstroms) should be larger than 0.001!");
@@ -1062,7 +1062,7 @@ RFLOAT calcCCofPsiFor2DHelicalSegment(
     for (vec_id = 0; vec_id < vec_len; vec_id++)
         sum_list[vec_id] = pix_list[vec_id] = 0.0;
     R = rotation2DMatrix(psi_deg, false);
-    R.setSmallValuesToZero();
+    setSmallValuesToZero(R.begin(), R.end());
 
     FOR_ALL_ELEMENTS_IN_ARRAY2D(v, i, j)
     {
@@ -1355,7 +1355,7 @@ void createCylindricalReferenceWithPolarity(
 }
 
 void transformCartesianAndHelicalCoords(
-    Matrix1D<RFLOAT> &in, Matrix1D<RFLOAT> &out,
+    Vector<RFLOAT> &in, Vector<RFLOAT> &out,
     RFLOAT rot_deg, RFLOAT tilt_deg, RFLOAT psi_deg,
     bool direction
 ) {
@@ -1364,14 +1364,14 @@ void transformCartesianAndHelicalCoords(
     if (dim != 2 && dim != 3)
         REPORT_ERROR("helix.cpp::transformCartesianAndHelicalCoords(): Vector of input coordinates should have 2 or 3 values!");
 
-    Matrix1D<RFLOAT> aux {in[0], in[1], dim == 3 ? in[2] : 0.0};
+    Vector<RFLOAT> aux {in[0], in[1], dim == 3 ? in[2] : 0.0};
 
     if (dim == 2)
         rot_deg = tilt_deg = 0.0;
 
     /// TODO: check whether rot_deg should be always set to 0 !
     /// TODO: fix the --random_seed and use --perturb 0 option for testing !
-    Matrix2D<RFLOAT> A = Euler::angles2matrix(rot_deg, tilt_deg, psi_deg);
+    Matrix<RFLOAT> A = Euler::angles2matrix(rot_deg, tilt_deg, psi_deg);
     if (direction == CART_TO_HELICAL_COORDS) // Don't put minus signs before angles, use 'transpose' instead
         A = A.transpose();
     aux = matmul(A, aux);
@@ -1392,8 +1392,8 @@ void transformCartesianAndHelicalCoords(
     if (dim != 2 && dim != 3)
         REPORT_ERROR("helix.cpp::transformCartesianAndHelicalCoords(): Vector of input coordinates should have 2 or 3 values!");
 
-    Matrix1D<RFLOAT> in = vectorR3(x, y, z);
-    Matrix1D<RFLOAT> out(dim);
+    Vector<RFLOAT> in = vectorR3(x, y, z);
+    Vector<RFLOAT> out (dim);
     transformCartesianAndHelicalCoords(in, out, rot_deg, tilt_deg, psi_deg, direction);
 
     x = XX(out);
@@ -1442,7 +1442,7 @@ void makeSimpleHelixFromPDBParticle(
         REPORT_ERROR("helix.cpp::makeHelixFromPDBParticle(): Original assembly contains no atoms!");
 
     // Calculate centre of mass of the original assembly
-    Matrix1D<RFLOAT> mass_centre {0, 0, 0};
+    Vector<RFLOAT> mass_centre {0, 0, 0};
     for (int imol = 0; imol < ori.molecules.size(); imol++) {
         for (int ires = 0; ires < ori.molecules[imol].residues.size(); ires++) {
             for (int iatom = 0; iatom < ori.molecules[imol].residues[ires].atoms.size(); iatom++) {
@@ -1474,14 +1474,14 @@ void makeSimpleHelixFromPDBParticle(
     }
 
     // Construct the helix
-    Matrix1D<RFLOAT> shift {0, 0, 0};
+    Vector<RFLOAT> shift {0, 0, 0};
     helix.clear();
     helix.join(aux0);
     for (int ii = ((nr_copy + 1) % 2) - nr_copy / 2 ; ii <= nr_copy / 2; ii++) {
         if (ii == 0)
             continue;
 
-        Matrix2D<RFLOAT> rotational_matrix = rotation2DMatrix((RFLOAT) ii * twist_deg, true);
+        Matrix<RFLOAT> rotational_matrix = rotation2DMatrix((RFLOAT) ii * twist_deg, true);
         ZZ(shift) = (RFLOAT) ii * rise_A;
 
         Assembly aux1;
@@ -2843,7 +2843,7 @@ void makeHelicalReference3D(
 {
     RFLOAT rise_pix, tube_diameter_pix, particle_diameter_pix, particle_radius_pix;
     int particle_radius_max_pix;
-    Matrix1D<RFLOAT> vec0, vec1, vec2;
+    Vector<RFLOAT> vec0, vec1, vec2;
     out.clear();
 
     if (box_size < 5)
@@ -2887,7 +2887,7 @@ void makeHelicalReference3D(
     {
         RFLOAT rot1_deg, x1, y1, z1;
         rot1_deg = (RFLOAT)(id) * twist_deg;
-        Matrix2D<RFLOAT> matrix1 = rotation2DMatrix(rot1_deg, false);
+        Matrix<RFLOAT> matrix1 = rotation2DMatrix(rot1_deg, false);
         vec1 = matrix1 * vec0;
 
         x1 = XX(vec1);
@@ -2900,7 +2900,7 @@ void makeHelicalReference3D(
         {
             RFLOAT rot2_deg, x2, y2, z2;
             rot2_deg = (360.0) * (RFLOAT)(Cn) / (RFLOAT)(sym_Cn);
-            Matrix2D<RFLOAT> matrix2 = rotation2DMatrix(rot2_deg, false);
+            Matrix<RFLOAT> matrix2 = rotation2DMatrix(rot2_deg, false);
             vec2 = matrix2 * vec1;
             x2 = XX(vec2);
             y2 = YY(vec2);
@@ -2956,7 +2956,7 @@ void makeHelicalReference3DWithPolarity(
     RFLOAT rise_pix, tube_diameter_pix, particle_diameter_pix, particle_radius_pix, cyl_radius_pix, top_radius_pix, bottom_radius_pix;
     int particle_radius_max_pix;
     bool append_additional_densities = false;
-    Matrix1D<RFLOAT> vec0, vec1, vec2;
+    Vector<RFLOAT> vec0, vec1, vec2;
     out.clear();
 
     if (box_size < 5)
@@ -3014,7 +3014,7 @@ void makeHelicalReference3DWithPolarity(
     for (int id = 0; true; id++) {
         RFLOAT rot1_deg, x1, y1, z1;
         rot1_deg = (RFLOAT) id * twist_deg;
-        Matrix2D<RFLOAT> matrix1 = rotation2DMatrix(rot1_deg, false);
+        Matrix<RFLOAT> matrix1 = rotation2DMatrix(rot1_deg, false);
         vec1 = matmul(matrix1, vec0);
 
         x1 = vec1[0];
@@ -3026,7 +3026,7 @@ void makeHelicalReference3DWithPolarity(
         for (int Cn = 0; Cn < sym_Cn; Cn++) {
             RFLOAT rot2_deg, x2, y2, z2;
             rot2_deg = 360.0 * (RFLOAT) Cn / (RFLOAT) sym_Cn;
-            Matrix2D<RFLOAT> matrix2 = rotation2DMatrix(rot2_deg, false);
+            Matrix<RFLOAT> matrix2 = rotation2DMatrix(rot2_deg, false);
             vec2 = matmul(matrix2, vec1);
             x2 = vec2[0];
             y2 = vec2[1];
@@ -3804,10 +3804,10 @@ void updatePriorsForOneHelicalTube(
 
             // Init
             this_rot = this_psi = this_tilt = center_pos = this_pos = sum_w = this_w = offset2 = 0.0;
-            Matrix1D<RFLOAT> this_ang_vec     {0, 0, 0};
-            Matrix1D<RFLOAT> this_rot_vec     {0, 0};	// KThurber
-            Matrix1D<RFLOAT> sum_ang_vec      {0, 0, 0};
-            Matrix1D<RFLOAT> sum_rot_vec      {0, 0};	// KThurber
+            Vector<RFLOAT> this_ang_vec     {0, 0, 0};
+            Vector<RFLOAT> this_rot_vec     {0, 0};	// KThurber
+            Vector<RFLOAT> sum_ang_vec      {0, 0, 0};
+            Vector<RFLOAT> sum_rot_vec      {0, 0};	// KThurber
 
             // Check position
             center_pos = this_pos = list[id].track_pos_A;
@@ -3831,7 +3831,7 @@ void updatePriorsForOneHelicalTube(
             // end new KThurber
 
             // Analyze translations
-            Matrix1D<RFLOAT> this_trans_vec (data_dim);
+            Vector<RFLOAT> this_trans_vec (data_dim);
             std::fill(this_trans_vec.begin(), this_trans_vec.end(), 0);
             XX(this_trans_vec) = list[id].dx_prior_A = list[id].dx_A; // REFRESH XOFF PRIOR
             YY(this_trans_vec) = list[id].dy_prior_A = list[id].dy_A; // REFRESH YOFF PRIOR
@@ -3839,13 +3839,13 @@ void updatePriorsForOneHelicalTube(
             ZZ(this_trans_vec) = list[id].dz_prior_A = list[id].dz_A; // REFRESH ZOFF PRIOR
 
             transformCartesianAndHelicalCoords(this_trans_vec, this_trans_vec, (is_3D_data) ? (this_rot) : (0.0), (is_3D_data) ? (this_tilt) : (0.0), this_psi, CART_TO_HELICAL_COORDS);
-            Matrix1D<RFLOAT> center_trans_vec = this_trans_vec; // Record helical coordinates of the central segment
+            Vector<RFLOAT> center_trans_vec = this_trans_vec; // Record helical coordinates of the central segment
             if (is_3D_data) {
                 ZZ(this_trans_vec) = 0.0;
             } else {
                 XX(this_trans_vec) = 0.0; // Do not accumulate translation along helical axis
             }
-            Matrix1D<RFLOAT> sum_trans_vec = this_trans_vec * this_w;
+            Vector<RFLOAT> sum_trans_vec = this_trans_vec * this_w;
 
             // Local averaging
             if (do_avg) {
@@ -4544,7 +4544,7 @@ void HermiteInterpolateOne3DHelicalFilament(
     accu_len_pix = 0.0;
     present_len_pix = -1.0;
     nr_segments = 0;
-    Matrix1D<RFLOAT> dr {0, 0, 0};
+    Vector<RFLOAT> dr {0, 0, 0};
     for (int id = 0; id < xlist.size() - 1; id++) {
         // Step size for interpolation is smaller than 1% of the inter-box distance
         // sqrt(0.57735 * 0.57735 * 0.57735 * 3) = 1.0, step size is larger than 1 pixel
@@ -4984,7 +4984,7 @@ void Interpolate3DCurves(
 }
 
 void estimateTiltPsiPriors(
-    Matrix1D<RFLOAT>& dr, RFLOAT& tilt_deg, RFLOAT& psi_deg
+    Vector<RFLOAT>& dr, RFLOAT& tilt_deg, RFLOAT& psi_deg
 ) {
     // euler.cpp: Euler::direction2angles: input angles = (a, b, g) then 3x3 matrix =
     //  cosg*cosb*cosa - sing*sina,  cosg*cosb*sina + sing*cosa, -cosg*sinb,
@@ -5000,7 +5000,7 @@ void estimateTiltPsiPriors(
     int dim = dr.size();
 
     if (dim != 2 && dim != 3)
-        REPORT_ERROR("helix.cpp::estimateTiltPsiPriors(): Input Matrix1D should have a size of 2 or 3!");
+        REPORT_ERROR("helix.cpp::estimateTiltPsiPriors(): Input Vector should have a size of 2 or 3!");
 
     vec_len = XX(dr) * XX(dr) + YY(dr) * YY(dr);
     vec_len += dim == 3 ? ZZ(dr) * ZZ(dr) : 0.0;
@@ -5206,7 +5206,7 @@ void averageAsymmetricUnits2D(
 
         // std::cerr << " imgno= " << imgno << " fn_img= " << fn_img << " psi= " << psi << " rise= " << rise  << " angpix= " << angpix << " nr_asu= " << nr_asu << " xsize= " << Xsize(img()) << std::endl;
 
-        Matrix1D<RFLOAT> in(2), out(2);
+        Vector<RFLOAT> in(2), out(2);
         for (int i = 2; i <= nr_asu; i++) {
             XX(in) = i % 2 == 0 ?
                 +rise * i * 0.5 / angpix :  // one way

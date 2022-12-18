@@ -51,7 +51,7 @@
 enum class VectorMode: bool { row, column };
 
 template<typename T>
-class Matrix1D {
+class Vector {
 
     /// The array itself
     T *vdata;
@@ -62,9 +62,9 @@ class Matrix1D {
     /// Whether row vector or column vector
     VectorMode mode;
 
-    template <typename U> friend class Matrix1D;
+    template <typename U> friend class Vector;
 
-    template <typename U> friend class Matrix2D;
+    template <typename U> friend class Matrix;
 
     public:
 
@@ -77,43 +77,42 @@ class Matrix1D {
      * You can choose between a column (default) or a row vector.
      * Default construction will produce an empty column vector.
      */
-    Matrix1D(int dim = 0, VectorMode mode = VectorMode::column): vdim(0), vdata(nullptr), mode(mode) {
-        resize(dim);
-    }
+    Vector(int dim = 0, VectorMode mode = VectorMode::column):
+        vdim(0), vdata(nullptr), mode(mode) { resize(dim); }
 
     /// Copy constructor
-    Matrix1D(const Matrix1D<T> &other): Matrix1D(other.size(), other.mode) {
+    Vector(const Vector<T> &other): Vector(other.size(), other.mode) {
         std::copy(other.begin(), other.end(), begin());
     }
 
     /// Type-casting copy constructor
     template<typename U>
-    Matrix1D(const Matrix1D<U> &other): Matrix1D(other.size(), other.mode) {
+    Vector(const Vector<U> &other): Vector(other.size(), other.mode) {
         std::copy(other.begin(), other.end(), begin());
     }
 
-    Matrix1D(std::initializer_list<T> list): Matrix1D(list.size()) {
+    Vector(std::initializer_list<T> list): Vector(list.size()) {
         std::copy(list.begin(), list.end(), begin());
     }
 
     /// Destructor
-    ~Matrix1D() { clear(); }
+    ~Vector() { clear(); }
 
     /// Assignment
-    Matrix1D<T>& operator = (Matrix1D<T> other) {
+    Vector<T>& operator = (Vector<T> other) {
         swap(*this, other);
         return *this;
     }
 
     /// Type-casting assignment
     template <typename U>
-    Matrix1D<T>& operator = (const Matrix1D<U>& other) {
-        Matrix1D<T> copy (other);
+    Vector<T>& operator = (const Vector<U>& other) {
+        Vector<T> copy (other);
         swap(*this, copy);
         return *this;
     }
 
-    friend void swap(Matrix1D<T>& lhs, Matrix1D<T>& rhs) {
+    friend void swap(Vector<T>& lhs, Vector<T>& rhs) {
         std::swap(lhs.vdim,  rhs.vdim);
         std::swap(lhs.vdata, rhs.vdata);
         std::swap(lhs.mode,  rhs.mode);
@@ -126,7 +125,7 @@ class Matrix1D {
         vdim = 0;
     }
 
-    ///@name Size and shape of Matrix1D
+    ///@name Size and shape of Vector
     //@{
 
     /** Resize
@@ -180,51 +179,51 @@ class Matrix1D {
     inline void setCol() { mode = VectorMode::column; }
     //@}
 
-    /// @name Matrix1D operators
+    /// @name Vector operators
     //@{
 
-    Matrix1D<T>& operator += (T rhs) {
+    Vector<T>& operator += (T rhs) {
         for (T& x: *this) { x += rhs; }
         return *this;
     }
 
-    Matrix1D<T>& operator -= (T rhs) {
+    Vector<T>& operator -= (T rhs) {
         for (T& x: *this) { x -= rhs; }
         return *this;
     }
 
-    Matrix1D<T>& operator *= (T rhs) {
+    Vector<T>& operator *= (T rhs) {
         for (T& x: *this) { x *= rhs; } 
         return *this;
     }
 
-    Matrix1D<T>& operator /= (T rhs) {
+    Vector<T>& operator /= (T rhs) {
         for (T& x: *this) { x /= rhs; }
         return *this;
     }
 
-    Matrix1D<T>& operator += (const Matrix1D<T> &other) {
+    Vector<T>& operator += (const Vector<T> &other) {
         if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector summation");
         for (int i = 0; i < size(); i++) { (*this)[i] += other[i]; }
         return *this;
     }
 
-    Matrix1D<T>& operator -= (const Matrix1D<T> &other) {
+    Vector<T>& operator -= (const Vector<T> &other) {
         if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector subtraction");
         for (int i = 0; i < size(); i++) { (*this)[i] -= other[i]; }
         return *this;
     }
 
-    Matrix1D<T>& operator *= (const Matrix1D<T> &other) {
+    Vector<T>& operator *= (const Vector<T> &other) {
         if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector multiplication");
         for (int i = 0; i < size(); i++) { (*this)[i] *= other[i]; }
         return *this;
     }
 
-    Matrix1D<T>& operator /= (const Matrix1D<T> &other) {
+    Vector<T>& operator /= (const Vector<T> &other) {
         if (size() != other.size())
             REPORT_ERROR("Not same sizes in vector division");
         for (int i = 0; i < size(); i++) { (*this)[i] /= other[i]; }
@@ -232,8 +231,8 @@ class Matrix1D {
     }
 
     /// Negation
-    Matrix1D<T> operator - () const {
-        Matrix1D<T> copy (*this);
+    Vector<T> operator - () const {
+        Vector<T> copy (*this);
         for (auto& x: copy) { x = -x; }
         return copy;
     }
@@ -246,11 +245,11 @@ class Matrix1D {
     const T& operator [] (int i) const { return vdata[i]; }
     //@}
 
-    /// @name Utilities for Matrix1D
+    /// @name Utilities for Vector
     //@{
 
     /// Algebraic transpose
-    Matrix1D<T> transpose() const {
+    Vector<T> transpose() const {
         auto t (*this);
         t.mode = static_cast<VectorMode>(!static_cast<bool>(mode));
         return t;
@@ -269,7 +268,7 @@ class Matrix1D {
          * The struct is meant to mimic a forward iterator.
          * It is essentially a wrapper around a pointer,
          * which can be made to traverse the heap-allocated memory
-         * belonging to our Matrix1D<>.
+         * belonging to our Vector<>.
          */
 
         using iterator_category = std::forward_iterator_tag;
@@ -310,7 +309,8 @@ class Matrix1D {
 
     /// Sum of squared vector values
     RFLOAT sum2() const {
-        return std::accumulate(begin(), end(), 0, [] (T acc, T x) { return acc + x * x; });
+        return std::accumulate(begin(), end(), 0,
+            [] (const T& running_total, const T& x) { return running_total + x * x; });
     }
 
     /** Modulus (magnitude) of the vector
@@ -347,95 +347,95 @@ class Matrix1D {
 
 /// Creates a vector in R2
 template <typename T>
-inline Matrix1D<T> vectorR2(T x, T y) {
+inline Vector<T> vectorR2(T x, T y) {
     return {x, y};
 }
 
 /// Creates a vector in R3
 template <typename T>
-inline Matrix1D<T> vectorR3(T x, T y, T z) {
+inline Vector<T> vectorR3(T x, T y, T z) {
     return {x, y, z};
 }
 
 /// 'X' component
 template <typename T>
-inline T& XX(Matrix1D<T> &v) { return v[0]; }
+inline T& XX(Vector<T> &v) { return v[0]; }
 
 /// 'Y' component
 template <typename T>
-inline T& YY(Matrix1D<T> &v) { return v[1]; }
+inline T& YY(Vector<T> &v) { return v[1]; }
 
 /// 'Z' component
 template <typename T>
-inline T& ZZ(Matrix1D<T> &v) { return v[2]; }
+inline T& ZZ(Vector<T> &v) { return v[2]; }
 
 // This function is only needed for single-precision compilation
 #ifdef RELION_SINGLE_PRECISION
-Matrix1D<float> vectorR3(double xx, double yy, double zz) {
+Vector<float> vectorR3(double xx, double yy, double zz) {
 	return {(float) xx, (float) yy, (float) zz};
 }
 #endif
 
 template <typename T>
-Matrix1D<T> operator + (Matrix1D<T> lhs, const Matrix1D<T> &other) {
-    return lhs += other;
-}
-
-template <typename T>
-Matrix1D<T> operator - (Matrix1D<T> lhs, const Matrix1D<T> &other) {
-    return lhs -= other;
-}
-
-template <typename T>
-Matrix1D<T> operator * (Matrix1D<T> lhs, const Matrix1D<T> &other) {
-    return lhs *= other;
-}
-
-template <typename T>
-Matrix1D<T> operator / (Matrix1D<T> lhs, const Matrix1D<T> &other) {
-    return lhs /= other;
-}
-
-template <typename T>
-Matrix1D<T> operator + (Matrix1D<T> lhs, T rhs) {
+Vector<T> operator + (Vector<T> lhs, const Vector<T> &rhs) {
     return lhs += rhs;
 }
 
 template <typename T>
-Matrix1D<T> operator - (Matrix1D<T> lhs, T rhs) {
+Vector<T> operator - (Vector<T> lhs, const Vector<T> &rhs) {
     return lhs -= rhs;
 }
 
 template <typename T>
-Matrix1D<T> operator * (Matrix1D<T> lhs, T rhs) {
+Vector<T> operator * (Vector<T> lhs, const Vector<T> &rhs) {
     return lhs *= rhs;
 }
 
 template <typename T>
-Matrix1D<T> operator / (Matrix1D<T> lhs, T rhs) {
+Vector<T> operator / (Vector<T> lhs, const Vector<T> &rhs) {
     return lhs /= rhs;
 }
 
 template <typename T>
-Matrix1D<T> operator + (T lhs, Matrix1D<T> rhs) {
+Vector<T> operator + (Vector<T> lhs, T rhs) {
+    return lhs += rhs;
+}
+
+template <typename T>
+Vector<T> operator - (Vector<T> lhs, T rhs) {
+    return lhs -= rhs;
+}
+
+template <typename T>
+Vector<T> operator * (Vector<T> lhs, T rhs) {
+    return lhs *= rhs;
+}
+
+template <typename T>
+Vector<T> operator / (Vector<T> lhs, T rhs) {
+    return lhs /= rhs;
+}
+
+template <typename T>
+Vector<T> operator + (T lhs, Vector<T> rhs) {
     for (T& x: rhs) { x = lhs + x; }
     return rhs;
 }
 
 template <typename T>
-Matrix1D<T> operator - (T lhs, Matrix1D<T> rhs) {
+Vector<T> operator - (T lhs, Vector<T> rhs) {
     for (T& x: rhs) { x = lhs - x; }
     return rhs;
 }
 
 template <typename T>
-Matrix1D<T> operator * (T lhs, Matrix1D<T> rhs) {
+Vector<T> operator * (T lhs, Vector<T> rhs) {
     for (T& x: rhs) { x = lhs * x; }
     return rhs;
 }
 
 template <typename T>
-Matrix1D<T> operator / (T lhs, Matrix1D<T> rhs) {
+Vector<T> operator / (T lhs, Vector<T> rhs) {
     for (T& x: rhs) { x = lhs / x; }
     return rhs;
 }
@@ -445,7 +445,7 @@ extern std::string floatToString(float F, int _width, int _prec);
 
 /** Output to output stream.*/
 template <typename T>
-std::ostream& operator << (std::ostream &ostrm, const Matrix1D<T> &v) {
+std::ostream& operator << (std::ostream &ostrm, const Vector<T> &v) {
     if (v.size() == 0) {
         ostrm << "Empty array\n";
     } else {
@@ -469,22 +469,22 @@ std::ostream& operator << (std::ostream &ostrm, const Matrix1D<T> &v) {
  * V1y*V2y + V1z*V2z.
  *
  * @code
- * Matrix1D< RFLOAT > v1(1000);
+ * Vector< RFLOAT > v1(1000);
  * v1.init_random(0, 10, "gaussian");
  * std::cout << "The power_class of this vector should be 100 and is " <<
  *     dotProduct(v1, v1) << std::endl;
  * @endcode
  */
 template<typename T>
-T dotProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
+T dotProduct(const Vector<T> &v1, const Vector<T> &v2) {
     if (v1.size() != v2.size())
         REPORT_ERROR("Dot product: vectors of different size");
 
-    T accumulate = 0;
+    T running_total = 0;
     for (int i = 0; i < v1.size(); i++) {
-        accumulate += v1[i] * v2[i];
+        running_total += v1[i] * v2[i];
     }
-    return accumulate;
+    return running_total;
 }
 
 /** Vector product in R3.
@@ -495,12 +495,12 @@ T dotProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
  * or they don't belong to R3.
  *
  * @code
- * Matrix1D< T > X = vectorR3(1, 0, 0), Y = vector_R3(0, 1, 0);
+ * Vector< T > X = vectorR3(1, 0, 0), Y = vector_R3(0, 1, 0);
  * std::cout << "X*Y=Z=" << crossProduct(X,Y).transpose() << std::endl;
  * @endcode
  */
 template<typename T>
-Matrix1D<T> crossProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
+Vector<T> crossProduct(const Vector<T> &v1, const Vector<T> &v2) {
     if (v1.size() != 3 || v2.size() != 3)
         REPORT_ERROR("Cross product: vectors are not in R3");
 
@@ -526,7 +526,7 @@ Matrix1D<T> crossProduct(const Matrix1D<T> &v1, const Matrix1D<T> &v2) {
   * corner1 to corner2) loop.
   */
 template<typename T>
-void sortTwoVectors(Matrix1D<T> &v1, Matrix1D<T> &v2) {
+void sortTwoVectors(Vector<T> &v1, Vector<T> &v2) {
     if (v1.size() != v2.size())
         REPORT_ERROR("sortTwoVectors: vectors are not of the same shape");
 

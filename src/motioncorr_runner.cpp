@@ -1386,8 +1386,8 @@ bool MotioncorrRunner::executeOwnMotionCorrection(Micrograph &mic) {
             goto skip_fitting; // TODO: Refactor!
         }
 
-        Matrix2D <RFLOAT> matA(n_obs, n_params);
-        Matrix1D <RFLOAT> vecX(n_obs), vecY(n_obs), coeffX(n_params), coeffY(n_params);
+        Matrix<RFLOAT> matA(n_obs, n_params);
+        Vector<RFLOAT> vecX(n_obs), vecY(n_obs), coeffX(n_params), coeffY(n_params);
         for (int i = 0; i < n_obs; i++) {
             vecX[i] = patch_xshifts[i]; vecY[i] = patch_yshifts[i];
 
@@ -1701,7 +1701,7 @@ void MotioncorrRunner::realSpaceInterpolation_ThirdOrderPolynomial(
 ) {
     const int n_frames = Iframes.size();
     const int nx = Xsize(Iframes[0]()), ny = Ysize(Iframes[0]());
-    const Matrix1D<RFLOAT> coeffX = model.coeffX, coeffY = model.coeffY;
+    const Vector<RFLOAT> coeffX = model.coeffX, coeffY = model.coeffY;
 
     for (int iframe = 0; iframe < n_frames; iframe++) {
         logfile << "." << std::flush;

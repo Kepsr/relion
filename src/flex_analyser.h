@@ -91,10 +91,10 @@ public:
 	bool do_write_all_pca_projections;
 
 	// center of mass of the above
-	Matrix1D<RFLOAT> com_mask;
+	Vector<RFLOAT> com_mask;
 
 	// Pre-calculated rotation matrix for (0,90,0) rotation, and its transpose
-	Matrix2D<RFLOAT> A_rot90, A_rot90T;
+	Matrix<RFLOAT> A_rot90, A_rot90T;
 
 	MetaDataTable DFo;
 

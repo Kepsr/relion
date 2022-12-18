@@ -37,7 +37,7 @@ void BackProjector::initZeros(int current_size) {
     weight.initZeros();
 }
 
-inline void fillm(Matrix2D<RFLOAT> *magMatrix, RFLOAT &m00, RFLOAT &m10, RFLOAT &m01, RFLOAT &m11) {
+inline void fillm(Matrix<RFLOAT> *magMatrix, RFLOAT &m00, RFLOAT &m10, RFLOAT &m01, RFLOAT &m11) {
 
     if (magMatrix != 0) {
         m00 = (*magMatrix)(0, 0);
@@ -55,17 +55,17 @@ inline void fillm(Matrix2D<RFLOAT> *magMatrix, RFLOAT &m00, RFLOAT &m10, RFLOAT 
 
 void BackProjector::backproject2Dto3D(
     const MultidimArray<Complex> &f2d,
-    const Matrix2D<RFLOAT> &A,
+    const Matrix<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight,
     RFLOAT r_ewald_sphere, RFLOAT curvature,
-    Matrix2D<RFLOAT> *magMatrix
+    Matrix<RFLOAT> *magMatrix
 ) {
 
     RFLOAT m00, m10, m01, m11;
     fillm(magMatrix, m00, m10, m01, m11);
 
     // Use the inverse matrix
-    Matrix2D<RFLOAT> Ainv = A.inv();
+    Matrix<RFLOAT> Ainv = A.inv();
 
     // Go from the 2D slice coordinates to the 3D coordinates
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
@@ -299,10 +299,10 @@ void BackProjector::backproject2Dto3D(
 
 void BackProjector::backproject1Dto2D(
     const MultidimArray<Complex> &f1d,
-    const Matrix2D<RFLOAT> &A,
+    const Matrix<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight
 ) {
-    Matrix2D<RFLOAT> Ainv = A.inv();
+    Matrix<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
     const int r_max_src = Xsize(f1d) - 1;
@@ -390,11 +390,11 @@ void BackProjector::backproject1Dto2D(
 
 void BackProjector::backrotate2D(
     const MultidimArray<Complex> &f2d,
-    const Matrix2D<RFLOAT> &A,
+    const Matrix<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight,
-    Matrix2D<RFLOAT> *magMatrix
+    Matrix<RFLOAT> *magMatrix
 ) {
-    Matrix2D<RFLOAT> Ainv = A.inv();
+    Matrix<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT) padding_factor;  // take scaling into account directly
 
     RFLOAT m00, m10, m01, m11;
@@ -551,13 +551,13 @@ void BackProjector::backrotate2D(
 
 void BackProjector::backrotate3D(
     const MultidimArray<Complex> &f3d,
-    const Matrix2D<RFLOAT> &A,
+    const Matrix<RFLOAT> &A,
     const MultidimArray<RFLOAT> *Mweight
 ) {
     // f3d should already be in the right size (ori_size,orihalfdim)
     // AND the points outside max_r should already be zero.
 
-    Matrix2D<RFLOAT> Ainv = A.inv();
+    Matrix<RFLOAT> Ainv = A.inv();
     Ainv *= (RFLOAT)padding_factor;  // take scaling into account directly
 
     const int r_max_src = Xsize(f3d) - 1;
@@ -1637,8 +1637,9 @@ void BackProjector::applyHelicalSymmetry(
     for (int hh = h_min; hh < h_max; hh++) {
         if (hh == 0) continue;  // h == 0 is done before the loop (where sum_data = data)
 
-        Matrix2D<RFLOAT> R = rotation3DMatrix(-hh * helical_twist, 'Z');
-        R.setSmallValuesToZero();  // TODO: invert rotation matrix?
+        Matrix<RFLOAT> R = rotation3DMatrix(-hh * helical_twist, 'Z');
+        setSmallValuesToZero(R.begin(), R.end());
+        // TODO: invert rotation matrix?
 
         // Loop over all points in the output (i.e. rotated, or summed) array
         FOR_ALL_ELEMENTS_IN_ARRAY3D(sum_weight, i, j, k) {
@@ -1766,7 +1767,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
 
     int rmax2 = round(r_max * padding_factor) * round(r_max * padding_factor);
     if (SL.SymsNo() > 0 && ref_dim == 3) {
-        Matrix2D<RFLOAT> L(4, 4), R(4, 4);  // A matrix from the list
+        Matrix<RFLOAT> L(4, 4), R(4, 4);  // A matrix from the list
         // First symmetry operator (not stored in SL) is the identity matrix
         MultidimArray<RFLOAT>  sum_weight = weight;
         MultidimArray<Complex> sum_data   = data;

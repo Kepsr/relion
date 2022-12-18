@@ -450,7 +450,7 @@ class image_handler_parameters {
             MultidimArray<Complex> &FT = transformer.FourierTransform(Iin());
 
             // Note: only 2D rotations are done! 3D application assumes zero rot and tilt!
-            Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
+            Matrix<RFLOAT> A = rotation2DMatrix(psi);
 
             Iop().setXmippOrigin();
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
@@ -506,7 +506,7 @@ class image_handler_parameters {
             fabs(shift_y) > 0.0 ||
             fabs(shift_z) > 0.0
         ) {
-            Matrix1D<RFLOAT> shift (2 + (zdim > 1));
+            Vector<RFLOAT> shift (2 + (zdim > 1));
             XX(shift) = shift_x;
             YY(shift) = shift_y;
             if (zdim > 1)
@@ -740,7 +740,7 @@ class image_handler_parameters {
                     "minval = " << stats.min << " maxval = " << stats.max << "; "
                     "angpix = " << header_angpix << std::endl;
             } else if (do_calc_com) {
-                Matrix1D <RFLOAT> com (3);
+                Vector <RFLOAT> com (3);
                 Iin.read(fn_img);
                 Iin().setXmippOrigin().centerOfMass(com);
                 std::cout << fn_img << " : center of mass (relative to XmippOrigin)"
@@ -756,7 +756,7 @@ class image_handler_parameters {
                     auto xoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X, i);
                     auto yoff = MD.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y, i);
                     // Apply the actual transformation
-                    Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
+                    Matrix<RFLOAT> A = rotation2DMatrix(psi);
                     A.at(0, 2) = xoff;
                     A.at(1, 2) = yoff;
                     Iin() = applyGeometry(Iin(), A, IS_NOT_INV, DONT_WRAP);

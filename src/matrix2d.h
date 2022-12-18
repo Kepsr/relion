@@ -50,13 +50,13 @@
 #include "src/matrix1d.h"
 #include "src/filename.h"
 
-/** @defgroup Matrices Matrix2D Matrices
+/** @defgroup Matrices Matrix Matrices
  * @ingroup DataLibrary
  */
 //@{
 
 template<typename T>
-class Matrix2D {
+class Matrix {
 
     // The array itself
     T* mdata;
@@ -70,31 +70,31 @@ class Matrix2D {
     /// @{
 
     // Default / dimension constructor
-    Matrix2D(int m = 0, int n = 0): mdimx(0), mdimy(0), mdata(nullptr) {
+    Matrix(int m = 0, int n = 0): mdimx(0), mdimy(0), mdata(nullptr) {
         resize(m, n);
     }
 
     // Copy constructor
-    Matrix2D(const Matrix2D<T> &other): Matrix2D(other.ncols(), other.nrows()) {
+    Matrix(const Matrix<T> &other): Matrix(other.ncols(), other.nrows()) {
         std::copy(other.begin(), other.end(), begin());
     }
 
     // Type-casting copy constructor
     template<typename U>
-    Matrix2D(const Matrix2D<U> &other): Matrix2D(other.ncols(), other.nrows()) {
+    Matrix(const Matrix<U> &other): Matrix(other.ncols(), other.nrows()) {
         std::copy(other.begin(), other.end(), begin());
     }
 
     // Destructor
-    ~Matrix2D() { clear(); }
+    ~Matrix() { clear(); }
 
-    friend void swap(Matrix2D<T> &lhs, Matrix2D<T> &rhs) {
+    friend void swap(Matrix<T> &lhs, Matrix<T> &rhs) {
         std::swap(lhs.mdimx, rhs.mdimx);
         std::swap(lhs.mdimy, rhs.mdimy);
         std::swap(lhs.mdata, rhs.mdata);
     }
 
-    Matrix2D<T>& operator = (Matrix2D<T> rhs) {
+    Matrix<T>& operator = (Matrix<T> rhs) {
         swap(*this, rhs);
         return *this;
     }
@@ -107,7 +107,7 @@ class Matrix2D {
         mdimx = mdimy = 0;
     }
 
-    /// @name Size and shape of Matrix2D
+    /// @name Size and shape of Matrix
     //@{
     // Resize to a given size
     void resize(int new_mdimx, int new_mdimy) {
@@ -143,10 +143,10 @@ class Matrix2D {
     }
 
     // Extract submatrix and assign to this object
-    Matrix2D<T> submatrix(int i0, int j0, int iF, int jF) const {
+    Matrix<T> submatrix(int i0, int j0, int iF, int jF) const {
         if (i0 < 0 || j0 < 0 || iF >= nrows() || jF >= ncols())
             REPORT_ERROR("Submatrix indices out of bounds");
-        Matrix2D<T> A (iF - i0 + 1, jF - j0 + 1);
+        Matrix<T> A (iF - i0 + 1, jF - j0 + 1);
 
         for (int i = 0; i < A.nrows(); i++) 
         for (int j = 0; j < A.ncols(); j++)
@@ -168,17 +168,17 @@ class Matrix2D {
 
     //@}
 
-    /// @name Initialise Matrix2D values
+    /// @name Initialise Matrix values
     //@{
 
-    static Matrix2D<T> zeros(int m, int n) {
-        Matrix2D<T> A (m, n);
+    static Matrix<T> zeros(int m, int n) {
+        Matrix<T> A (m, n);
         std::fill(A.begin(), A.end(), 0);
         return A;
     }
 
-    static Matrix2D<T> identity(int n) {
-        Matrix2D<T> A (n, n);
+    static Matrix<T> identity(int n) {
+        Matrix<T> A (n, n);
         A.setIdentity();
         return A;
     }
@@ -194,7 +194,7 @@ class Matrix2D {
     }
     //@}
 
-    /// @name Operators for Matrix2D
+    /// @name Operators for Matrix
     //@{
 
     /// Subscripting
@@ -208,33 +208,32 @@ class Matrix2D {
     inline T  operator [] (int i) const { return mdata[i]; }
     inline T& operator [] (int i)       { return mdata[i]; }
 
-    Matrix2D<T>& operator += (T rhs) {
+    Matrix<T>& operator += (T rhs) {
         for (auto& x: *this) { x += rhs; }
         return *this;
     }
 
-    Matrix2D<T>& operator -= (T rhs) {
+    Matrix<T>& operator -= (T rhs) {
         for (auto& x: *this) { x -= rhs; }
         return *this;
     }
 
-    Matrix2D<T>& operator *= (T rhs) {
+    Matrix<T>& operator *= (T rhs) {
         for (auto& x: *this) { x *= rhs; }
         return *this;
     }
 
-    Matrix2D<T>& operator /= (T rhs) {
+    Matrix<T>& operator /= (T rhs) {
         for (auto& x: *this) { x /= rhs; }
         return *this;
     }
 
-    Matrix2D<T> matmul(const Matrix2D<T>& rhs) const {
-        const Matrix2D<T>& lhs = *this;
+    Matrix<T> matmul(const Matrix<T>& rhs) const {
+        const Matrix<T>& lhs = *this;
         if (lhs.ncols() != rhs.nrows())
             REPORT_ERROR("Incompatible shapes in matrix multiplication");
 
-        Matrix2D<T> product (lhs.nrows(), rhs.ncols());
-        std::fill(product.begin(), product.end(), 0);
+        Matrix<T> product = zeros(lhs.nrows(), rhs.ncols());
         for (int i = 0; i < lhs.nrows(); i++)
         for (int j = 0; j < rhs.ncols(); j++)
         for (int k = 0; k < lhs.ncols(); k++)
@@ -242,14 +241,14 @@ class Matrix2D {
         return product;
     }
 
-    Matrix2D<T>& operator += (const Matrix2D<T> &rhs) {
+    Matrix<T>& operator += (const Matrix<T> &rhs) {
         if (shape() != rhs.shape())
             REPORT_ERROR("operator+=: Not same sizes in matrix addition");
         for (int i = 0; i < size(); i++) mdata[i] += rhs.mdata[i];
         return *this;
     }
 
-    Matrix2D<T>& operator -= (const Matrix2D<T> &rhs) {
+    Matrix<T>& operator -= (const Matrix<T> &rhs) {
         if (shape() != rhs.shape())
             REPORT_ERROR("operator-=: Not same sizes in matrix subtraction");
         for (int i = 0; i < size(); i++) mdata[i] -= rhs.mdata[i];
@@ -261,7 +260,7 @@ class Matrix2D {
     * Returns true if this object has the same shape as the argument
     * and the same values (to within machine epsilon).
     */
-    bool equal(const Matrix2D<T> &other, RFLOAT accuracy = Xmipp::epsilon) const {
+    bool equal(const Matrix<T> &other, RFLOAT accuracy = Xmipp::epsilon) const {
         if (shape() != other.shape()) 
             return false;
 
@@ -273,16 +272,11 @@ class Matrix2D {
     }
     //@}
 
-    /// @name Utilities for Matrix2D
-    //@{
-    // Set very small values (abs(val) < accuracy) equal to zero
-    void setSmallValuesToZero(RFLOAT accuracy = Xmipp::epsilon);
-
     inline T* begin() const { return mdata; }
 
     inline T* end() const { return mdata + mdimx * mdimy; }
 
-    /// @name Utilities for Matrix2D
+    /// @name Utilities for Matrix
     //@{
 
     /** Produce a 2D array suitable for working with Numerical Recipes
@@ -295,7 +289,7 @@ class Matrix2D {
         T** ptr = ask_matrix<T>(1, mdimy, 1, mdimx);
         for (int i = 0; i < mdimy; i++)
         for (int j = 0; j < mdimx; j++)
-            ptr[i + 1][j + 1] = mdata[i * mdimx + j];
+            ptr[i + 1][j + 1] = at(i, j);
         return ptr;
     }
 
@@ -315,7 +309,7 @@ class Matrix2D {
         resize(m, n);
         for (int i = 1; i <= n; i++)
         for (int j = 1; j <= m; j++)
-            (*this)(i - 1, j - 1) = ptr[i][j];
+            at(i - 1, j - 1) = ptr[i][j];
     }
 
     // Kill a 2D array produced for numerical recipes
@@ -329,29 +323,19 @@ class Matrix2D {
         // Do nothing
     }
 
-    // Write this matrix to file
-    void write(const FileName &fn) const {
-        std::ofstream fhOut (fn.c_str());
-        if (!fhOut)
-            REPORT_ERROR((std::string) "write: Cannot open " + fn + " for output");
-        fhOut << *this;
-    }
-
     /** Construct from a vector
     *
     * The origin of the matrix is set such that it has one of the index origins
     * (X or Y) to the same value as the vector, and the other set to 0
     * according to the shape.
     */
-    explicit Matrix2D(const Matrix1D<T> &v): Matrix2D() {
+    explicit Matrix(const Vector<T> &v): Matrix() {
         if (v.isRow()) {
             resize(v.size(), 1);
-            for (int j = 0; j < v.size(); j++)
-                at(0, j) = v[j];
+            std::copy(v.begin(), v.end(), begin());
         } else {
             resize(1, v.size());
-            for (int i = 0; i < v.size(); i++)
-                at(i, 0) = v[i];
+            std::copy(v.begin(), v.end(), begin());
         }
     }
 
@@ -359,15 +343,15 @@ class Matrix2D {
     *
     * An exception is thrown if the matrix is not a row or column vector.
     */
-    explicit operator Matrix1D<T>() const {
+    explicit operator Vector<T>() const {
         if (nrows() == 1) {
-            Matrix1D<T> v (ncols(), VectorMode::row);  // Row vector
-            for (int j = 0; j < ncols(); j++) { v[j] = at(0, j); }
+            Vector<T> v (ncols(), VectorMode::row);  // Row vector
+            std::copy(begin(), end(), v.begin());
             return v;
         }
         if (ncols() == 1) {
-            Matrix1D<T> v (nrows(), VectorMode::column);  // Column vector
-            for (int i = 0; i < nrows(); i++) { v[i] = at(i, 0); }
+            Vector<T> v (nrows(), VectorMode::column);  // Column vector
+            std::copy(begin(), end(), v.begin());
             return v;
         }
         // Otherwise, throw
@@ -376,7 +360,7 @@ class Matrix2D {
 
     operator std::vector<T>() const { return {begin(), end()}; }
 
-    Matrix2D(const std::vector<T>& v, int m, int n): Matrix2D(m, n) {
+    Matrix(const std::vector<T>& v, int m, int n): Matrix(m, n) {
         // m * n had better be at least v.size()
         copy(v.begin(), v.end(), mdata);
     }
@@ -387,12 +371,12 @@ class Matrix2D {
     * row inside the nth 2D matrix, the numbering of the rows is also
     * logical not physical.
     */
-    Matrix1D<T> getRow(int i) const {
+    Vector<T> getRow(int i) const {
         if (i < 0 || i >= nrows())
             REPORT_ERROR("getRow: index out of matrix bounds");
             // std::out_of_range ?
 
-        Matrix1D<T> v (ncols(), VectorMode::row);
+        Vector<T> v (ncols(), VectorMode::row);
         for (int j = 0; j < ncols(); j++) { v[j] = at(i, j); }
         return v;
     }
@@ -402,12 +386,12 @@ class Matrix2D {
     * This function returns a column vector corresponding to the
     * choosen column.
     */
-    Matrix1D<T> getCol(int j) const {
+    Vector<T> getCol(int j) const {
         if (j < 0 || j >= ncols())
             REPORT_ERROR("getCol: index outside matrix bounds");
             // std::out_of_range() ?
 
-        Matrix1D<T> v (nrows(), VectorMode::column);
+        Vector<T> v (nrows(), VectorMode::column);
         for (int i = 0; i < nrows(); i++) { v[i] = at(i, j); }
         return v;
     }
@@ -420,7 +404,7 @@ class Matrix2D {
     * m.setRow(-2, m.row(1));  // Copies row 1 in row -2
     * @endcode
     */
-    void setRow(int i, const Matrix1D<T> &v) {
+    void setRow(int i, const Vector<T> &v) {
         if (i < 0 || i >= nrows())
             REPORT_ERROR("setRow: Matrix subscript (i) out of range");
 
@@ -443,7 +427,7 @@ class Matrix2D {
     * m.setCol(0, m.row(1).transpose());  // Copies row 1 in column 0
     * @endcode
     */
-    void setCol(int j, const Matrix1D<T> &v) {
+    void setCol(int j, const Vector<T> &v) {
         if (j < 0 || j >= ncols())
             REPORT_ERROR("setCol: Matrix subscript (j) out of range");
 
@@ -478,9 +462,9 @@ class Matrix2D {
         }
 
         // Perform decomposition
-        Matrix1D<int> indx;
+        Vector<int> indx;
         T d;
-        Matrix2D<T> LU;
+        Matrix<T> LU;
         ludcmp(*this, LU, indx, d);
 
         // Calculate determinant
@@ -492,9 +476,9 @@ class Matrix2D {
 
     /** Algebraic transpose of a matrix
     */
-    Matrix2D<T> transpose() const {
+    Matrix<T> transpose() const {
         /// XXX: Could be done in place.
-        Matrix2D<T> t (ncols(), nrows());
+        Matrix<T> t (ncols(), nrows());
         for (int i = 0; i < t.nrows(); i++)
         for (int j = 0; j < t.ncols(); j++)
         t.at(i, j) = at(j, i);
@@ -506,11 +490,11 @@ class Matrix2D {
     *
     * Compute the pseudoinverse of a matrix by SVD.
     */
-    void inv(Matrix2D<T> &result) const;
+    void inv(Matrix<T> &result) const;
 
     // Matrix inverse
-    Matrix2D<T> inv() const {
-        Matrix2D<T> result;
+    Matrix<T> inv() const {
+        Matrix<T> result;
         inv(result);
         return result;
     }
@@ -532,7 +516,7 @@ class Matrix2D {
 // Free functions
 
 template <typename T>
-Matrix1D<T> matmul(const Matrix2D<T> &lhs, const Matrix1D<T> &rhs) {
+Vector<T> matmul(const Matrix<T> &lhs, const Vector<T> &rhs) {
 
     if (lhs.ncols() != rhs.size())
         REPORT_ERROR("Incompatible shapes in matrix by vector multiplication");
@@ -540,7 +524,7 @@ Matrix1D<T> matmul(const Matrix2D<T> &lhs, const Matrix1D<T> &rhs) {
     if (!rhs.isCol())
         REPORT_ERROR("Right operand is not a column vector");
 
-    Matrix1D<T> result (lhs.nrows(), VectorMode::column);
+    Vector<T> result (lhs.nrows(), VectorMode::column);
     for (int i = 0; i < result.size(); i++) {
         result[i] = 0;
         for (int j = 0; j < rhs.size(); j++)
@@ -550,7 +534,7 @@ Matrix1D<T> matmul(const Matrix2D<T> &lhs, const Matrix1D<T> &rhs) {
 }
 
 template<typename T>
-Matrix1D<T> matmul(const Matrix1D<T> &lhs, const Matrix2D<T> &rhs) {
+Vector<T> matmul(const Vector<T> &lhs, const Matrix<T> &rhs) {
 
     if (lhs.size() != rhs.nrows())
         REPORT_ERROR("Incompatible shapes in vector by matrix multiplication");
@@ -558,7 +542,7 @@ Matrix1D<T> matmul(const Matrix1D<T> &lhs, const Matrix2D<T> &rhs) {
     if (!lhs.isRow())
         REPORT_ERROR("Left operand is not a row vector");
 
-    Matrix1D<T> result (rhs.ncols(), VectorMode::row);
+    Vector<T> result (rhs.ncols(), VectorMode::row);
     for (int j = 0; j < rhs.ncols(); j++) {
         result[j] = 0;
         for (int i = 0; i < rhs.nrows(); i++)
@@ -568,12 +552,12 @@ Matrix1D<T> matmul(const Matrix1D<T> &lhs, const Matrix2D<T> &rhs) {
 }
 
 /** @name Matrix-related functions
- * These functions are not methods of Matrix2D
+ * These functions are not methods of Matrix
  */
 //@{
 // LU Decomposition
 template<typename T>
-void ludcmp(const Matrix2D<T> &A, Matrix2D<T> &LU, Matrix1D<int> &indx, T &d) {
+void ludcmp(const Matrix<T> &A, Matrix<T> &LU, Vector<int> &indx, T &d) {
     LU = A;
     indx.resize(A.ncols());
     ludcmp(
@@ -584,7 +568,7 @@ void ludcmp(const Matrix2D<T> &A, Matrix2D<T> &LU, Matrix1D<int> &indx, T &d) {
 
 // LU Backsubstitution
 template<typename T>
-void lubksb(const Matrix2D<T> &LU, Matrix1D<int> &indx, Matrix1D<T> &b) {
+void lubksb(const Matrix<T> &LU, Vector<int> &indx, Vector<T> &b) {
     lubksb(
         LU.adaptForNumericalRecipes2(), indx.size(),
         indx.data() - 1, b.data() - 1
@@ -593,15 +577,15 @@ void lubksb(const Matrix2D<T> &LU, Matrix1D<int> &indx, Matrix1D<T> &b) {
 
 // SVD Backsubstitution
 void svbksb(
-    Matrix2D<RFLOAT> &u, Matrix1D<RFLOAT> &w, Matrix2D<RFLOAT> &v,
-    Matrix1D<RFLOAT> &b, Matrix1D<RFLOAT> &x
+    Matrix<RFLOAT> &u, Vector<RFLOAT> &w, Matrix<RFLOAT> &v,
+    Vector<RFLOAT> &b, Vector<RFLOAT> &x
 );
 
 // Singular Value Decomposition (from numerical_recipes)
 template<typename T>
 void svdcmp(
-    const Matrix2D<T> &a,
-    Matrix2D<RFLOAT> &u, Matrix1D<RFLOAT> &w, Matrix2D<RFLOAT> &v
+    const Matrix<T> &a,
+    Matrix<RFLOAT> &u, Vector<RFLOAT> &w, Matrix<RFLOAT> &v
 ) {
     // svdcmp only works with RFLOAT
     u.resize(a.ncols(), a.nrows());
@@ -618,15 +602,15 @@ void svdcmp(
 // Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
 void solve(
-    const Matrix2D<T> &A, const Matrix1D<T> &b,
-    Matrix1D<RFLOAT> &result, RFLOAT tolerance
+    const Matrix<T> &A, const Vector<T> &b,
+    Vector<RFLOAT> &result, RFLOAT tolerance
 );
 
 // Solve a system of linear equations (Ax=b), where x and b are matrices,
 // by SVD Decomposition (through Gauss-Jordan numerical recipes)
 template<typename T>
-void solve(const Matrix2D<T> &A, const Matrix2D<T> &b, Matrix2D<T> &result) {
-    if (A.ncols() == 0)
+void solve(Matrix<T> A, const Matrix<T> &b, Matrix<T> &result) {
+    if (A.size() == 0)
         REPORT_ERROR("Solve: Matrix is empty");
 
     if (A.ncols() != A.nrows())
@@ -637,9 +621,8 @@ void solve(const Matrix2D<T> &A, const Matrix2D<T> &b, Matrix2D<T> &result) {
 
     // Solve
     result = b;
-    Matrix2D<T> Aux = A;
     gaussj(
-        Aux.adaptForNumericalRecipes2(), Aux.nrows(),
+        A.adaptForNumericalRecipes2(), A.nrows(),
         result.adaptForNumericalRecipes2(), b.ncols()
     );
 }
@@ -647,10 +630,10 @@ void solve(const Matrix2D<T> &A, const Matrix2D<T> &b, Matrix2D<T> &result) {
 
 /** Least-squares rigid transformation between two sets of 3D coordinates
  *
-RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::vector<Matrix1D<RFLOAT> > &set2,
-        Matrix2D<RFLOAT> &Rot, Matrix1D<RFLOAT> &trans) {
-    Matrix2D<RFLOAT> A;
-    Matrix1D<RFLOAT> avg1, avg2;
+RFLOAT lsq_rigid_body_transformation(std::vector<Vector<RFLOAT> > &set1, std::vector<Vector<RFLOAT> > &set2,
+        Matrix<RFLOAT> &Rot, Vector<RFLOAT> &trans) {
+    Matrix<RFLOAT> A;
+    Vector<RFLOAT> avg1, avg2;
 
     if (set1.size() != set2.size())
         REPORT_ERROR("lsq_rigid_body_transformation ERROR: unequal set size");
@@ -686,8 +669,8 @@ RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::
         A(2, 2) += (ZZ(set1[i]) - ZZ(avg1)) * (ZZ(set2[i]) - ZZ(avg2));
     }
 
-    Matrix2D<RFLOAT> U, V;
-    Matrix1D<RFLOAT> w;
+    Matrix<RFLOAT> U, V;
+    Vector<RFLOAT> w;
 
     // TODO: check inverse, transpose etc etc!!!
 
@@ -711,44 +694,51 @@ RFLOAT lsq_rigid_body_transformation(std::vector<Matrix1D<RFLOAT> > &set1, std::
 */
 
 template <typename T>
-Matrix2D<T> operator + (Matrix2D<T> lhs, T rhs) {
+Matrix<T> operator + (Matrix<T> lhs, T rhs) {
     return lhs += rhs;
 }
 
 template <typename T>
-Matrix2D<T> operator - (Matrix2D<T> lhs, T rhs) {
+Matrix<T> operator - (Matrix<T> lhs, T rhs) {
     return lhs -= rhs;
 }
 
 template <typename T>
-Matrix2D<T> operator * (Matrix2D<T> lhs, T rhs) {
+Matrix<T> operator * (Matrix<T> lhs, T rhs) {
     return lhs *= rhs;
 }
 
 template <typename T>
-Matrix2D<T> operator / (Matrix2D<T> lhs, T rhs) {
+Matrix<T> operator / (Matrix<T> lhs, T rhs) {
     return lhs /= rhs;
 }
 
 template <typename T>
-Matrix2D<T> operator * (T lhs, Matrix2D<T> rhs) {
+Matrix<T> operator * (T lhs, Matrix<T> rhs) {
     for (auto& x: rhs) x = lhs * x;
     return rhs;
 }
 
 template <typename T>
-Matrix2D<T> operator + (Matrix2D<T> lhs, const Matrix2D<T> &rhs) {
+Matrix<T> operator + (Matrix<T> lhs, const Matrix<T> &rhs) {
     return lhs += rhs;
 }
 
 template <typename T>
-Matrix2D<T> operator - (Matrix2D<T> lhs, const Matrix2D<T> &rhs) {
+Matrix<T> operator - (Matrix<T> lhs, const Matrix<T> &rhs) {
     return lhs -= rhs;
+}
+
+template <typename It>
+void setSmallValuesToZero(It here, const It& end, RFLOAT epsilon = Xmipp::epsilon) {
+    for (; here != end; ++here)
+        if (abs(*here) < epsilon)
+            *here = 0;
 }
 
 // Show matrix
 template <typename T>
-std::ostream& operator << (std::ostream &ostrm, const Matrix2D<T> &m) {
+std::ostream& operator << (std::ostream &ostrm, const Matrix<T> &m) {
     if (m.size() == 0) {
         ostrm << "Empty matrix\n";
     } else {
@@ -756,13 +746,22 @@ std::ostream& operator << (std::ostream &ostrm, const Matrix2D<T> &m) {
         const T maximum = *std::max_element(m.begin(), m.end());
         const int epsilon = bestPrecision(maximum, 10);
         for (int i = 0; i < m.nrows(); i++) {
-            for (int j = 0; j < m.ncols(); j++) {
-                ostrm << std::setw(13) << floatToString((RFLOAT) m.at(i, j), 10, epsilon) << ' ';
+        for (int j = 0; j < m.ncols(); j++) {
+            ostrm << std::setw(13) << floatToString((RFLOAT) m.at(i, j), 10, epsilon) << ' ';
             }
             ostrm << std::endl;
         }
     }
     return ostrm;
+}
+
+// Write matrix to file
+template <typename T>
+void write(const Matrix<T>& matrix, const FileName& fn) {
+    std::ofstream fhOut (fn.c_str());
+    if (!fhOut)
+        REPORT_ERROR((std::string) "write: Cannot open " + fn + " for output");
+    fhOut << matrix;
 }
 
 //@}

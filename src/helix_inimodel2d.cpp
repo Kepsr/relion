@@ -191,7 +191,7 @@ void HelixAligner::initialise() {
         vol().resize(ori_size, ori_size, ori_size);
         for (int k = 0; k < Zsize(vol()); k++) {
             float ang = deg_per_pixel * k;
-            Matrix2D<RFLOAT> Arot = rotation2DMatrix(ang);
+            Matrix<RFLOAT> Arot = rotation2DMatrix(ang);
 
             MultidimArray<RFLOAT> Mrot = applyGeometry(img(), Arot, true, false);
             for (long int j = 0; j < Ysize(Mrot); j++)
@@ -290,7 +290,7 @@ void HelixAligner::readImages() {
         ori_psis.push_back(psi);
         ori_yoffs.push_back(yoff);
         // Apply the actual transformation
-        Matrix2D<RFLOAT> A = rotation2DMatrix(psi);
+        Matrix<RFLOAT> A = rotation2DMatrix(psi);
         A.at(1, 2) = -yoff / angpix;
         img() = applyGeometry(img(), A, IS_INV, DONT_WRAP);
 
@@ -302,7 +302,7 @@ void HelixAligner::readImages() {
         for (int iflip = 0; iflip < 2; iflip++) {
             for (RFLOAT ang = 0; ang <= max_rotate; ang += step_rotate) {
                 RFLOAT myang = iflip == 1 ? ang + 180.0 : ang;
-                Matrix2D<RFLOAT> Arot = rotation2DMatrix(myang);
+                Matrix<RFLOAT> Arot = rotation2DMatrix(myang);
                 MultidimArray<RFLOAT> Irot = applyGeometry(img(), Arot, true, false);
                 resizeMap(Irot, down_size);
                 Irot.setXmippOrigin();
@@ -417,7 +417,7 @@ void HelixAligner::getHelicesFromMics() {
                     int nrots = ang > 0.0 ? 2 : 1;
                     // For for positive and negative rotations
                     for (int irot = 0; irot < nrots; irot++) {
-                        Matrix2D<RFLOAT> Arot = rotation2DMatrix(irot == 0 ? phi + ang : phi - ang);
+                        Matrix<RFLOAT> Arot = rotation2DMatrix(irot == 0 ? phi + ang : phi - ang);
                         Arot(0, 2) = xcen;
                         Arot(1, 2) = ycen;
 
@@ -869,7 +869,7 @@ void HelixAligner::reconstruct2D(int iclass) {
 
     for (int j = 0; j < myFlines.size(); j++) {
         RFLOAT rot = (RFLOAT) j * 360.0 / Xsize(model.Aref[iclass]);
-        Matrix2D<RFLOAT> A2D = rotation2DMatrix(rot);
+        Matrix<RFLOAT> A2D = rotation2DMatrix(rot);
         BP.set2DFourierTransform(myFlines[j], A2D);
     }
     MultidimArray<RFLOAT> tau2;
@@ -886,7 +886,7 @@ void HelixAligner::reconstruct2D(int iclass) {
         MultidimArray<RFLOAT> Asum = model.Arec[iclass];
         for (int i = 1; i < symmetry; i++) {
             RFLOAT ang = i * 360.0 / (RFLOAT) symmetry;
-            Matrix2D<RFLOAT> A2D = rotation2DMatrix(ang);
+            Matrix<RFLOAT> A2D = rotation2DMatrix(ang);
             Asum += applyGeometry(model.Arec[iclass], A2D, false, false);
         }
         model.Arec[iclass] = Asum / (RFLOAT) symmetry;
@@ -913,7 +913,7 @@ void HelixAligner::reconstruct2D(int iclass) {
     for (int i = 0; i < myFlines.size(); i++) {
 
         const RFLOAT rot = (RFLOAT) i * 360.0 / Xsize(model.Aref[iclass]);
-        const Matrix2D<RFLOAT> A2D = rotation2DMatrix(rot);
+        const Matrix<RFLOAT> A2D = rotation2DMatrix(rot);
         myFlines[i] = PP.get2DFourierTransform(
             myFlines[i].xdim, myFlines[i].ydim, myFlines[i].zdim, A2D);
         FourierTransformer transformer;
@@ -1002,7 +1002,7 @@ void HelixAligner::reconstruct3D() {
         Ic().resize(ori_size, ori_size, ori_size);
         for (int k = 0; k < Zsize(Ic()); k++) {
             float ang = deg_per_pixel * k;
-            Matrix2D<RFLOAT> Arot = rotation2DMatrix(ang);
+            Matrix<RFLOAT> Arot = rotation2DMatrix(ang);
 
             MultidimArray<RFLOAT> Mrot = applyGeometry(Mori, Arot, true, false);
             for (long int j = 0; j < Ysize(Mrot); j++) \

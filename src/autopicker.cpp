@@ -456,7 +456,7 @@ void AutoPicker::initialise() {
             for (long int idir = 0; idir < sampling.NrDirections(); idir++) {
                 RFLOAT rot  = sampling.rot_angles [idir];
                 RFLOAT tilt = sampling.tilt_angles[idir];
-                Matrix2D<RFLOAT> A = Euler::angles2matrix(rot, tilt, 0.0);
+                Matrix<RFLOAT> A = Euler::angles2matrix(rot, tilt, 0.0);
                 Fref = projector.get2DFourierTransform(Mref.xdim / 2, Mref.ydim, Mref.zdim, A);
                 // Shift the image back to the center...
                 CenterFFTbySign(Fref);
@@ -933,8 +933,8 @@ std::vector<AmyloidCoord> AutoPicker::findNextCandidateCoordinates(
     int new_micrograph_xsize = (float) micrograph_xsize * scale;
     int new_micrograph_ysize = (float) micrograph_ysize * scale;
     int skip_side_pix = round(skip_side * scale);
-    Matrix1D<RFLOAT> vec_c (2), vec_p (2);
-    Matrix2D<RFLOAT> A2D = rotation2DMatrix(-mycoord.psi, false);
+    Vector<RFLOAT> vec_c (2), vec_p (2);
+    Matrix<RFLOAT> A2D = rotation2DMatrix(-mycoord.psi, false);
 
     for (const auto& coord: circle) {
         // Rotate the circle-vector coordinates along the mycoord.psi

@@ -1072,7 +1072,7 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                 }
             } else if (abs(rescale_fndata - 1.0) > 1e-6 || do_recenter) {
                 // re-scale or re-center (irrelevant if do_reset_offsets)
-                Matrix1D<RFLOAT> my_projected_center {0, 0, 0};
+                Vector<RFLOAT> my_projected_center {0, 0, 0};
 
                 xoff = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_X_ANGSTROM, i);
                 yoff = MDresult.getValue<RFLOAT>(EMDL::ORIENT_ORIGIN_Y_ANGSTROM, i);
@@ -1090,10 +1090,10 @@ MetaDataTable Preprocessing::getCoordinateMetaDataTable(FileName fn_mic) {
                     psi  = MDresult.getValue<RFLOAT>(EMDL::ORIENT_PSI,  i);
 
                     // Project the center-coordinates
-                    Matrix1D<RFLOAT> my_center {recenter_x, recenter_y, recenter_z};  // in run_data's pixels
+                    Vector<RFLOAT> my_center {recenter_x, recenter_y, recenter_z};  // in run_data's pixels
                     if (ref_angpix > 0)
                         my_center *= ref_angpix / particle_angpix;
-                    const Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+                    const Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
                     my_projected_center = matmul(A3D, my_center);
                 }
 

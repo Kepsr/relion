@@ -164,8 +164,8 @@ class particle_reposition_parameters {
                     MultidimArray<RFLOAT> Mref (my_image_size, my_image_size,
                         optimiser.mymodel.data_dim == 3 ? my_image_size : 1);
 
-                    Matrix2D<RFLOAT> A;
-                    Matrix1D<RFLOAT> offsets(3);
+                    Matrix<RFLOAT> A;
+                    Vector<RFLOAT> offsets (3);
 
                     const long int i = MDcoord.addObject();
                     MDcoord.setObject(optimiser.mydata.MDimg.getObject(ori_img_id), i);

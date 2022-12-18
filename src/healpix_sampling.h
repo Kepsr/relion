@@ -80,8 +80,8 @@ class HealpixSampling {
     FileName fn_sym_relax;
 
     /** List of symmetry operators */
-    std::vector <Matrix2D<RFLOAT> > R_repository,       L_repository;
-    std::vector <Matrix2D<RFLOAT> > R_repository_relax, L_repository_relax;
+    std::vector<Matrix<RFLOAT>> R_repository,       L_repository;
+    std::vector<Matrix<RFLOAT>> R_repository_relax, L_repository_relax;
 
     /** Two numbers that describe the symmetry group */
     int pgGroup, pgOrder, pgGroupRelaxSym, pgOrderRelaxSym;
@@ -93,7 +93,7 @@ class HealpixSampling {
     std::vector<int> directions_ipix;
 
     /** vector with sampling points described by angles */
-    std::vector<RFLOAT > rot_angles, tilt_angles;
+    std::vector<RFLOAT> rot_angles, tilt_angles;
 
     /** vector with the psi-samples */
     std::vector<RFLOAT> psi_angles;
@@ -173,8 +173,8 @@ class HealpixSampling {
     // Initialise symmetry matrices
     void initialiseSymMats(
         FileName fn_sym_, int &pgGroup, int &pgOrder,
-        std::vector<Matrix2D<RFLOAT> > &Rs,
-        std::vector<Matrix2D<RFLOAT> > &Ls
+        std::vector<Matrix<RFLOAT>> &Rs,
+        std::vector<Matrix<RFLOAT>> &Ls
     );
 
     // Reset the random perturbation
@@ -233,7 +233,7 @@ class HealpixSampling {
 
     /* Sjors, 9 Nov 2015: new rot-priors for DNA-origami-bound refinements
      */
-    RFLOAT calculateDeltaRot(Matrix1D<RFLOAT> my_direction, RFLOAT rot_prior);
+    RFLOAT calculateDeltaRot(Vector<RFLOAT> my_direction, RFLOAT rot_prior);
 
     /* Select all orientations with zero prior probabilities
      * store all these in the vectors pointer_dir_nonzeroprior and pointer_psi_nonzeroprior
@@ -354,9 +354,9 @@ class HealpixSampling {
      */
     void getTranslationsInPixel(
         long int itrans, int oversampling_order, RFLOAT my_pixel_size,
-        std::vector<RFLOAT > &my_translations_x,
-        std::vector<RFLOAT > &my_translations_y,
-        std::vector<RFLOAT > &my_translations_z,
+        std::vector<RFLOAT> &my_translations_x,
+        std::vector<RFLOAT> &my_translations_y,
+        std::vector<RFLOAT> &my_translations_z,
         bool do_helical_refine = false
     );
 
@@ -404,7 +404,7 @@ class HealpixSampling {
      * */
     void writeBildFileOrientationalDistribution(MultidimArray<RFLOAT> &pdf_direction,
             FileName &fn_bild, RFLOAT R, RFLOAT offset = 0.0,
-            const Matrix2D<RFLOAT> *Aorient = NULL, const Matrix1D<RFLOAT> *Acom = NULL,
+            const Matrix<RFLOAT> *Aorient = NULL, const Vector<RFLOAT> *Acom = NULL,
             RFLOAT Rmax_frac = 0.3, RFLOAT width_frac = 0.5);
 
     private:
@@ -429,7 +429,7 @@ class HealpixSampling {
         symmetry group, symmetry order */
     void removeSymmetryEquivalentPointsGeometric(
         const int symmetry, int sym_order,
-        std::vector<Matrix1D<RFLOAT> >  &sampling_points_vector
+        std::vector<Vector<RFLOAT>>  &sampling_points_vector
     );
 
 };

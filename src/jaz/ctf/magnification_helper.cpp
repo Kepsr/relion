@@ -30,12 +30,12 @@
 
 using namespace gravis;
 
-Matrix2D<RFLOAT> MagnificationHelper::polarToMatrix(
+Matrix<RFLOAT> MagnificationHelper::polarToMatrix(
     double scaleMajor, double scaleMinor, double angleDeg
 ) {
     // based on definition by T. Nakane
 
-    Matrix2D<RFLOAT> out(2, 2);
+    Matrix<RFLOAT> out(2, 2);
 
     const double angle = radians(angleDeg);
     const double si = sin(angle), co = cos(angle);
@@ -64,7 +64,7 @@ Matrix2D<RFLOAT> MagnificationHelper::polarToMatrix(
 }
 
 void MagnificationHelper::matrixToPolar(
-    const Matrix2D<RFLOAT>& mat,
+    const Matrix<RFLOAT>& mat,
     RFLOAT& scaleMajor, RFLOAT& scaleMinor, RFLOAT& angleDeg
 ) {
     matrixToPolar(
@@ -227,12 +227,12 @@ void MagnificationHelper::solvePerPixel(
     }
 }
 
-Matrix2D<RFLOAT> MagnificationHelper::solveLinearlyFreq(
+Matrix<RFLOAT> MagnificationHelper::solveLinearlyFreq(
     const Volume<Equation2x2> &eqs,
     const Image<RFLOAT>& snr,
     Image<RFLOAT> &vx, Image<RFLOAT> &vy
 ) {
-    Matrix2D<RFLOAT> mat(2, 2);
+    Matrix<RFLOAT> mat(2, 2);
 
     const long w = eqs.dimx;
     const long h = eqs.dimy;
@@ -394,7 +394,7 @@ void MagnificationHelper::updatePowSpec(
 }
 
 void MagnificationHelper::adaptAstigmatism(
-    const std::vector<Matrix2D<RFLOAT>>& dMs,
+    const std::vector<Matrix<RFLOAT>>& dMs,
     std::vector<MetaDataTable>& partMdts,
     bool perParticle, ObservationModel* obsModel
 ) {

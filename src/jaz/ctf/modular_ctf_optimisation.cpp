@@ -117,7 +117,7 @@ double ModularCtfOptimisation::f(const std::vector<double> &x) const {
             double xu, yu;
 
             if (obsModel->hasMagMatrices) {
-                const Matrix2D<RFLOAT>& M = obsModel->getMagMatrix(og);
+                const Matrix<RFLOAT>& M = obsModel->getMagMatrix(og);
 
                 xu = M(0, 0) * xx + M(0, 1) * yy;
                 yu = M(1, 0) * xx + M(1, 1) * yy;
@@ -186,7 +186,7 @@ double ModularCtfOptimisation::f(
             double xu, yu;
 
             if (obsModel->hasMagMatrices) {
-                const Matrix2D<RFLOAT>& M = obsModel->getMagMatrix(og);
+                const Matrix<RFLOAT>& M = obsModel->getMagMatrix(og);
 
                 xu = M(0,0) * xx + M(0,1) * yy;
                 yu = M(1,0) * xx + M(1,1) * yy;
@@ -251,7 +251,7 @@ void ModularCtfOptimisation::grad(
             double xu, yu;
 
             if (obsModel->hasMagMatrices) {
-                const Matrix2D<RFLOAT>& M = obsModel->getMagMatrix(og);
+                const Matrix<RFLOAT>& M = obsModel->getMagMatrix(og);
 
                 xu = M(0, 0) * xx + M(0, 1) * yy;
                 yu = M(1, 0) * xx + M(1, 1) * yy;
@@ -371,7 +371,7 @@ void ModularCtfOptimisation::grad(
             double xu, yu;
 
             if (obsModel->hasMagMatrices) {
-                const Matrix2D<RFLOAT>& M = obsModel->getMagMatrix(og);
+                const Matrix<RFLOAT>& M = obsModel->getMagMatrix(og);
 
                 xu = M(0, 0) * xx + M(0, 1) * yy;
                 yu = M(1, 0) * xx + M(1, 1) * yy;

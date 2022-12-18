@@ -82,7 +82,7 @@ void getFourierTransformsAndCtfs(
         RFLOAT normcorr = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_NORM);
 
         // Get the optimal origin offsets from the previous iteration
-        Matrix1D<RFLOAT> my_old_offset(2), my_prior(2);
+        Vector<RFLOAT> my_old_offset (2), my_prior (2);
         XX(my_old_offset) = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_XOFF);
         YY(my_old_offset) = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_YOFF);
         XX(my_prior)      = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_XOFF_PRIOR);
@@ -282,7 +282,7 @@ void getFourierTransformsAndCtfs(
 
         // Helical reconstruction: calculate old_offset in the system of coordinates of the helix, i.e. parallel & perpendicular, depending on psi-angle!
         // For helices do NOT apply old_offset along the direction of the helix!!
-        Matrix1D<RFLOAT> my_old_offset_helix_coords;
+        Vector<RFLOAT> my_old_offset_helix_coords;
         RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_ROT);
         RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_TILT);
         RFLOAT psi_deg  = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_PSI);
@@ -2224,7 +2224,7 @@ void storeWeightedSums(
         RFLOAT old_psi = direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, icol_psi);
         direct::elem(baseMLO->exp_metadata, op.metadata_offset + ipart, icol_psi) = psi;
 
-        Matrix1D<RFLOAT> shifts(2);
+        Vector<RFLOAT> shifts(2);
         //21may2015
         if (baseMLO->mymodel.nr_bodies == 1) {
             // include old_offsets for normal refinement (i.e. non multi-body)

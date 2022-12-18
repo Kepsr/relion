@@ -91,8 +91,8 @@ void AccProjectorPlan::setup(
     unsigned iclass,
     bool coarse, bool inverseMatrix, bool do_skip_align, bool do_skip_rotate,
     int orientational_prior_mode,
-    Matrix2D<RFLOAT> &L_,
-    Matrix2D<RFLOAT> &R_
+    Matrix<RFLOAT> &L_,
+    Matrix<RFLOAT> &R_
 ) {
     TICTOC(TIMING_TOP, ({
 
@@ -119,8 +119,8 @@ void AccProjectorPlan::setup(
 
     orientation_num = 0;
 
-    auto L = Matrix2D<RFLOAT>::identity(3);
-    auto R = Matrix2D<RFLOAT>::identity(3);
+    auto L = Matrix<RFLOAT>::identity(3);
+    auto R = Matrix<RFLOAT>::identity(3);
 
     bool doL = false, doR = false;
     RFLOAT myperturb = 0.0;

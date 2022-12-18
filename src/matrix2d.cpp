@@ -23,8 +23,8 @@
 
 /* Interface to numerical recipes: svbksb ---------------------------------- */
 void svbksb(
-    Matrix2D<RFLOAT> &u, Matrix1D<RFLOAT> &w, Matrix2D<RFLOAT> &v,
-    Matrix1D<RFLOAT> &b, Matrix1D<RFLOAT> &x
+    Matrix<RFLOAT> &u, Vector<RFLOAT> &w, Matrix<RFLOAT> &v,
+    Vector<RFLOAT> &b, Vector<RFLOAT> &x
 ) {
     // Call to the numerical recipes routine. Results will be stored in X
     svbksb(
@@ -37,15 +37,8 @@ void svbksb(
     );
 }
 
-template <typename T>
-void Matrix2D<T>::setSmallValuesToZero(RFLOAT epsilon) {
-    for (auto& x: *this)
-        if (abs(x) < epsilon)
-            x = 0.0;
-}
-
 template<typename T>
-void Matrix2D<T>::inv(Matrix2D<T> &result) const {
+void Matrix<T>::inv(Matrix<T> &result) const {
 
     if (ncols() == 0 || nrows() == 0)
         REPORT_ERROR("Inverse: Matrix is empty");
@@ -57,11 +50,11 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
         int a, b, c, d;
         for (int i = 0; i <= 2; i++)
         for (int j = 0; j <= 2; j++) {
-                a = (j - 1) % 3;
-                b = (i - 1) % 3;
-                c = (j + 1) % 3;
-                d = (i + 1) % 3;
-                result.at(i, j) = at(a, b) * at(c, d) - at(a, d) * at(c, b);
+            a = (j - 1) % 3;
+            b = (i - 1) % 3;
+            c = (j + 1) % 3;
+            d = (i + 1) % 3;
+            result.at(i, j) = at(a, b) * at(c, d) - at(a, d) * at(c, b);
         }
         // Multiply first column of `this` with first row of `result`
         RFLOAT divisor = at(0, 0) * result.at(0, 0) 
@@ -79,8 +72,8 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
         result /= divisor;
     } else {
         // Perform SVD
-        Matrix2D<RFLOAT> u, v;
-        Matrix1D<RFLOAT> w;
+        Matrix<RFLOAT> u, v;
+        Vector<RFLOAT> w;
         svdcmp(*this, u, w, v); // *this = U * W * V^t
 
         const T maximum = *std::max_element(begin(), end());
@@ -115,8 +108,8 @@ void Matrix2D<T>::inv(Matrix2D<T> &result) const {
 // Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
 void solve(
-    const Matrix2D<T> &A, const Matrix1D<T> &b,
-    Matrix1D<RFLOAT> &result, RFLOAT tolerance
+    const Matrix<T> &A, const Vector<T> &b,
+    Vector<RFLOAT> &result, RFLOAT tolerance
 ) {
     if (A.ncols() == 0)
         REPORT_ERROR("Solve: Matrix is empty");
@@ -132,8 +125,8 @@ void solve(
 
     // First perform SVD
     // Xmipp interface that calls to svdcmp of numerical recipes
-    Matrix2D<RFLOAT> u, v;
-    Matrix1D<RFLOAT> w;
+    Matrix<RFLOAT> u, v;
+    Vector<RFLOAT> w;
     svdcmp(A, u, w, v);
 
     // Check if eigenvalues of the SVD are acceptable.
@@ -145,14 +138,14 @@ void solve(
     result.resize(b.size());
 
     // Xmipp interface that calls to svdksb of numerical recipes
-    Matrix1D<RFLOAT> bd (b);
+    Vector<RFLOAT> bd (b);
     svbksb(u, w, v, bd, result);
 }
 
 // https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
 template void solve(
-    const Matrix2D<RFLOAT>&, const Matrix1D<RFLOAT>&,
-    Matrix1D<RFLOAT>&, RFLOAT 
+    const Matrix<RFLOAT>&, const Vector<RFLOAT>&,
+    Vector<RFLOAT>&, RFLOAT 
 );
 
-template class Matrix2D<RFLOAT>;
+template class Matrix<RFLOAT>;

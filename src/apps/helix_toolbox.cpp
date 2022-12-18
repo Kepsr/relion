@@ -764,7 +764,7 @@ class helix_bilder_parameters {
                 return;
             }
 
-            Matrix1D<RFLOAT> transZ(3);
+            Vector<RFLOAT> transZ (3);
             Image<RFLOAT> img = Image<RFLOAT>::from_filename(fn_in);
 
             Image<RFLOAT>::Dimensions dimensions = img.getDimensions();

@@ -35,7 +35,7 @@ public:
         std::string name;
 
         // Coordinates
-        Matrix1D<RFLOAT> coords;
+        Vector<RFLOAT> coords;
 
         // Occupancy
         RFLOAT occupancy;
@@ -66,7 +66,7 @@ public:
         void clear();
 
         // Get the 3D corrdinates as a POint3D
-        Matrix1D<RFLOAT> getCoordinates();
+        Vector<RFLOAT> getCoordinates();
 };
 
 
@@ -245,7 +245,7 @@ public:
         void checkBreaksInResidueNumbering(int maximum_residue_break = 500);
 
         // Apply a transformation (first rotation, then shift)
-        void applyTransformation(Matrix2D<RFLOAT> &mat, Matrix1D<RFLOAT> &shift);
+        void applyTransformation(Matrix<RFLOAT> &mat, Vector<RFLOAT> &shift);
 
 };
 

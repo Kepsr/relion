@@ -345,11 +345,11 @@ class MultidimArray {
     xinit(other.xinit), yinit(other.yinit), zinit(other.zinit),
     data(other.data), allocator(Allocator()) { other.data = nullptr; }
 
-    /** Constructor from a Matrix1D.
+    /** Constructor from a Vector.
      * The Size constructor creates an array with memory associated,
      * and fills it with zeros.
      */
-    MultidimArray(const Matrix1D<T> &v) {
+    MultidimArray(const Vector<T> &v) {
         coreInit();
         resize(v.size());
         for (long int i = 0; i < v.size(); i++)
@@ -877,7 +877,7 @@ class MultidimArray {
     }
 
     /** Is this logical index vector outside the bounds of this array? */
-    bool outside(const Matrix1D<RFLOAT> &r) const {
+    bool outside(const Vector<RFLOAT> &r) const {
         int rsize = r.size();
         if (rsize < 1) REPORT_ERROR(std::string(__func__) + ": index vector has too few components");
 
@@ -940,7 +940,7 @@ class MultidimArray {
      *
      * Is this logical index a corner of this array?
      */
-    bool isCorner(const Matrix1D<RFLOAT> &v) const {
+    bool isCorner(const Vector<RFLOAT> &v) const {
 
         if (v.size() < 2)
             REPORT_ERROR(std::string(__func__) + ": index vector has too few components");
@@ -984,7 +984,7 @@ class MultidimArray {
      * val = V(vectorR3(1, -2, 0));
      * @endcode
      */
-    T& operator()(const Matrix1D<index_t> &v) {
+    T& operator()(const Vector<index_t> &v) {
         switch (v.size()) {
             case 1:
             return elem(v[0]);
@@ -1534,7 +1534,7 @@ class MultidimArray {
 
     /** Computes the center of mass of the nth slice
      */
-    void centerOfMass(Matrix1D<RFLOAT> &CoM, MultidimArray<int> *mask = nullptr, long int n = 0) {
+    void centerOfMass(Vector<RFLOAT> &CoM, MultidimArray<int> *mask = nullptr, long int n = 0) {
 
             CoM.resize(3);
             std::fill(CoM.begin(), CoM.end(), 0);

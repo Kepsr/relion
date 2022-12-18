@@ -46,10 +46,10 @@
 #include "src/transformations.h"
 
 /* Rotation 2D ------------------------------------------------------------- */
-Matrix2D<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous) {
+Matrix<RFLOAT> rotation2DMatrix(RFLOAT ang, bool homogeneous) {
 
     int n = homogeneous ? 3 : 2;
-    Matrix2D<RFLOAT> result(n, n);
+    Matrix<RFLOAT> result(n, n);
 
     if (homogeneous) {
         result.at(0, 2) = 0;
@@ -236,21 +236,21 @@ template RFLOAT interpolate_sub(
 );
 
 /* Translation 2D ---------------------------------------------------------- */
-Matrix2D<RFLOAT> translation2DMatrix(const Matrix1D<RFLOAT> &v) {
+Matrix<RFLOAT> translation2DMatrix(const Vector<RFLOAT> &v) {
     // if (v.size() != 2)
     //    REPORT_ERROR("Translation2D_matrix: vector is not in R2");
-    auto result = Matrix2D<RFLOAT>::identity(3);
+    auto result = Matrix<RFLOAT>::identity(3);
     result.at(0, 2) = v[0];
     result.at(1, 2) = v[1];
     return result;
 }
 
 /* Rotation 3D around the system axes -------------------------------------- */
-Matrix2D<RFLOAT> rotation3DMatrix(
+Matrix<RFLOAT> rotation3DMatrix(
     RFLOAT ang, char axis, bool homogeneous
 ) {
     const int n = homogeneous ? 4 : 3;
-    auto result = Matrix2D<RFLOAT>::zeros(n, n);
+    auto result = Matrix<RFLOAT>::zeros(n, n);
     if (homogeneous) { result.at(3, 3) = 1; }
 
     RFLOAT cosa = cos(radians(ang));
@@ -291,7 +291,7 @@ Matrix2D<RFLOAT> rotation3DMatrix(
 
 /* Align a vector with Z axis */
 void alignWithZ(
-    const Matrix1D<RFLOAT> &axis, Matrix2D<RFLOAT> &result, bool homogeneous
+    const Vector<RFLOAT> &axis, Matrix<RFLOAT> &result, bool homogeneous
 ) {
     if (axis.size() != 3)
         REPORT_ERROR("alignWithZ: Axis is not in R3");
@@ -303,7 +303,7 @@ void alignWithZ(
         result.resize(3, 3);
         std::fill(result.begin(), result.end(), 0);
     }
-    Matrix1D<RFLOAT> Axis (axis);
+    Vector<RFLOAT> Axis (axis);
     Axis.normalise();
 
     // Compute length of the projection on YZ plane
@@ -335,23 +335,23 @@ void alignWithZ(
 }
 
 /* Rotation 3D around any axis -------------------------------------------- */
-Matrix2D<RFLOAT> rotation3DMatrix(
-    RFLOAT ang, const Matrix1D<RFLOAT> &axis,
+Matrix<RFLOAT> rotation3DMatrix(
+    RFLOAT ang, const Vector<RFLOAT> &axis,
     bool homogeneous
 ) {
     // Compute a matrix which makes the turning axis coincident with Z
     // And turn around this axis
-    Matrix2D<RFLOAT> A;
+    Matrix<RFLOAT> A;
     alignWithZ(axis, A, homogeneous);
-    const Matrix2D<RFLOAT> R = rotation3DMatrix(ang, 'Z', homogeneous);
+    const Matrix<RFLOAT> R = rotation3DMatrix(ang, 'Z', homogeneous);
     return A.transpose().matmul(R).matmul(A);
 }
 
 /* Translation 3D ---------------------------------------------------------- */
-Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v) {
+Matrix<RFLOAT> translation3DMatrix(const Vector<RFLOAT> &v) {
     if (v.size() != 3)
         REPORT_ERROR("Translation3D_matrix: vector is not in R3");
-    auto result = Matrix2D<RFLOAT>::identity(4);
+    auto result = Matrix<RFLOAT>::identity(4);
     result.at(0, 3) = v[0];
     result.at(1, 3) = v[1];
     result.at(2, 3) = v[2];
@@ -359,14 +359,14 @@ Matrix2D<RFLOAT> translation3DMatrix(const Matrix1D<RFLOAT> &v) {
 }
 
 /* Scale 3D ---------------------------------------------------------------- */
-Matrix2D<RFLOAT> scale3DMatrix(
-    const Matrix1D<RFLOAT> &sc, bool homogeneous
+Matrix<RFLOAT> scale3DMatrix(
+    const Vector<RFLOAT> &sc, bool homogeneous
 ) {
     if (sc.size() != 3)
         REPORT_ERROR("Scale3D_matrix: vector is not in R3");
 
     const int n = homogeneous ? 4 : 3;
-    auto result = Matrix2D<RFLOAT>::zeros(n, n);
+    auto result = Matrix<RFLOAT>::zeros(n, n);
     if (homogeneous) { result.at(3, 3) = 1; }
 
     result.at(0, 0) = sc[0];

@@ -128,7 +128,7 @@ class tiltpair_plot_parameters {
     ) {
 
         int imax = SL.SymsNo() + 1;
-        Matrix2D<RFLOAT> L(4, 4), R(4, 4);  // A matrix from the list
+        Matrix<RFLOAT> L (4, 4), R (4, 4);  // A matrix from the list
         RFLOAT best_ang_dist = 3600;
         RFLOAT best_rot2, best_tilt2, best_psi2;
 
@@ -171,8 +171,8 @@ class tiltpair_plot_parameters {
         RFLOAT rot2 = alpha, tilt2 = tilt_angle, psi2 = beta;
 
         // Calculate the transformation from one setting to the second one.
-        Matrix2D<RFLOAT> E1 = Euler::angles2matrix(psi1, tilt1, rot1);
-        Matrix2D<RFLOAT> E2 = Euler::angles2matrix(psi2, tilt2, rot2).matmul(E1.inv());
+        Matrix<RFLOAT> E1 = Euler::angles2matrix(psi1, tilt1, rot1);
+        Matrix<RFLOAT> E2 = Euler::angles2matrix(psi2, tilt2, rot2).matmul(E1.inv());
 
         // Get the tilt angle (and its sine)
         RFLOAT ah = (E2(0, 0) + E2(1, 1) + E2(2, 2) - 1.0) / 2.0;
@@ -181,15 +181,15 @@ class tiltpair_plot_parameters {
         tilt_angle = degrees(tilt_angle_radians);
         RFLOAT sine_tilt_angle = 2.0 * sin(tilt_angle_radians);
 
-        Matrix1D<RFLOAT> axis;
+        Vector<RFLOAT> axis;
         // Get the tilt axis direction in angles alpha and beta
         if (sine_tilt_angle > Xmipp::epsilon) {
-            axis = Matrix1D<RFLOAT>({
+            axis = Vector<RFLOAT>({
                 (E2(2, 1) - E2(1, 2)) / sine_tilt_angle,
                 (E2(0, 2) - E2(2, 0)) / sine_tilt_angle,
                 (E2(1, 0) - E2(0, 1)) / sine_tilt_angle});
         } else {
-            axis = Matrix1D<RFLOAT>({0.0, 0.0, 1.0});
+            axis = Vector<RFLOAT>({0.0, 0.0, 1.0});
         }
 
         // Apply E1.inv() to the axis to get everyone in the same coordinate system again
@@ -243,7 +243,7 @@ class tiltpair_plot_parameters {
             RFLOAT distp  = check_symmetries(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);
 
             // Calculate distance to user-defined point
-            Matrix1D<RFLOAT> aux2 (4);
+            Vector<RFLOAT> aux2 (4);
             // SINCOS?
             RFLOAT xp = dist_from_tilt * cos(radians(dist_from_alpha));
             RFLOAT yp = dist_from_tilt * sin(radians(dist_from_alpha));

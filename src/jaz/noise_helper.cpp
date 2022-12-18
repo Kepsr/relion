@@ -53,12 +53,12 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         if (goodAngles % 10 == 0) std::cout << goodAngles << "/" << nangles << "\n";
 
-        Matrix1D<RFLOAT> dm = vectorR3(dx, dy, dz);
+        Vector<RFLOAT> dm = vectorR3(dx, dy, dz);
 
         RFLOAT rot, tilt;
         Euler::direction2angles(dm, rot, tilt);
 
-        Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, 0.0);
+        Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, 0.0);
 
         Image<Complex> spec (prj.get2DFourierTransform(sh, s, 1, A3D));
 

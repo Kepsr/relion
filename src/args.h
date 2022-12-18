@@ -55,7 +55,6 @@
 
 #include "src/funcs.h"
 #include "src/matrix1d.h"
-template <typename T> class Matrix1D;
 
 // Forward declaration
 struct ColourScheme;

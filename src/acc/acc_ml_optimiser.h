@@ -147,8 +147,8 @@ class OptimisationParamters {
     MultidimArray<bool> Mcoarse_significant;
     // And from storeWeightedSums
     std::vector<RFLOAT> sum_weight, significant_weight, max_weight;
-    std::vector<Matrix1D<RFLOAT> > old_offset, prior;
-    std::vector<MultidimArray<RFLOAT> > power_img;
+    std::vector<Vector<RFLOAT>> old_offset, prior;
+    std::vector<MultidimArray<RFLOAT>> power_img;
     MultidimArray<XFLOAT> Mweight;
     std::vector<Indices> max_index;
 

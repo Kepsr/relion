@@ -22,13 +22,13 @@
 #include <src/jaz/index_sort.h>
 
 void SvdHelper::decompose(
-    const Matrix2D<RFLOAT> &A,
-    Matrix2D<RFLOAT> &U,
-    Matrix1D<RFLOAT> &S,
-    Matrix2D<RFLOAT> &Vt
+    const Matrix<RFLOAT> &A,
+    Matrix<RFLOAT> &U,
+    Vector<RFLOAT> &S,
+    Matrix<RFLOAT> &Vt
 ) {
-    Matrix2D<RFLOAT> U0, Vt0;
-    Matrix1D<RFLOAT> S0;
+    Matrix<RFLOAT> U0, Vt0;
+    Vector<RFLOAT> S0;
     svdcmp(A, U0, S0, Vt0);
 
     const int rc = A.nrows(), cc = A.ncols();
@@ -38,9 +38,9 @@ void SvdHelper::decompose(
 
     std::vector<int> order = IndexSort<RFLOAT>::sortIndices(Svec);
 
-    U = Matrix2D<RFLOAT>(rc, cc);
-    S = Matrix1D<RFLOAT>(cc);
-    Vt = Matrix2D<RFLOAT>(cc, cc);
+    U = Matrix<RFLOAT>(rc, cc);
+    S = Vector<RFLOAT>(cc);
+    Vt = Matrix<RFLOAT>(cc, cc);
 
     for (int i = 0; i < cc; i++) {
         const int j = order[cc - i - 1];

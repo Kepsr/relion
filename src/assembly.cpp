@@ -13,7 +13,7 @@ void Atom::clear() {
     coords.clear();
 }
 
-Matrix1D<RFLOAT> Atom::getCoordinates() {
+Vector<RFLOAT> Atom::getCoordinates() {
     return coords;
 }
 
@@ -173,10 +173,10 @@ void Assembly::readPDB(std::string filename, bool use_segid_instead_of_chainid, 
     // Clear existing object
     clear();
 
-    std::ifstream fh(filename.c_str(), std::ios_base::in);
+    std::ifstream fh (filename.c_str(), std::ios_base::in);
 
     if (fh.fail())
-        REPORT_ERROR( (std::string) "Assembly::read: File " + filename + " does not exists" );
+        REPORT_ERROR((std::string) "Assembly::read: File " + filename + " does not exists" );
 
     char line[100];
     bool is_sorted = true;
@@ -265,24 +265,23 @@ void Assembly::readPDB(std::string filename, bool use_segid_instead_of_chainid, 
 
             //#define DEBUG
             if (nr < 5) {
-                std::string str(line);
-                REPORT_ERROR("Assembly::readPDB ERROR: too few entries on ATOM line:" + str);
+                REPORT_ERROR("Assembly::readPDB ERROR: too few entries on ATOM line:" + std::string(line));
             }
 
             if (resnum < 0) {
                 REPORT_ERROR("Assembly::readPDB ERROR: negative residue number encountered");
             }
 
-            std::string str_chainID(chainID);
-            std::string str_segID(segID);
-            std::string str_atomname(atomname);
-            std::string str_resname(resname);
+            std::string str_chainID (chainID);
+            std::string str_segID (segID);
+            std::string str_atomname (atomname);
+            std::string str_resname (resname);
 
             // 1. Get mol_id: to which molecule does this atom belong?
             // Allow for non-ordered atoms belonging to the same molecule...
             // To speed up things: first check whether the chainID/segID is the same as the previous line
-            molname = (use_segid_instead_of_chainid) ? str_segID : str_chainID;
-            alt_molname = (use_segid_instead_of_chainid) ? str_chainID : str_segID;
+            molname     = use_segid_instead_of_chainid ? str_segID : str_chainID;
+            alt_molname = use_segid_instead_of_chainid ? str_chainID : str_segID;
             #ifdef DEBUG
             std::cerr << " molname= " << molname << " alt_molname= " << alt_molname << " str_chainID= " << str_chainID << " chainID= "<< chainID<<std::endl;
             #endif
@@ -410,19 +409,16 @@ void Assembly::writePDB(std::string filename) {
     fclose(file);
 }
 
-void Assembly::join(Assembly &tojoin) {
-
-    for (int imol = 0; imol < tojoin.molecules.size(); imol++)
-        addMolecule(tojoin.molecules[imol]);
-
+void Assembly::join(Assembly &other) {
+    for (auto& molecule: other.molecules)
+        addMolecule(molecule);
 }
 
 void Assembly::sortResidues() {
 
-    // Loop over all molecules
-    for (auto &molecule : molecules) {
+    for (auto &molecule: molecules) {
 
-        // A. Sort all Residues
+        // Sort residues
         std::vector<std::pair<int, int>> vp;
         for (int ires = 0; ires < molecule.residues.size(); ires++) {
             vp.emplace_back(molecule.residues[ires].number, ires);
@@ -437,11 +433,11 @@ void Assembly::sortResidues() {
 
 }
 
-void Assembly::applyTransformation(Matrix2D<RFLOAT> &mat, Matrix1D<RFLOAT> &shift) {
-    for (int imol = 0;  imol  < molecules.size();                             imol++)
-    for (int ires = 0;  ires  < molecules[imol].residues.size();              ires++)
-    for (int iatom = 0; iatom < molecules[imol].residues[ires].atoms.size(); iatom++) {
-        Matrix1D<RFLOAT>& coordinates = molecules[imol].residues[ires].atoms[iatom].coords;
+void Assembly::applyTransformation(Matrix<RFLOAT> &mat, Vector<RFLOAT> &shift) {
+    for (auto& molecule: molecules)
+    for (auto& residue: molecule.residues)
+    for (auto& atom: residue.atoms) {
+        Vector<RFLOAT>& coordinates = atom.coords;
         coordinates = matmul(coordinates, mat) + shift;
     }
 }

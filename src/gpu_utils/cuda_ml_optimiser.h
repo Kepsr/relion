@@ -156,16 +156,16 @@ class OptimisationParamters {
 
     unsigned long my_ori_particle;
 
-    std::vector<MultidimArray<Complex > > Fimgs, Fimgs_nomask, local_Fimgs_shifted, local_Fimgs_shifted_nomask;
-    std::vector<MultidimArray<RFLOAT> > Fctfs, local_Fctfs, local_Minvsigma2s;
+    std::vector<MultidimArray<Complex>> Fimgs, Fimgs_nomask, local_Fimgs_shifted, local_Fimgs_shifted_nomask;
+    std::vector<MultidimArray<RFLOAT>> Fctfs, local_Fctfs, local_Minvsigma2s;
     std::vector<int> pointer_dir_nonzeroprior, pointer_psi_nonzeroprior;
     std::vector<RFLOAT> directions_prior, psi_prior, local_sqrtXi2;
     std::vector<RFLOAT> highres_Xi2_imgs, min_diff2, avg_diff2;
     MultidimArray<bool> Mcoarse_significant;
     // And from storeWeightedSums
     std::vector<RFLOAT> sum_weight, significant_weight, max_weight;
-    std::vector<Matrix1D<RFLOAT> > old_offset, prior;
-    std::vector<MultidimArray<RFLOAT> > power_imgs;
+    std::vector<Vector<RFLOAT>> old_offset, prior;
+    std::vector<MultidimArray<RFLOAT>> power_imgs;
     MultidimArray<XFLOAT> Mweight;
     std::vector<Indices> max_index;
 

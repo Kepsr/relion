@@ -604,9 +604,9 @@ void CtfHelper::applyWeightEwaldSphereCurvature(
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;
 
-    Matrix2D<RFLOAT> M = obsModel && obsModel->hasMagMatrices ?
+    Matrix<RFLOAT> M = obsModel && obsModel->hasMagMatrices ?
         obsModel->getMagMatrix(opticsGroup) :
-        Matrix2D<RFLOAT>::identity(2);
+        Matrix<RFLOAT>::identity(2);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
         RFLOAT xu = (RFLOAT) ip / xs;

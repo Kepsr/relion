@@ -249,7 +249,7 @@ CtfPremultiplied(_opticsMdt.size(), false
         // If none are defined, keep a set of identity matrices
 
         auto &magMatrix = magMatrices[i];
-        magMatrix = Matrix2D<RFLOAT>::identity(2);
+        magMatrix = Matrix<RFLOAT>::identity(2);
 
         // See if there is more than one MTF, for more rapid divideByMtf
         hasMultipleMtfs = std::adjacent_find(
@@ -292,7 +292,7 @@ MultidimArray<Complex> ObservationModel::predictObservation(
     double tilt = partMdt.getValue<double>(EMDL::ORIENT_TILT, particle);
     double psi  = partMdt.getValue<double>(EMDL::ORIENT_PSI,  particle);
 
-    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+    Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
     if (hasMagMatrices)
         A3D = A3D.matmul(anisoMag(opticsGroup));
     A3D *= scaleDifference(opticsGroup, s_ref, angpix_ref);
@@ -549,21 +549,21 @@ void ObservationModel::getBoxSizes(std::vector<int>& sDest, std::vector<int>& sh
     }
 }
 
-Matrix2D<RFLOAT> ObservationModel::getMagMatrix(int opticsGroup) const {
+Matrix<RFLOAT> ObservationModel::getMagMatrix(int opticsGroup) const {
     return magMatrices[opticsGroup];
 }
 
-void ObservationModel::setMagMatrix(int opticsGroup, const Matrix2D<RFLOAT> &M) {
+void ObservationModel::setMagMatrix(int opticsGroup, const Matrix<RFLOAT> &M) {
     magMatrices[opticsGroup] = M;
 }
 
-std::vector<Matrix2D<RFLOAT>> ObservationModel::getMagMatrices() const {
+std::vector<Matrix<RFLOAT>> ObservationModel::getMagMatrices() const {
     return magMatrices;
 }
 
-Matrix2D<RFLOAT> ObservationModel::anisoMag(int opticsGroup) const {
-    const Matrix2D<RFLOAT> &magmatrix = magMatrices[opticsGroup];
-    Matrix2D<RFLOAT> mag = Matrix2D<RFLOAT>::identity(3);
+Matrix<RFLOAT> ObservationModel::anisoMag(int opticsGroup) const {
+    const Matrix<RFLOAT> &magmatrix = magMatrices[opticsGroup];
+    Matrix<RFLOAT> mag = Matrix<RFLOAT>::identity(3);
     mag(0, 0) = magmatrix(0, 0);
     mag(0, 1) = magmatrix(0, 1);
     mag(1, 0) = magmatrix(1, 0);
@@ -822,7 +822,7 @@ const Image<Complex>& ObservationModel::getPhaseCorrection(int optGroup, int s) 
             phaseCorr[optGroup][s] = Image<Complex>(s, sh);
             Image<Complex> &img = phaseCorr[optGroup][s];
             const double as = angpix[optGroup] * boxSizes[optGroup];
-            const Matrix2D<RFLOAT> &M = magMatrices[optGroup];
+            const Matrix<RFLOAT> &M = magMatrices[optGroup];
 
             for (int y = 0; y < s;  y++)
             for (int x = 0; x < sh; x++) {
@@ -864,7 +864,7 @@ const Image<RFLOAT>& ObservationModel::getGammaOffset(int optGroup, int s) {
             Image<RFLOAT> &img = gammaOffset[optGroup][s];
 
             const double as = angpix[optGroup] * boxSizes[optGroup];
-            const Matrix2D<RFLOAT> &M = magMatrices[optGroup];
+            const Matrix<RFLOAT> &M = magMatrices[optGroup];
 
             for (int y = 0; y < s;  y++)
             for (int x = 0; x < sh; x++) {

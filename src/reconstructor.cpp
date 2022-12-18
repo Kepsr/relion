@@ -303,7 +303,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
         psi  += rnd_gaus(0.0, angular_error);
     }
 
-    Matrix2D<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
+    Matrix<RFLOAT> A3D = Euler::angles2matrix(rot, tilt, psi);
 
     // If we are considering Ewald sphere curvature, the mag. matrix
     // has to be provided to the backprojector explicitly
@@ -325,7 +325,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
     }
 
     // Translations (either through phase-shifts or in real space)
-    Matrix1D<RFLOAT> trans {0, 0, 0};
+    Vector<RFLOAT> trans {0, 0, 0};
     const std::array<EMDL::EMDLabel, 3> origin_labels {
         EMDL::ORIENT_ORIGIN_X_ANGSTROM,
         EMDL::ORIENT_ORIGIN_Y_ANGSTROM,
@@ -546,9 +546,9 @@ void Reconstructor::backprojectOneParticle(long int p) {
         direct::elem(F2D, 0, 0) = 0.0;
 
         if (do_ewald) {
-            Matrix2D<RFLOAT> magMat = !do_ignore_optics && obsModel.hasMagMatrices ?
+            Matrix<RFLOAT> magMat = !do_ignore_optics && obsModel.hasMagMatrices ?
                 obsModel.getMagMatrix(opticsGroup) :
-                Matrix2D<RFLOAT>::identity(2);
+                Matrix<RFLOAT>::identity(2);
 
             backprojector.set2DFourierTransform(F2DP, A3D, &Fctf, r_ewald_sphere, +1.0, &magMat);
             backprojector.set2DFourierTransform(F2DQ, A3D, &Fctf, r_ewald_sphere, -1.0, &magMat);

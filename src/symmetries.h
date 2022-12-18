@@ -140,8 +140,8 @@ class SymList {
 
     public:
     // L and R matrices
-    Matrix2D<RFLOAT> __L, __R;
-    Matrix1D<int>    __chain_length;
+    Matrix<RFLOAT> __L, __R;
+    Vector<int>    __chain_length;
 
     // As the symmetry elements form a subgroup, this is the number of
     // true symmetry elements belonging to the list, the rest of
@@ -199,7 +199,7 @@ class SymList {
      *  }
      *  @endcode
      */
-    void get_matrices(int i, Matrix2D<RFLOAT> &L, Matrix2D<RFLOAT> &R) const;
+    void get_matrices(int i, Matrix<RFLOAT> &L, Matrix<RFLOAT> &R) const;
 
     /** Set a couple of matrices in the symmetry list.
         The number of matrices inside the list is given by SymsNo.
@@ -212,7 +212,7 @@ class SymList {
                ...
            }
         @endcode */
-    void set_matrices(int i, const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R);
+    void set_matrices(int i, const Matrix<RFLOAT> &L, const Matrix<RFLOAT> &R);
 
     /** Read a symmetry file into a symmetry list.
         The former symmetry list is overwritten with the new one.
@@ -234,7 +234,7 @@ class SymList {
 
         The chain length is the number of single matrices multiplication of
         which the inserted one is compound.*/
-    void add_matrices(const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R, int chain_length);
+    void add_matrices(const Matrix<RFLOAT> &L, const Matrix<RFLOAT> &R, int chain_length);
 
     /** Compute subgroup for this structure.
         After adding or setting a matrix, the subgroup information

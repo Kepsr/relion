@@ -108,8 +108,8 @@ int SymList::read_sym_file(FileName fn_sym) {
 
     // Read symmetry parameters
     int i = 0;
-    Matrix1D<RFLOAT> axis(3);
-    Matrix2D<RFLOAT> L(4, 4), R(4, 4);
+    Vector<RFLOAT> axis (3);
+    Matrix<RFLOAT> L (4, 4), R (4, 4);
     for (int n = 0; n < fileContent.size(); n++) {
         strcpy(line,fileContent[n].c_str());
         char *token = firstToken(line);
@@ -126,7 +126,7 @@ int SymList::read_sym_file(FileName fn_sym) {
             L.setIdentity();
             for (int j = 1, rot_ang = ang_incr; j < fold; j++, rot_ang += ang_incr) {
                 R = rotation3DMatrix(rot_ang, axis);
-                R.setSmallValuesToZero();
+                setSmallValuesToZero(R.begin(), R.end());
                 set_matrices(i++, L, R.transpose());
             }
             __sym_elements++;
@@ -150,7 +150,7 @@ int SymList::read_sym_file(FileName fn_sym) {
             ZZ(axis) = textToFloat(token);
             L.setIdentity();
             L(2, 2) = -1;
-            Matrix2D<RFLOAT> A;
+            Matrix<RFLOAT> A;
             alignWithZ(axis, A);
             A = A.transpose();
             R = A.matmul(L).matmul(A.inv());
@@ -166,7 +166,7 @@ int SymList::read_sym_file(FileName fn_sym) {
 }
 
 // Get matrix ==============================================================
-void SymList::get_matrices(int i, Matrix2D<RFLOAT> &L, Matrix2D<RFLOAT> &R) const {
+void SymList::get_matrices(int i, Matrix<RFLOAT> &L, Matrix<RFLOAT> &R) const {
     L.resize(4, 4);
     std::fill(L.begin(), L.end(), 0);
     R.resize(4, 4);
@@ -179,7 +179,7 @@ void SymList::get_matrices(int i, Matrix2D<RFLOAT> &L, Matrix2D<RFLOAT> &R) cons
 }
 
 // Set matrix ==============================================================
-void SymList::set_matrices(int i, const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R) {
+void SymList::set_matrices(int i, const Matrix<RFLOAT> &L, const Matrix<RFLOAT> &R) {
     for (int k = 4 * i; k < 4 * i + 4; k++)
     for (int l = 0;     l < 4;         l++) {
         __L(k, l) = L(k - 4 * i, l);
@@ -189,7 +189,7 @@ void SymList::set_matrices(int i, const Matrix2D<RFLOAT> &L, const Matrix2D<RFLO
 
 // Matrix addition ============================================================
 void SymList::add_matrices(
-    const Matrix2D<RFLOAT> &L, const Matrix2D<RFLOAT> &R, int chain_length
+    const Matrix<RFLOAT> &L, const Matrix<RFLOAT> &R, int chain_length
 ) {
 
     if (
@@ -210,7 +210,7 @@ void SymList::add_matrices(
 
 // Compute subgroup ========================================================
 bool found_not_tried(
-    const Matrix2D<int> &tried, int &i, int &j, int true_symNo
+    const Matrix<int> &tried, int &i, int &j, int true_symNo
 ) {
     i = j = 0;
     int n = 0;
@@ -235,9 +235,9 @@ bool found_not_tried(
 
 // #define DEBUG
 void SymList::compute_subgroup() {
-    auto I = Matrix2D<RFLOAT>::identity(4);
-    Matrix2D<RFLOAT> L1(4, 4), R1(4, 4), L2(4, 4), R2(4, 4), newL(4, 4), newR(4, 4);
-    Matrix2D<int>    tried (true_symNo, true_symNo);
+    auto I = Matrix<RFLOAT>::identity(4);
+    Matrix<RFLOAT> L1(4, 4), R1(4, 4), L2(4, 4), R2(4, 4), newL(4, 4), newR(4, 4);
+    Matrix<int>    tried (true_symNo, true_symNo);
     int i, j;
     int new_chain_length;
     while (found_not_tried(tried, i, j, true_symNo)) {
@@ -248,7 +248,7 @@ void SymList::compute_subgroup() {
         newL = L1.matmul(L2);
         newR = R1.matmul(R2);
         new_chain_length = __chain_length[i] + __chain_length[j];
-        Matrix2D<RFLOAT> newR3 = newR;
+        Matrix<RFLOAT> newR3 = newR;
         newR3.resize(3, 3);
         if (newL.isIdentity() && newR3.isIdentity()) continue;
 
@@ -271,8 +271,8 @@ void SymList::compute_subgroup() {
             std::cout << "Result R Sh\n" << newR;
             #endif
             // #undef DEBUG
-            newR.setSmallValuesToZero();
-            newL.setSmallValuesToZero();
+            setSmallValuesToZero(newR.begin(), newR.end());
+            setSmallValuesToZero(newL.begin(), newL.end());
             add_matrices(newL, newR, new_chain_length);
             tried.resize(tried.nrows() + 1, tried.ncols() + 1);
         }
@@ -636,9 +636,9 @@ void SymList::fill_symmetry_class(
 
 void SymList::writeDefinition(std::ostream &outstream, FileName fn_sym) {
     read_sym_file(fn_sym);
-    Matrix2D<RFLOAT> L (3, 3);
+    Matrix<RFLOAT> L (3, 3);
     outstream << " ++++ Using symmetry group " << fn_sym << ", with the following " << SymsNo() + 1 << " transformation matrices:" << std::endl;
-    auto R = Matrix2D<RFLOAT>::identity(3);
+    auto R = Matrix<RFLOAT>::identity(3);
     outstream << " R(1)= " << R;
     for (int isym = 0; isym < SymsNo(); isym++) {
         get_matrices(isym, L, R);
@@ -720,7 +720,7 @@ void symmetriseMap(MultidimArray<RFLOAT> &img, FileName &fn_sym, bool do_wrap) {
     SymList SL;
     SL.read_sym_file(fn_sym);
 
-    Matrix2D<RFLOAT> L(4, 4), R(4, 4); // A matrix from the list
+    Matrix<RFLOAT> L(4, 4), R(4, 4); // A matrix from the list
     MultidimArray<RFLOAT> sum = img;
 
     for (int isym = 0; isym < SL.SymsNo(); isym++) {

@@ -95,22 +95,22 @@ public:
     RFLOAT tau2_fudge_factor;
 
     // Vector with all reference images
-    std::vector<MultidimArray<RFLOAT> > Iref;
+    std::vector<MultidimArray<RFLOAT>> Iref;
 
     // Vector with all SGD gradients
-    std::vector<MultidimArray<RFLOAT> > Igrad;
+    std::vector<MultidimArray<RFLOAT>> Igrad;
 
     // Vector with masks for all bodies in multi-body refinement
-    std::vector<MultidimArray<RFLOAT> > masks_bodies;
+    std::vector<MultidimArray<RFLOAT>> masks_bodies;
 
     // Vector with center-of-mass coordinates for all bodies in multi-body refinement
-    std::vector<Matrix1D<RFLOAT> > com_bodies;
+    std::vector<Vector<RFLOAT>> com_bodies;
 
     // Vector with 2D matrices that pre-orient all bodies in multi-body refinement
-    std::vector<Matrix2D<RFLOAT> > orient_bodies;
+    std::vector<Matrix<RFLOAT>> orient_bodies;
 
     // Vector with directions around which to rotate each body in multi-body refinement
-    std::vector<Matrix1D<RFLOAT> > rotate_direction_bodies;
+    std::vector<Vector<RFLOAT>> rotate_direction_bodies;
 
     // One projector for each class;
     std::vector<Projector > PPref;
@@ -129,28 +129,28 @@ public:
     std::vector<RFLOAT> bfactor_correction;
 
     // Prior information: one restrained power_class spectrum for each class (inverse of right-hand side in Wiener-filter-like update formula)
-    std::vector<MultidimArray<RFLOAT > > tau2_class;
+    std::vector<MultidimArray<RFLOAT>> tau2_class;
 
     // Radial average of the estimated variance in the reconstruction (inverse of left-hand side in Wiener-filter-like update formula)
-    std::vector<MultidimArray<RFLOAT > > sigma2_class;
+    std::vector<MultidimArray<RFLOAT>> sigma2_class;
 
     // FSC spectra between random halves of the data (multiple ones for each body in multibody-refinement)
-    std::vector< MultidimArray<RFLOAT > > fsc_halves_class;
+    std::vector< MultidimArray<RFLOAT>> fsc_halves_class;
 
     // One likelihood vs prior ratio spectrum for each class
-    std::vector<MultidimArray<RFLOAT > > data_vs_prior_class;
+    std::vector<MultidimArray<RFLOAT>> data_vs_prior_class;
 
     // One Fourier-coverage spectrum for each class
-    std::vector<MultidimArray<RFLOAT > > fourier_coverage_class;
+    std::vector<MultidimArray<RFLOAT>> fourier_coverage_class;
 
     // One value for each class
-    std::vector<RFLOAT > pdf_class;
+    std::vector<RFLOAT> pdf_class;
 
     // One array for each class
-    std::vector<MultidimArray<RFLOAT> > pdf_direction;
+    std::vector<MultidimArray<RFLOAT>> pdf_direction;
 
     // Priors for offsets for each class (only in 2D)
-    std::vector<Matrix1D<RFLOAT> > prior_offset_class;
+    std::vector<Vector<RFLOAT>> prior_offset_class;
 
     // Mode for orientational prior distributions
     int orientational_prior_mode;
@@ -197,7 +197,7 @@ public:
     std::vector<RFLOAT> total_fourier_coverage;
 
     // Spectral contribution to orientability of individual particles, one for each class
-    std::vector<MultidimArray<RFLOAT > > orientability_contrib;
+    std::vector<MultidimArray<RFLOAT>> orientability_contrib;
 
     // Nov20,2015 - Shaoda, Helical refinement
     bool is_helix;
@@ -455,10 +455,10 @@ class MlWsumModel: public MlModel {
 
     // For the refinement of group intensity scales and bfactors
     // For each group store weighted sums of experimental image times reference image as a function of resolution
-    std::vector<RFLOAT > wsum_signal_product;
+    std::vector<RFLOAT> wsum_signal_product;
 
     // For each group store weighted sums of squared reference as a function of resolution
-    std::vector<RFLOAT > wsum_reference_power;
+    std::vector<RFLOAT> wsum_reference_power;
 
     // Constructor
     MlWsumModel() { clear(); }

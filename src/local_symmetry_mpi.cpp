@@ -24,11 +24,11 @@ void local_symmetry_parameters_mpi::run() {
 
     Image<RFLOAT> map, mask, mask2;
     map.clear(); mask.clear(); mask2.clear();
-    Matrix1D<RFLOAT> op_search_ranges, op, com0_int, com1_int, com1_float, com1_diff, vecR3;
+    Vector<RFLOAT> op_search_ranges, op, com0_int, com1_int, com1_float, com1_diff, vecR3;
     op_search_ranges.clear(); op.clear(); com0_int.clear(); com1_int.clear(); com1_float.clear(); com1_diff.clear(); vecR3.clear();
-    std::vector<std::vector<Matrix1D<RFLOAT> > > op_list;
+    std::vector<std::vector<Vector<RFLOAT>>> op_list;
     op_list.clear();
-    std::vector<Matrix1D<RFLOAT> > op_samplings, op_samplings_batch;
+    std::vector<Vector<RFLOAT>> op_samplings, op_samplings_batch;
     op_samplings.clear(); op_samplings_batch.clear();
     MultidimArray<RFLOAT> op_samplings_batch_packed, src_cropped, dest_cropped, mask_cropped;
     op_samplings_batch_packed.clear(); src_cropped.clear(); dest_cropped.clear(); mask_cropped.clear();
@@ -275,7 +275,7 @@ void local_symmetry_parameters_mpi::run() {
                     // Local searches
                     // Get com1_float. (floating point numbers)
                     // Com1f = R * Com0 + v
-                    Matrix2D<RFLOAT> mat1 = Euler::angles2matrix(aa, bb, gg);
+                    Matrix<RFLOAT> mat1 = Euler::angles2matrix(aa, bb, gg);
                     com1_float = matmul(mat1, com0_int) + vectorR3(dx, dy, dz);
                 } else {
                     // Global searches
@@ -457,7 +457,7 @@ void local_symmetry_parameters_mpi::run() {
 
                     // Update v = newCom1f + ( - newR * com0)
                     Localsym_decomposeOperator(op_samplings[isamp], aa, bb, gg, dx, dy, dz, cc);
-                    Matrix2D<RFLOAT> mat1 = Euler::angles2matrix(aa, bb, gg);
+                    Matrix<RFLOAT> mat1 = Euler::angles2matrix(aa, bb, gg);
                     vecR3 = vectorR3(dx, dy, dz) - matmul(mat1, com0_int);
                     Localsym_composeOperator(op_samplings[isamp], aa, bb, gg, XX(vecR3), YY(vecR3), ZZ(vecR3), cc);
                 }

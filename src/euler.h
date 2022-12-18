@@ -70,26 +70,26 @@ namespace Euler {
  * Euler angles (in degrees).
  *
  * As an implementation note you might like to know that this function calls
- * always to Matrix2D::resize
+ * always to Matrix::resize
  *
  * See http://xmipp.cnb.csic.es/twiki/bin/view/Xmipp/EulerAngles for a
  * description of the Euler angles.
  */
-Matrix2D<RFLOAT> angles2matrix(RFLOAT a, RFLOAT b, RFLOAT g, bool homogeneous=false);
+Matrix<RFLOAT> angles2matrix(RFLOAT a, RFLOAT b, RFLOAT g, bool homogeneous=false);
 
 /** Euler angles2direction
  *
  * This function returns  a vector parallel to the  projection direction.
  * Resizes v if needed
  */
-Matrix1D<RFLOAT> angles2direction(RFLOAT alpha, RFLOAT beta);
+Vector<RFLOAT> angles2direction(RFLOAT alpha, RFLOAT beta);
 
 /** Euler direction2angles
  *
  * This function returns the 2 Euler angles (rot&tilt) associated to the direction given by
  * the vector v.
  */
-void direction2angles(Matrix1D<RFLOAT> &v, RFLOAT &alpha, RFLOAT &beta);
+void direction2angles(Vector<RFLOAT> &v, RFLOAT &alpha, RFLOAT &beta);
 
 /** "Euler" matrix --> angles
  *
@@ -105,7 +105,7 @@ void direction2angles(Matrix1D<RFLOAT> &v, RFLOAT &alpha, RFLOAT &beta);
  * matrix2angles(Euler, alpha, beta, gamma);
  * @endcode
  */
-angles_t matrix2angles(const Matrix2D<RFLOAT> &A);
+angles_t matrix2angles(const Matrix<RFLOAT> &A);
 
 /** Up-Down projection equivalence
  *
@@ -197,15 +197,15 @@ angles_t mirrorXY(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
  * system.
  *
  * @code
- * Matrix2D< RFLOAT > R60 = rotation3DMatrix(60, 'Z');
+ * Matrix< RFLOAT > R60 = rotation3DMatrix(60, 'Z');
  * R60.resize(3, 3); // Get rid of homogeneous part
- * Matrix2D<RFLOAT> I = Matrix2D<RFLOAT>::identity(3);
+ * Matrix<RFLOAT> I = Matrix<RFLOAT>::identity(3);
  * angles_t new_angles = apply_transf(I, R60, rot, tilt, psi);
  * @endcode
  */
 angles_t apply_transf(
-    const Matrix2D<RFLOAT> &L,
-    const Matrix2D<RFLOAT> &R,
+    const Matrix<RFLOAT> &L,
+    const Matrix<RFLOAT> &R,
     RFLOAT rot, RFLOAT tilt, RFLOAT psi
 );
 
@@ -216,10 +216,10 @@ angles_t apply_transf(
  * IS_NOT_INV in applyGeometry.
  *
  * @code
- * Matrix2D<float> euler = rotation3DMatrix(60, 30, 60);
+ * Matrix<float> euler = rotation3DMatrix(60, 30, 60);
  * @endcode
  */
-Matrix2D<RFLOAT> rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
+Matrix<RFLOAT> rotation3DMatrix(RFLOAT rot, RFLOAT tilt, RFLOAT psi);
 
 };
 //@}
