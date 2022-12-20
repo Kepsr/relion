@@ -26,25 +26,42 @@ void svbksb(
     Matrix<RFLOAT> &u, Vector<RFLOAT> &w, Matrix<RFLOAT> &v,
     Vector<RFLOAT> &b, Vector<RFLOAT> &x
 ) {
-    // Call to the numerical recipes routine. Results will be stored in X
+    // Call the numerical recipes routine
     svbksb(
-        u.adaptForNumericalRecipes2(),
-        w.data() - 1,
-        v.adaptForNumericalRecipes2(),
+        nr::adaptForNumericalRecipes2(u),
+        nr::adaptForNumericalRecipes(w),
+        nr::adaptForNumericalRecipes2(v),
         u.nrows(), u.ncols(),
-        b.data() - 1,
-        x.data() - 1
+        nr::adaptForNumericalRecipes(b),
+        nr::adaptForNumericalRecipes(x)
     );
+    // Results are stored in x
 }
 
 template<typename T>
-void Matrix<T>::inv(Matrix<T> &result) const {
+void svdcmp(
+    const Matrix<T> &a,
+    Matrix<RFLOAT> &u, Vector<RFLOAT> &w, Matrix<RFLOAT> &v
+) {
+    // svdcmp only works with RFLOAT
+    u.resize(a.ncols(), a.nrows());
+    std::copy(a.begin(), a.end(), u.begin());
+    w.resize(u.ncols());
+    std::fill(w.begin(), w.end(), 0);
+    v.resize(u.ncols(), u.ncols());
+    std::fill(u.begin(), u.end(), 0);
+    // Call the numerical recipes routine
+    svdcmp(u.data(), a.nrows(), a.ncols(), w.data(), v.data());
+}
 
-    if (ncols() == 0 || nrows() == 0)
+template<typename T>
+Matrix<T> Matrix<T>::inv() const {
+
+    if (size() == 0)
         REPORT_ERROR("Inverse: Matrix is empty");
     // Initialise output
-    result.resize(ncols(), nrows());
-    std::fill(result.begin(), result.end(), 0);
+    Matrix<T> inverse (ncols(), nrows());
+    std::fill(inverse.begin(), inverse.end(), 0);
 
     if (ncols() == 3 && nrows() == 3) {
         int a, b, c, d;
@@ -54,22 +71,22 @@ void Matrix<T>::inv(Matrix<T> &result) const {
             b = (i - 1) % 3;
             c = (j + 1) % 3;
             d = (i + 1) % 3;
-            result.at(i, j) = at(a, b) * at(c, d) - at(a, d) * at(c, b);
+            inverse.at(i, j) = at(a, b) * at(c, d) - at(a, d) * at(c, b);
         }
-        // Multiply first column of `this` with first row of `result`
-        RFLOAT divisor = at(0, 0) * result.at(0, 0) 
-                       + at(1, 0) * result.at(0, 1) 
-                       + at(2, 0) * result.at(0, 2);
-        result /= divisor;
+        // Multiply first column of `this` with first row of `inverse`
+        RFLOAT divisor = at(0, 0) * inverse.at(0, 0) 
+                       + at(1, 0) * inverse.at(0, 1) 
+                       + at(2, 0) * inverse.at(0, 2);
+        return inverse / divisor;
     } else if (ncols() == 2 && nrows() == 2) {
         for (int i = 0; i <= 1; i++)
         for (int j = 0; j <= 1; j++) {
-            int a = (j + 1) % 2;  // logical negation
+            int a = (j + 1) % 2;
             int b = (i + 1) % 2;
-            result.at(i, j) = (i + j) % 2 ? -at(a, b) : +at(a, b);
+            inverse.at(i, j) = (i + j) % 2 ? -at(a, b) : +at(a, b);
         }
         RFLOAT divisor = at(0, 0) * at(1, 1) - at(0, 1) * at(1, 0);
-        result /= divisor;
+        return inverse / divisor;
     } else {
         // Perform SVD
         Matrix<RFLOAT> u, v;
@@ -81,7 +98,7 @@ void Matrix<T>::inv(Matrix<T> &result) const {
 
         // Compute W^-1
         bool invertible = false;
-        for (RFLOAT &x : w) {
+        for (RFLOAT &x: w) {
             if (abs(x) > tol) {
                 x = 1.0 / x;
                 invertible = true;
@@ -90,38 +107,56 @@ void Matrix<T>::inv(Matrix<T> &result) const {
             }
         }
 
-        if (!invertible) return;
+        if (!invertible) return inverse;
 
         // Compute V*W^-1
         for (int i = 0; i < v.nrows(); i++)
         for (int j = 0; j < v.ncols(); j++)
-        v.at(i, j) *= w[j];
+            v.at(i, j) *= w[j];
 
         // Compute inverse
         for (int i = 0; i < ncols(); i++)
         for (int j = 0; j < nrows(); j++)
         for (int k = 0; k < ncols(); k++)
-        result.at(i, j) += (T) v.at(i, k) * u.at(j, k);
+            inverse.at(i, j) += (T) v.at(i, k) * u.at(j, k);
+
+        return inverse;
     }
+}
+
+template<typename T>
+void solve(Matrix<T> A, const Matrix<T> &b, Matrix<T> &x) {
+    if (A.size() == 0)
+        REPORT_ERROR("Solve: Matrix is empty");
+
+    if (A.ncols() != A.nrows())
+        REPORT_ERROR("Solve: Matrix is not square");
+
+    if (A.nrows() != b.nrows())
+        REPORT_ERROR("Solve: Different sizes of A and b");
+
+    // Solve
+    x = b;
+    gaussj(
+        nr::adaptForNumericalRecipes2(A), A.nrows(),
+        nr::adaptForNumericalRecipes2(x), x.ncols()
+    );
 }
 
 // Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
-void solve(
-    const Matrix<T> &A, const Vector<T> &b,
-    Vector<RFLOAT> &result, RFLOAT tolerance
-) {
+void solve(const Matrix<T> &A, Vector<T> b, Vector<RFLOAT> &x, RFLOAT epsilon) {
     if (A.ncols() == 0)
         REPORT_ERROR("Solve: Matrix is empty");
 
-    /*if (A.ncols() != A.nrows())
-        REPORT_ERROR("Solve: Matrix is not square");*/
+    // if (A.ncols() != A.nrows())
+    //     REPORT_ERROR("Solve: Matrix is not square");
 
     if (A.nrows() != b.size())
         REPORT_ERROR("Solve: Differently sized Matrix and Vector");
 
-    /*if (b.isRow())
-        REPORT_ERROR("Solve: Incorrect vector shape");*/
+    // if (b.isRow())
+    //     REPORT_ERROR("Solve: Incorrect vector shape");
 
     // First perform SVD
     // Xmipp interface that calls to svdcmp of numerical recipes
@@ -130,22 +165,18 @@ void solve(
     svdcmp(A, u, w, v);
 
     // Check if eigenvalues of the SVD are acceptable.
-    // If a value is lower than the tolerance, it is made zero,
-    // to improve the routine's precision.
-    for (RFLOAT& x: w) if (x < tolerance) { x = 0; }
+    // To improve the routine's precision,
+    // values smaller than epsilon are made zero.
+    setSmallValuesToZero(w.begin(), w.end(), epsilon);
 
     // Set size of matrices
-    result.resize(b.size());
+    x.resize(b.size());
 
     // Xmipp interface that calls to svdksb of numerical recipes
-    Vector<RFLOAT> bd (b);
-    svbksb(u, w, v, bd, result);
+    svbksb(u, w, v, b, x);
 }
 
 // https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template void solve(
-    const Matrix<RFLOAT>&, const Vector<RFLOAT>&,
-    Vector<RFLOAT>&, RFLOAT 
-);
-
 template class Matrix<RFLOAT>;
+template void solve(const Matrix<RFLOAT>&, Vector<RFLOAT>, Vector<RFLOAT>&, RFLOAT);
+template void solve(Matrix<RFLOAT>, const Matrix<RFLOAT>&, Matrix<RFLOAT>&);

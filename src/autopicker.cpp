@@ -52,9 +52,9 @@ CTF find_micrograph_ctf(MetaDataTable &mdt, const FileName &fn_mic, ObservationM
 
 // Squared distance between two peaks
 inline int dist2(const Peak peak1, const Peak peak2) {
-    int dx = peak1.x - peak2.x;
-    int dy = peak1.y - peak2.y;
-    return dx * dx + dy * dy;
+    const int dx = peak1.x - peak2.x;
+    const int dy = peak1.y - peak2.y;
+    return euclidsq(dx, dy);
 }
 
 void ccfPeak::clear() {
@@ -67,11 +67,9 @@ bool ccfPeak::isValid() const {
     // Invalid parameters
     if (r < 0.0 || area_percentage < 0.0 || ccf_pixel_list.empty())
         return false;
-    // TODO: check ccf values in ccf_pixel_list?
-    for (const ccfPixel &pixel : ccf_pixel_list) {
-        if (pixel.fom > fom_thres) return true;
-    }
-    return false;
+    /// TODO: check ccf values in ccf_pixel_list?
+    return std::any_of(ccf_pixel_list.begin(), ccf_pixel_list.end(),
+        [this] (const ccfPixel& pixel) { return pixel.fom > fom_thres; });
 }
 
 bool ccfPeak::operator < (const ccfPeak& b) const {

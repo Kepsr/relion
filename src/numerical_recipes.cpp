@@ -148,12 +148,12 @@ RFLOAT chebev(RFLOAT a, RFLOAT b, const RFLOAT c[], int m, RFLOAT x) {
     if ((x - a) * (x - b) > 0.0)
         nrerror("x not in range in routine chebev");
 
-    RFLOAT y = (2.0 * x - a - b) / (b - a);
-    RFLOAT y2 = 2.0 * y;
+    const RFLOAT y = (2.0 * x - a - b) / (b - a);
+    const RFLOAT two_y = 2.0 * y;
     RFLOAT d = 0.0, dd = 0.0;
     for (int j = m - 1; j >= 1; j--) {
         RFLOAT sv = d;
-        d = y2 * d - dd + c[j];
+        d = two_y * d - dd + c[j];
         dd = sv;
     }
     return y * d - dd + 0.5 * c[0];
@@ -178,189 +178,196 @@ void beschb(RFLOAT x, RFLOAT *gam1, RFLOAT *gam2, RFLOAT *gampl, RFLOAT *gammi) 
     *gammi = *gam2 + x * (*gam1);
 }
 
-RFLOAT bessjy(RFLOAT x, RFLOAT xnu) {
+void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *rj, RFLOAT *ry, RFLOAT *rjp, RFLOAT *ryp) {
+    if (x <= 0.0 || nu < 0.0)
+        nrerror("bad arguments in besseljy");
     const int MAXIT = 10000;
     const RFLOAT XMIN = 2.0;
     const RFLOAT EPS = 1.0e-16;
     const RFLOAT FPMIN = 1.0e-30;
-    int i;
-    RFLOAT a, p, q, r, rjmu, ry1, rymu;
-
-    if (x <= 0.0 || xnu < 0.0)
-        nrerror("bad arguments in bessjy");
-    const int nl = x < XMIN ? (int) (xnu + 0.5) : std::max(0, (int) (xnu - x + 1.5));
-    RFLOAT xmu = xnu - nl;
-    const RFLOAT xmu2 = xmu * xmu;
-    const RFLOAT xi = 1.0 / x;
-    const RFLOAT xi2 = 2.0 / x;
-    const RFLOAT w = xi2 / PI;
-    RFLOAT h = std::max(xnu * xi, FPMIN);
-    RFLOAT b = xi2 * xnu;
-    RFLOAT c = h;
-    RFLOAT d = 0.0;
-    for (i = 1; i <= MAXIT; i++) {
-        b += xi2;
-        d = b - d;
-        if (fabs(d) < FPMIN)
-            d = FPMIN;
+    const int nl = x < XMIN ? (int) (nu + 0.5) : std::max(0, (int) (nu - x + 1.5));
+    // nl is the number of downward recurrences of the J's and upward recurrences of Y's.
+    // For x < XMIN, xmu lies in the interval (-0.5, +0.5).
+    // For x >= XMIN, it is chosen so that x is greater than the turning point.
+    const RFLOAT xmu = nu - nl, xmu2 = xmu * xmu;
+    const RFLOAT ix = 1.0 / x, two_ix = 2.0 / x, half_x = x / 2.0;
+    const RFLOAT w = two_ix / PI;
+    RFLOAT h = nu * ix;
+    if (h < FPMIN) h = FPMIN;
+    RFLOAT b = nu * two_ix, c = h, d = 0.0;
+    int nr_sign_changes = 0;
+    {
+    int i = 0;
+    for (; i < MAXIT; i++) {
+        b += two_ix;
         c = b - 1.0 / c;
-        if (fabs(c) < FPMIN)
-            c = FPMIN;
+        d = b - d;
+        if (fabs(c) < FPMIN) c = FPMIN;
+        if (fabs(d) < FPMIN) d = FPMIN;
         d = 1.0 / d;
         RFLOAT del = c * d;
-        h = del * h;
-        if (fabs(del - 1.0) < EPS)
-            break;
+        h *= del;
+        if (d < 0) ++nr_sign_changes;
+        if (fabs(del - 1.0) < EPS) break;
     }
-    if (i > MAXIT)
-        nrerror("x too large in bessjy; try asymptotic expansion");
-    RFLOAT rjl = copysign(FPMIN, d);
-    RFLOAT rjpl = h * rjl;
+    if (i == MAXIT)
+        nrerror("x too large in besseljy; try asymptotic expansion");
+    }
+    // Initialize Jnu and J'nu for downward recurrence.
+    RFLOAT rjl = nr_sign_changes % 2 ? -FPMIN : FPMIN, rjpl = rjl * h;
+    // Store values for later rescaling.
     const RFLOAT rjl1 = rjl, rjp1 = rjpl;
-    RFLOAT fact = xnu * xi;
-    for (int l = nl; l >= 1; l--) {
-        RFLOAT rjtemp = fact * rjl + rjpl;
-        fact -= xi;
-        rjpl = fact * rjtemp - rjl;
-        rjl = rjtemp;
+    RFLOAT fact = nu * ix;
+    for (int i = 0; i < nl; i++) {
+        const RFLOAT new_rjl = fact * rjl + rjpl;
+        fact -= ix;
+        rjpl = fact * new_rjl - rjl;
+        rjl = new_rjl;
     }
     if (rjl == 0.0) rjl = EPS;
-    RFLOAT f = rjpl / rjl;
-    if (x < XMIN) {
-        RFLOAT x2 = 0.5 * x;
-        RFLOAT pimu = PI * xmu;
-        fact = fabs(pimu) < EPS ? 1.0 : pimu / sin(pimu);
-        d = -log(x2);
-        RFLOAT e = xmu * d;
-        RFLOAT fact2 = fabs(e) < EPS ? 1.0 : sinh(e) / e;
+    const RFLOAT f = rjpl / rjl;  // Now have unnormalized Jmu and J'mu
+    RFLOAT rjmu, ry1, rymu;
+    if (x < XMIN) {  // Use series
+        const RFLOAT pimu = PI * xmu;
+        const RFLOAT isinc_pimu = fabs(pimu) < EPS ? 1.0 : pimu / sin(pimu);  // 1 / sinc(pimu)
+        const RFLOAT half_pimu = 0.5 * pimu;
+        const RFLOAT sinc_half_pimu = fabs(half_pimu) < EPS ? 1.0 : sin(half_pimu) / half_pimu;  // sinc(half_pimu)
+        const RFLOAT log_two_over_x = log(two_ix);
+        const RFLOAT e = xmu * log_two_over_x;
+        const RFLOAT sinch_e = fabs(e) < EPS ? 1.0 : sinh(e) / e;  // sinch(e)
+
         RFLOAT gam1, gam2, gammi, gampl;
         beschb(xmu, &gam1, &gam2, &gampl, &gammi);
-        RFLOAT ff = 2.0 / PI * fact * (gam1 * cosh(e) + gam2 * fact2 * d);
-        e = exp(e);
-        p = e / (gampl * PI);
-        q = 1.0 / (e * PI * gammi);
-        RFLOAT pimu2 = 0.5 * pimu;
-        RFLOAT fact3 = fabs(pimu2) < EPS ? 1.0 : sin(pimu2) / pimu2;
-        r = PI * pimu2 * fact3 * fact3;
-        c = 1.0;
-        d = -x2 * x2;
-        RFLOAT sum = ff + r * q;
-        RFLOAT sum1 = p;
-        for (i = 1; i <= MAXIT; i++) {
+
+        RFLOAT ff = 2.0 / PI * isinc_pimu * (gam1 * cosh(e) + gam2 * sinch_e * log_two_over_x);
+        const RFLOAT expe = exp(e);
+        const RFLOAT r = PI * half_pimu * sinc_half_pimu * sinc_half_pimu;
+        const RFLOAT d = half_x * -half_x;
+        RFLOAT p = expe / (gampl * PI), q = 1.0 / (expe * gammi * PI);
+        RFLOAT sum1 = ff + r * q, sum2 = p;
+        RFLOAT c = 1;
+        int i = 1;
+        for (; i < MAXIT; i++) {
             ff = (i * ff + p + q) / (i * i - xmu2);
             c *= d / i;
             p /= i - xmu;
             q /= i + xmu;
-            RFLOAT del = c * (ff + r * q);
-            sum  += del;
-            sum1 += c * p - i * del;
-            if (fabs(del) < (1.0 + fabs(sum)) * EPS)
-                break;
+            RFLOAT del1 = c * (ff + r * q);
+            RFLOAT del2 = c * p - i * del1;
+            sum1 += del1;
+            sum2 += del2;
+            if (fabs(del1) < EPS * (1 + fabs(sum1))) break;
         }
-        if (i > MAXIT)
+        if (i == MAXIT)
             nrerror("bessy series failed to converge");
-        rymu = -sum;
-        ry1 = -sum1 * xi2;
-        RFLOAT rymup = xmu * xi * rymu - ry1;
+
+        rymu = -sum1;
+        ry1  = -sum2 * two_ix;
+        const RFLOAT rymup = xmu * ix * rymu - ry1;
         rjmu = w / (rymup - f * rymu);
     } else {
-        a = 0.25 - xmu2;
-        p = -0.5 * xi;
-        q = 1.0;
-        RFLOAT br = 2.0 * x;
-        RFLOAT bi = 2.0;
-        fact = a * xi / (p * p + q * q);
+        RFLOAT a = 0.25 - xmu2;
+        const RFLOAT br = 2 * x;
+        RFLOAT bi = 2;
+        RFLOAT p = -0.5 * ix, q = 1;
+        const RFLOAT fact = a * ix / (p * p + q * q);
         RFLOAT cr = br + q * fact;
         RFLOAT ci = bi + p * fact;
         RFLOAT den = br * br + bi * bi;
-        RFLOAT dr =  br / den;
+        RFLOAT dr = +br / den;
         RFLOAT di = -bi / den;
-        RFLOAT dlr = cr * dr - ci * di;
-        RFLOAT dli = cr * di + ci * dr;
-        RFLOAT ptemp = p * dlr - q * dli;
-        RFLOAT qtemp = p * dli + q * dlr;
-        p = ptemp;
-        q = qtemp;
-        for (i = 2; i <= MAXIT; i++) {
-            a  += 2.0 * (i - 1);
-            bi += 2.0;
+        {
+            const RFLOAT dlr = cr * dr - ci * di;
+            const RFLOAT dli = cr * di + ci * dr;
+            const RFLOAT new_p = p * dlr - q * dli;
+            const RFLOAT new_q = p * dli + q * dlr;
+            p = new_p, q = new_q;
+        }
+        int i = 1;
+        for (; i < MAXIT; i++) {
+            a  += 2 * i;
+            bi += 2;
 
             dr = a * dr + br;
             di = a * di + bi;
             if (fabs(dr) + fabs(di) < FPMIN) dr = FPMIN;
 
-            fact = a / (cr * cr + ci * ci);
+            const RFLOAT fact = a / (cr * cr + ci * ci);
 
             cr = br + cr * fact;
             ci = bi - ci * fact;
             if (fabs(cr) + fabs(ci) < FPMIN) cr = FPMIN;
 
-            RFLOAT den = dr * dr + di * di;
-            dr /=  den;
+            const RFLOAT den = dr * dr + di * di;
+            dr /= +den;
             di /= -den;
-            RFLOAT dlr = cr * dr - ci * di;
-            RFLOAT dli = cr * di + ci * dr;
-            RFLOAT ptemp = p * dlr - q * dli;
-            RFLOAT qtemp = p * dli + q * dlr;
-            p = ptemp;
-            q = qtemp;
-            if (fabs(dlr - 1.0) + fabs(dli) < EPS)
-                break;
+            const RFLOAT dlr = cr * dr - ci * di;
+            const RFLOAT dli = cr * di + ci * dr;
+            const RFLOAT new_p = p * dlr - q * dli;
+            const RFLOAT new_q = p * dli + q * dlr;
+            p = new_p, q = new_q;
+            if (fabs(dlr - 1) + fabs(dli) < EPS) break;
         }
-        if (i > MAXIT)
-            nrerror("cf2 failed in bessjy");
-        RFLOAT gam = (p - f) / q;
-        rjmu = copysign(fabs(sqrt(w / ((p - f) * gam + q))), rjl);  // Isn't fabs(sqrt(x)) just sqrt(x)?
+        if (i == MAXIT)
+            nrerror("cf2 failed in besseljy");
+        const RFLOAT gam = (p - f) / q;
+        rjmu = copysign(sqrt(w / ((p - f) * gam + q)), rjl);
         rymu = rjmu * gam;
         RFLOAT rymup = rymu * (p + q / gam);
-        ry1 = xmu * xi * rymu - rymup;
+        ry1 = xmu * ix * rymu - rymup;
     }
-    fact = rjmu / rjl;
-    RFLOAT rj  = rjl1 * fact;
-    RFLOAT rjp = rjp1 * fact;
+    {
+    const RFLOAT fact = rjmu / rjl;
+    *rj  = rjl1 * fact;
+    *rjp = rjp1 * fact;
     for (int i = 1; i <= nl; i++) {
-        RFLOAT rytemp = (xmu + i) * xi2 * ry1 - rymu;
+        const RFLOAT new_ry1 = (xmu + i) * two_ix * ry1 - rymu;
         rymu = ry1;
-        ry1 = rytemp;
+        ry1  = new_ry1;
     }
-    RFLOAT ryp = xnu * xi * rymu - ry1;
-    return rj;
+    *ry = rymu;
+    *ryp = nu * ix * rymu - ry1;
+    }
 }
 
 //............................................................................
 RFLOAT bessi0_5(RFLOAT x) {
-    return x == 0 ? 0 : sqrt(2 / (PI*x))*sinh(x);
+    return (x == 0) ? 0 : sqrt(2 / (PI*x))*sinh(x);
 }
 
 RFLOAT bessi1_5(RFLOAT x) {
-    return x == 0 ? 0 : sqrt(2 / (PI*x))*(cosh(x) - sinh(x) / x);
+    return (x == 0) ? 0 : sqrt(2 / (PI*x))*(cosh(x) - sinh(x) / x);
 }
 RFLOAT bessi2(RFLOAT x) {
-    return x == 0 ? 0 : bessi0(x) - ((2*1) / x) * bessi1(x);
+    return (x == 0) ? 0 : bessi0(x) - ((2*1) / x) * bessi1(x);
 }
 
 RFLOAT bessi2_5(RFLOAT x) {
-    return x == 0 ? 0 : bessi0_5(x) - ((2*1.5) / x) * bessi1_5(x);
+    return (x == 0) ? 0 : bessi0_5(x) - ((2*1.5) / x) * bessi1_5(x);
 }
 
 RFLOAT bessi3(RFLOAT x) {
-    return x == 0 ? 0 : bessi1(x) - ((2*2) / x) * bessi2(x);
+    return (x == 0) ? 0 : bessi1(x) - ((2*2) / x) * bessi2(x);
 }
 
 RFLOAT bessi3_5(RFLOAT x) {
-    return x == 0 ? 0 : bessi1_5(x) - ((2*2.5) / x) * bessi2_5(x);
+    return (x == 0) ? 0 : bessi1_5(x) - ((2*2.5) / x) * bessi2_5(x);
 }
 
 RFLOAT bessi4(RFLOAT x) {
-    return x == 0 ? 0 : bessi2(x) - ((2*3) / x) * bessi3(x);
+    return (x == 0) ? 0 : bessi2(x) - ((2*3) / x) * bessi3(x);
 }
 
 RFLOAT bessj1_5(RFLOAT x) {
-    return bessjy(x, 1.5);
+    RFLOAT rj, ry, rjp, ryp;
+    besseljy(x, 1.5, &rj, &ry, &rjp, &ryp);
+    return rj;
 }
 
 RFLOAT bessj3_5(RFLOAT x) {
-    return bessjy(x, 3.5);
+    RFLOAT rj, ry, rjp, ryp;
+    besseljy(x, 3.5, &rj, &ry, &rjp, &ryp);
+    return rj;
 }
 
 /* Special functions ------------------------------------------------------- */

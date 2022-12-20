@@ -447,7 +447,6 @@ void MovieReconstructor::backproject(int rank, int size) {
 
 void MovieReconstructor::backprojectOneParticle(MetaDataTable &mdt, long int p, MultidimArray<Complex> &F2D, int this_subset) {
     RFLOAT fom, r_ewald_sphere;
-    Vector<RFLOAT> trans(2);
     FourierTransformer transformer;
 
     // Rotations

@@ -240,9 +240,8 @@ int main(int argc, char *argv[]) {
                 for (int rot = -1; rot <= 1; rot++)
                 for (int tilt = -1; tilt <= 1; tilt++)
                 for (int psi = -1; psi <= 1; psi++) {
-                    Image<Complex> pred;
 
-                    pred = obsModel.predictObservation(
+                    Image<Complex> pred = obsModel.predictObservation(
                         randSubset == 0 ? projector0 : projector1, 
                         mdts[g], p, true, true,
                         rot * deltaAngle, tilt * deltaAngle, psi * deltaAngle
@@ -255,7 +254,7 @@ int main(int argc, char *argv[]) {
                     for (int y = 0; y < s; y++)
                     for (int x = 0; x < sh; x++) {
                         double yy = y < sh  ? y : y - s;
-                        double r = sqrt(x * x + yy * yy);
+                        double r = sqrt(euclidsq(x, yy));
                         if (r > kmax) continue;
 
                         b(index) += imgSnr(y, x) * (pred(y, x) - obsF[p](y, x)).norm();
@@ -277,16 +276,16 @@ int main(int argc, char *argv[]) {
                 }
 
                 const double tol = 1e-20;
-                Vector<RFLOAT> x(10);
+                Vector<RFLOAT> x (10);
                 solve(A, b, x, tol);
 
-                d3Matrix C3(
+                d3Matrix C3 (
                     x(0), x(1), x(2),
                     x(1), x(4), x(5),
                     x(2), x(5), x(7)
                 );
 
-                d3Vector d(x(3), x(6), x(8));
+                d3Vector d (x(3), x(6), x(8));
 
                 d3Matrix C3i = C3;
                 C3i.invert();
@@ -301,13 +300,13 @@ int main(int argc, char *argv[]) {
                 double tilt = mdts[g].getValue(EMDL::ORIENT_TILT, p);
                 double psi  = mdts[g].getValue(EMDL::ORIENT_PSI,  p);
 
-                rot += min[0] * deltaAngle;
+                rot  += min[0] * deltaAngle;
                 tilt += min[1] * deltaAngle;
-                psi += min[2] * deltaAngle;
+                psi  += min[2] * deltaAngle;
 
-                mdts[g].setValue(EMDL::ORIENT_ROT, rot, p);
+                mdts[g].setValue(EMDL::ORIENT_ROT,  rot,  p);
                 mdts[g].setValue(EMDL::ORIENT_TILT, tilt, p);
-                mdts[g].setValue(EMDL::ORIENT_PSI, psi, p);
+                mdts[g].setValue(EMDL::ORIENT_PSI,  psi,  p);
             }
         }
 

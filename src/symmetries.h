@@ -155,13 +155,8 @@ class SymList {
 
     /** Create an empty list.
      *  The 2D matrices are 0 × 0.
-     *  @code
-     *  SymList SL;
-     *  @endcode
      */
-    SymList() {
-        __sym_elements = true_symNo = 0;
-    }
+    SymList(): __sym_elements(0), true_symNo(0) {}
 
     /** Translate a string 'symstring' to a symmetry group.
      *  Return value indicates whether the string was recognised as a symmetry group.

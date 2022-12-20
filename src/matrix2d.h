@@ -50,9 +50,6 @@
 #include "src/matrix1d.h"
 #include "src/filename.h"
 
-/** @defgroup Matrices Matrix Matrices
- * @ingroup DataLibrary
- */
 //@{
 
 template<typename T>
@@ -142,12 +139,12 @@ class Matrix {
         mdimy = new_mdimy;
     }
 
-    // Extract submatrix and assign to this object
+    // Extract submatrix
     Matrix<T> submatrix(int i0, int j0, int iF, int jF) const {
         if (i0 < 0 || j0 < 0 || iF >= nrows() || jF >= ncols())
             REPORT_ERROR("Submatrix indices out of bounds");
-        Matrix<T> A (iF - i0 + 1, jF - j0 + 1);
 
+        Matrix<T> A (iF - i0 + 1, jF - j0 + 1);
         for (int i = 0; i < A.nrows(); i++) 
         for (int j = 0; j < A.ncols(); j++)
             A.at(i, j) = at(i + i0, j + j0);
@@ -156,7 +153,8 @@ class Matrix {
 
     int size() const { return mdimx * mdimy; }
 
-    T* data() const { return mdata; }
+    const T* data() const { return mdata; }
+          T* data()       { return mdata; }
 
     std::pair<int, int> shape() const { return {mdimx, mdimy}; }
 
@@ -272,56 +270,14 @@ class Matrix {
     }
     //@}
 
-    inline T* begin() const { return mdata; }
+    inline const T* begin() const { return mdata; }
+    inline       T* begin()       { return mdata; }
 
-    inline T* end() const { return mdata + mdimx * mdimy; }
+    inline const T* end() const { return mdata + mdimx * mdimy; }
+    inline       T* end()       { return mdata + mdimx * mdimy; }
 
     /// @name Utilities for Matrix
     //@{
-
-    /** Produce a 2D array suitable for working with Numerical Recipes
-    *
-    * This function must be used only as a preparation for routines which need
-    * that the first physical index is 1 and not 0 as it usually is in C. New
-    * memory is needed to hold the new pointer array.
-    */
-    T** adaptForNumericalRecipes() const {
-        T** ptr = ask_matrix<T>(1, mdimy, 1, mdimx);
-        for (int i = 0; i < mdimy; i++)
-        for (int j = 0; j < mdimx; j++)
-            ptr[i + 1][j + 1] = at(i, j);
-        return ptr;
-    }
-
-    /** Produce a 1D pointer suitable for working with Numerical Recipes (2)
-    *
-    * This function meets the same goal as the one before,
-    * however this one works with 2D arrays as a single pointer.
-    * result[i * Xdim + j]
-    * result[1 * Xdim + 1] points to the first element of the array,
-    */
-    T* adaptForNumericalRecipes2() const {
-        return mdata - 1 - mdimx;
-    }
-
-    // Load 2D array from numerical recipes result
-    void loadFromNumericalRecipes(T **ptr, int m, int n) {
-        resize(m, n);
-        for (int i = 1; i <= n; i++)
-        for (int j = 1; j <= m; j++)
-            at(i - 1, j - 1) = ptr[i][j];
-    }
-
-    // Kill a 2D array produced for numerical recipes
-    void killAdaptationForNumericalRecipes(T **ptr) const {
-        // Free the allocated memory
-        free_matrix<T>(ptr, 1, mdimy, 1, mdimx);
-        ptr = nullptr;
-    }
-
-    void killAdaptationForNumericalRecipes2(T **ptr) const {
-        // Do nothing
-    }
 
     /** Construct from a vector
     *
@@ -332,11 +288,10 @@ class Matrix {
     explicit Matrix(const Vector<T> &v): Matrix() {
         if (v.isRow()) {
             resize(v.size(), 1);
-            std::copy(v.begin(), v.end(), begin());
         } else {
             resize(1, v.size());
-            std::copy(v.begin(), v.end(), begin());
         }
+        std::copy(v.begin(), v.end(), begin());
     }
 
     /** Construct a vector
@@ -469,7 +424,7 @@ class Matrix {
 
         // Calculate determinant
         for (int i = 0; i < ncols(); i++)
-            d *= (T) LU.at(i, i);
+            d *= LU.at(i, i);
 
         return d;
     }
@@ -481,7 +436,7 @@ class Matrix {
         Matrix<T> t (ncols(), nrows());
         for (int i = 0; i < t.nrows(); i++)
         for (int j = 0; j < t.ncols(); j++)
-        t.at(i, j) = at(j, i);
+            t.at(i, j) = at(j, i);
         return t;
     }
 
@@ -490,21 +445,13 @@ class Matrix {
     *
     * Compute the pseudoinverse of a matrix by SVD.
     */
-    void inv(Matrix<T> &result) const;
-
-    // Matrix inverse
-    Matrix<T> inv() const {
-        Matrix<T> result;
-        inv(result);
-        return result;
-    }
+    Matrix<T> inv() const;
 
     // Test for identity matrix
     bool isIdentity() const {
         for (int i = 0; i < nrows(); i++)
         for (int j = 0; j < ncols(); j++) {
-           const T& x = at(i, j);
-            if (abs(i == j ? x - 1.0 : x) > Xmipp::epsilon)
+            if (abs(i == j ? at(i, j) - 1.0 : at(i, j)) > Xmipp::epsilon)
                 return false;
         }
         return true;
@@ -512,6 +459,57 @@ class Matrix {
     //@}
 
 };
+
+namespace nr {
+
+    template <typename T>
+    T* adaptForNumericalRecipes(Vector<T>& vec) {
+        return vec.data() - 1;
+    }
+
+    /** Produce a 2D array suitable for working with Numerical Recipes
+    *
+    * This function must be used only as a preparation for routines which need
+    * that the first physical index is 1 and not 0 as it usually is in C. New
+    * memory is needed to hold the new pointer array.
+    */
+   template <typename T>
+    T** adaptForNumericalRecipes(const Matrix<T>& mat) {
+        T** ptr = ask_matrix<T>(1, mat.nrows(), 1, mat.ncols());
+        for (int i = 0; i < mat.nrows(); i++)
+        for (int j = 0; j < mat.ncols(); j++)
+            ptr[i + 1][j + 1] = mat.at(i, j);
+        return ptr;
+    }
+
+    // Kill a 2D array produced for numerical recipes
+    template <typename T>
+    void killAdaptationForNumericalRecipes(const Matrix<T>& mat, T **ptr) {
+        // Free the allocated memory
+        free_matrix<T>(ptr, 1, mat.nrows(), 1, mat.ncols());
+    }
+
+    // Load 2D array from numerical recipes result
+    template <typename T>
+    void loadFromNumericalRecipes(Matrix<T> &mat, T **ptr, int m, int n) {
+        mat.resize(m, n);
+        for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            mat.at(i - 1, j - 1) = ptr[i][j];
+    }
+
+    /** Produce a 1D pointer suitable for working with Numerical Recipes (2)
+    *
+    * This function meets the same goal as the one before,
+    * however this one works with 2D arrays as a single pointer.
+    * ptr[i * mat.ncols() + j] = mat.at(i - 1, j - 1)
+    */
+   template <typename T>
+    T* adaptForNumericalRecipes2(Matrix<T>& mat) {
+        return mat.data() - 1 - mat.nrows();
+    }
+
+}
 
 // Free functions
 
@@ -561,7 +559,7 @@ void ludcmp(const Matrix<T> &A, Matrix<T> &LU, Vector<int> &indx, T &d) {
     LU = A;
     indx.resize(A.ncols());
     ludcmp(
-        LU.adaptForNumericalRecipes2(), A.ncols(),
+        nr::adaptForNumericalRecipes2(LU), A.ncols(),
         indx.data() - 1, &d
     );
 }
@@ -570,7 +568,7 @@ void ludcmp(const Matrix<T> &A, Matrix<T> &LU, Vector<int> &indx, T &d) {
 template<typename T>
 void lubksb(const Matrix<T> &LU, Vector<int> &indx, Vector<T> &b) {
     lubksb(
-        LU.adaptForNumericalRecipes2(), indx.size(),
+        nr::adaptForNumericalRecipes2(LU), indx.size(),
         indx.data() - 1, b.data() - 1
     );
 }
@@ -586,47 +584,16 @@ template<typename T>
 void svdcmp(
     const Matrix<T> &a,
     Matrix<RFLOAT> &u, Vector<RFLOAT> &w, Matrix<RFLOAT> &v
-) {
-    // svdcmp only works with RFLOAT
-    u.resize(a.ncols(), a.nrows());
-    std::copy(a.begin(), a.end(), u.begin());
-    w.resize(u.ncols());
-    std::fill(w.begin(), w.end(), 0);
-    v.resize(u.ncols(), u.ncols());
-    std::fill(u.begin(), u.end(), 0);
-
-    // Call the numerical recipes routine
-    svdcmp(u.data(), a.nrows(), a.ncols(), w.data(), v.data());
-}
+);
 
 // Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
-void solve(
-    const Matrix<T> &A, const Vector<T> &b,
-    Vector<RFLOAT> &result, RFLOAT tolerance
-);
+void solve(const Matrix<T> &A, Vector<T> b, Vector<RFLOAT> &x, RFLOAT epsilon = Xmipp::epsilon);
 
 // Solve a system of linear equations (Ax=b), where x and b are matrices,
 // by SVD Decomposition (through Gauss-Jordan numerical recipes)
 template<typename T>
-void solve(Matrix<T> A, const Matrix<T> &b, Matrix<T> &result) {
-    if (A.size() == 0)
-        REPORT_ERROR("Solve: Matrix is empty");
-
-    if (A.ncols() != A.nrows())
-        REPORT_ERROR("Solve: Matrix is not square");
-
-    if (A.nrows() != b.nrows())
-        REPORT_ERROR("Solve: Different sizes of A and b");
-
-    // Solve
-    result = b;
-    gaussj(
-        A.adaptForNumericalRecipes2(), A.nrows(),
-        result.adaptForNumericalRecipes2(), b.ncols()
-    );
-}
-
+void solve(Matrix<T> A, const Matrix<T> &b, Matrix<T> &x);
 
 /** Least-squares rigid transformation between two sets of 3D coordinates
  *
