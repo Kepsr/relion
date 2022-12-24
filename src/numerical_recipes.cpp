@@ -45,15 +45,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-
+#include <limits>
+#include "src/complex.h"
 #include "src/numerical_recipes.h"
 
 /* NUMERICAL UTILITIES ----------------------------------------------------- */
-void nrerror(const char error_text[]) {
-    fprintf(stderr, "Numerical Recipes run-time error...\n");
-    fprintf(stderr, "%s\n", error_text);
-    fprintf(stderr, "...now exiting to system...\n");
-    exit(1);
+namespace nr {
+
+    void error(const char error_text[]) {
+        fprintf(stderr, "Numerical Recipes run-time error...\n");
+        fprintf(stderr, "%s\n", error_text);
+        fprintf(stderr, "...now exiting to system...\n");
+        exit(1);
+    }
+
 }
 
 // BESSEL FUNCTIONS --------------------------------------------------------
@@ -146,7 +151,7 @@ RFLOAT bessi1(RFLOAT x)
 /* General Bessel functions ------------------------------------------------ */
 RFLOAT chebev(RFLOAT a, RFLOAT b, const RFLOAT c[], int m, RFLOAT x) {
     if ((x - a) * (x - b) > 0.0)
-        nrerror("x not in range in routine chebev");
+        nr::error("x not in range in routine chebev");
 
     const RFLOAT y = (2.0 * x - a - b) / (b - a);
     const RFLOAT two_y = 2.0 * y;
@@ -178,155 +183,161 @@ void beschb(RFLOAT x, RFLOAT *gam1, RFLOAT *gam2, RFLOAT *gampl, RFLOAT *gammi) 
     *gammi = *gam2 + x * (*gam1);
 }
 
-void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *rj, RFLOAT *ry, RFLOAT *rjp, RFLOAT *ryp) {
+RFLOAT inline at_least(RFLOAT x, RFLOAT min) {
+    return fabs(x) < min ? min : x;
+}
+
+Complex inline at_least(Complex x, RFLOAT min) {
+    return fabs(x.real) + fabs(x.imag) < min ? Complex(min, x.imag) : x;
+}
+
+void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *J, RFLOAT *Y, RFLOAT *Jp, RFLOAT *Yp) {
     if (x <= 0.0 || nu < 0.0)
-        nrerror("bad arguments in besseljy");
+        nr::error("bad arguments in besseljy");
     const int MAXIT = 10000;
-    const RFLOAT XMIN = 2.0;
-    const RFLOAT EPS = 1.0e-16;
-    const RFLOAT FPMIN = 1.0e-30;
+    const RFLOAT XMIN = 2;
+    const RFLOAT EPS = std::numeric_limits<RFLOAT>::epsilon(), FPMIN = 1e-30;
     const int nl = x < XMIN ? (int) (nu + 0.5) : std::max(0, (int) (nu - x + 1.5));
     // nl is the number of downward recurrences of the J's and upward recurrences of Y's.
-    // For x < XMIN, xmu lies in the interval (-0.5, +0.5).
+    // For x < XMIN, mu lies in the interval (-0.5, +0.5).
     // For x >= XMIN, it is chosen so that x is greater than the turning point.
-    const RFLOAT xmu = nu - nl, xmu2 = xmu * xmu;
-    const RFLOAT ix = 1.0 / x, two_ix = 2.0 / x, half_x = x / 2.0;
-    const RFLOAT w = two_ix / PI;
-    RFLOAT h = nu * ix;
-    if (h < FPMIN) h = FPMIN;
-    RFLOAT b = nu * two_ix, c = h, d = 0.0;
+    const RFLOAT mu = nu - nl, mumu = mu * mu;
+    const RFLOAT ix = 1 / x, two_ix = 2 / x, half_x = x / 2;
+    const RFLOAT w = two_ix / PI;  // The Wronskian
+
+    /** Evaluate CF1 by modified Lentz's method
+     * 
+     * J'{nu} / J{nu} = nu / x - J{nu + 1} / J{nu}
+     *                = nu / x - 1 /
+     *                  2 * (nu + 1) / x - 1 /
+     *                  2 * (nu + 2) / x - ...
+     * 
+     * The partial numerators (a) are all -1.
+     * The partial denominators (b) are given by 2 * (nu + i) / x for i = 1, 2, 3...
+     */
+    RFLOAT CF1 = at_least(nu * ix, FPMIN);
+    RFLOAT b = nu * two_ix, C = CF1, D = 0, delta;
     int nr_sign_changes = 0;
     {
     int i = 0;
-    for (; i < MAXIT; i++) {
+    for (; i != MAXIT; i++) {
+        // a = -1
         b += two_ix;
-        c = b - 1.0 / c;
-        d = b - d;
-        if (fabs(c) < FPMIN) c = FPMIN;
-        if (fabs(d) < FPMIN) d = FPMIN;
-        d = 1.0 / d;
-        RFLOAT del = c * d;
-        h *= del;
-        if (d < 0) ++nr_sign_changes;
-        if (fabs(del - 1.0) < EPS) break;
+        C = at_least(b - 1 / C, FPMIN);  // b + a / C
+        D = 1 / at_least(b - D, FPMIN);  // 1 / (b + a * D)
+        if (D < 0) ++nr_sign_changes;
+        CF1 *= delta = C * D;
+        if (fabs(delta - 1) < EPS) break;
     }
     if (i == MAXIT)
-        nrerror("x too large in besseljy; try asymptotic expansion");
+        nr::error("x too large in besseljy; try asymptotic expansion");
     }
+
     // Initialize Jnu and J'nu for downward recurrence.
-    RFLOAT rjl = nr_sign_changes % 2 ? -FPMIN : FPMIN, rjpl = rjl * h;
+    RFLOAT rjl = nr_sign_changes % 2 ? -FPMIN : FPMIN, rjpl = rjl * CF1;
     // Store values for later rescaling.
     const RFLOAT rjl1 = rjl, rjp1 = rjpl;
     RFLOAT fact = nu * ix;
+    // Downward recurrence
     for (int i = 0; i < nl; i++) {
         const RFLOAT new_rjl = fact * rjl + rjpl;
         fact -= ix;
-        rjpl = fact * new_rjl - rjl;
-        rjl = new_rjl;
+        rjpl = new_rjl * fact - rjl;
+        rjl  = new_rjl;
     }
-    if (rjl == 0.0) rjl = EPS;
-    const RFLOAT f = rjpl / rjl;  // Now have unnormalized Jmu and J'mu
-    RFLOAT rjmu, ry1, rymu;
+    if (rjl == 0) rjl = EPS;
+    const RFLOAT fmu = rjpl / rjl;  // Now have unnormalized Jmu and J'mu
+    RFLOAT Jmu, ry1, Ymu;
     if (x < XMIN) {  // Use series
-        const RFLOAT pimu = PI * xmu;
+        const RFLOAT pimu = PI * mu;
         const RFLOAT isinc_pimu = fabs(pimu) < EPS ? 1.0 : pimu / sin(pimu);  // 1 / sinc(pimu)
         const RFLOAT half_pimu = 0.5 * pimu;
         const RFLOAT sinc_half_pimu = fabs(half_pimu) < EPS ? 1.0 : sin(half_pimu) / half_pimu;  // sinc(half_pimu)
         const RFLOAT log_two_over_x = log(two_ix);
-        const RFLOAT e = xmu * log_two_over_x;
+        const RFLOAT e = mu * log_two_over_x;
         const RFLOAT sinch_e = fabs(e) < EPS ? 1.0 : sinh(e) / e;  // sinch(e)
 
         RFLOAT gam1, gam2, gammi, gampl;
-        beschb(xmu, &gam1, &gam2, &gampl, &gammi);
+        beschb(mu, &gam1, &gam2, &gampl, &gammi);
 
-        RFLOAT ff = 2.0 / PI * isinc_pimu * (gam1 * cosh(e) + gam2 * sinch_e * log_two_over_x);
+        RFLOAT ff = 2 / PI * isinc_pimu * (gam1 * cosh(e) + gam2 * sinch_e * log_two_over_x);
         const RFLOAT expe = exp(e);
         const RFLOAT r = PI * half_pimu * sinc_half_pimu * sinc_half_pimu;
-        const RFLOAT d = half_x * -half_x;
-        RFLOAT p = expe / (gampl * PI), q = 1.0 / (expe * gammi * PI);
-        RFLOAT sum1 = ff + r * q, sum2 = p;
-        RFLOAT c = 1;
+        Complex CF2 = {expe / (gampl * PI), 1 / (expe * gammi * PI)};
+        RFLOAT sum1 = ff + r * CF2.imag, sum2 = CF2.real;
+        RFLOAT C = 1, D = half_x * -half_x, delta1, delta2;
         int i = 1;
-        for (; i < MAXIT; i++) {
-            ff = (i * ff + p + q) / (i * i - xmu2);
-            c *= d / i;
-            p /= i - xmu;
-            q /= i + xmu;
-            RFLOAT del1 = c * (ff + r * q);
-            RFLOAT del2 = c * p - i * del1;
-            sum1 += del1;
-            sum2 += del2;
-            if (fabs(del1) < EPS * (1 + fabs(sum1))) break;
+        for (; i != MAXIT; i++) {
+            ff = (i * ff + CF2.real + CF2.imag) / (i * i - mumu);
+            C *= D / i;
+            CF2.real /= i - mu;
+            CF2.imag /= i + mu;
+            sum1 += delta1 = C * (ff + r * CF2.imag);
+            sum2 += delta2 = C * CF2.real - i * delta1;
+            if (fabs(delta1) < EPS + EPS * fabs(sum1)) break;
         }
         if (i == MAXIT)
-            nrerror("bessy series failed to converge");
+            nr::error("bessy series failed to converge");
 
-        rymu = -sum1;
-        ry1  = -sum2 * two_ix;
-        const RFLOAT rymup = xmu * ix * rymu - ry1;
-        rjmu = w / (rymup - f * rymu);
+        Ymu = -sum1;
+        ry1 = -sum2 * two_ix;
+        const RFLOAT Ymup = mu * ix * Ymu - ry1;
+        Jmu = w / (Ymup - fmu * Ymu);
     } else {
-        RFLOAT a = 0.25 - xmu2;
-        const RFLOAT br = 2 * x;
-        RFLOAT bi = 2;
-        RFLOAT p = -0.5 * ix, q = 1;
-        const RFLOAT fact = a * ix / (p * p + q * q);
-        RFLOAT cr = br + q * fact;
-        RFLOAT ci = bi + p * fact;
-        RFLOAT den = br * br + bi * bi;
-        RFLOAT dr = +br / den;
-        RFLOAT di = -bi / den;
-        {
-            const RFLOAT dlr = cr * dr - ci * di;
-            const RFLOAT dli = cr * di + ci * dr;
-            const RFLOAT new_p = p * dlr - q * dli;
-            const RFLOAT new_q = p * dli + q * dlr;
-            p = new_p, q = new_q;
-        }
+        /** Evaluate CF2 by modified Lentz's method
+         *
+         * p + iq = (Jnu' - iYnu') / (Jnu - iYnu)
+         *        = -1/2x + i + i/x * (1/2) ** 2 - nu ** 2 /
+         *          2 * (x +  i)    + (3/2) ** 2 - nu ** 2 /
+         *          2 * (x + 2i)
+         * 
+         * The partial numerators are 1/4 - nu**2 + j(j + 1) for j in 1, 2, 3...
+         * The partial denominators are 2 * (x + ij) for j in 1, 2, 3...
+         */
+        RFLOAT a = 0.25 - mumu;
+        Complex b {2 * x, 2};
+        Complex CF2 {-0.5 * ix, 1};
+        Complex C = b + a * ix * Complex(0, 1) * CF2.conj() / CF2.norm();
+        Complex D = b.conj() / b.norm();
+        Complex delta = C * D;
+        CF2 *= delta;
         int i = 1;
-        for (; i < MAXIT; i++) {
-            a  += 2 * i;
-            bi += 2;
+        for (; i != MAXIT; i++) {
+            a      += 2 * i;
+            b.imag += 2;
 
-            dr = a * dr + br;
-            di = a * di + bi;
-            if (fabs(dr) + fabs(di) < FPMIN) dr = FPMIN;
+            // C = b + a / C
+            C = C.conj() / C.norm();
+            C = at_least(b + a * C, FPMIN);
 
-            const RFLOAT fact = a / (cr * cr + ci * ci);
+            // D = 1 / (b + a * D)
+            D = at_least(b + a * D, FPMIN);
+            D = D.conj() / D.norm();
 
-            cr = br + cr * fact;
-            ci = bi - ci * fact;
-            if (fabs(cr) + fabs(ci) < FPMIN) cr = FPMIN;
-
-            const RFLOAT den = dr * dr + di * di;
-            dr /= +den;
-            di /= -den;
-            const RFLOAT dlr = cr * dr - ci * di;
-            const RFLOAT dli = cr * di + ci * dr;
-            const RFLOAT new_p = p * dlr - q * dli;
-            const RFLOAT new_q = p * dli + q * dlr;
-            p = new_p, q = new_q;
-            if (fabs(dlr - 1) + fabs(dli) < EPS) break;
+            CF2 *= delta = C * D;
+            if (fabs(delta.real - 1) + fabs(delta.imag) < EPS) break;
         }
         if (i == MAXIT)
-            nrerror("cf2 failed in besseljy");
-        const RFLOAT gam = (p - f) / q;
-        rjmu = copysign(sqrt(w / ((p - f) * gam + q)), rjl);
-        rymu = rjmu * gam;
-        RFLOAT rymup = rymu * (p + q / gam);
-        ry1 = xmu * ix * rymu - rymup;
+            nr::error("cf2 failed in besseljy");
+
+        const RFLOAT gam = (CF2.real - fmu) / CF2.imag;
+        Jmu = copysign(sqrt(w / (CF2.imag * (gam * gam + 1))), rjl);
+        Ymu = Jmu * gam;
+        const RFLOAT Ymup = Ymu * (CF2.real + CF2.imag / gam);
+        ry1 = mu * ix * Ymu - Ymup;
     }
     {
-    const RFLOAT fact = rjmu / rjl;
-    *rj  = rjl1 * fact;
-    *rjp = rjp1 * fact;
+    const RFLOAT fact = Jmu / rjl;
+    *J  = rjl1 * fact;
+    *Jp = rjp1 * fact;
+    // Upward recurrence of Ynu
     for (int i = 1; i <= nl; i++) {
-        const RFLOAT new_ry1 = (xmu + i) * two_ix * ry1 - rymu;
-        rymu = ry1;
+        const RFLOAT new_ry1 = (mu + i) * two_ix * ry1 - Ymu;
+        Ymu = ry1;
         ry1  = new_ry1;
     }
-    *ry = rymu;
-    *ryp = nu * ix * rymu - ry1;
+    *Y = Ymu;
+    *Yp = nu * ix * Ymu - ry1;
     }
 }
 
@@ -394,7 +405,7 @@ RFLOAT gammln(RFLOAT xx) {
 RFLOAT betai(RFLOAT a, RFLOAT b, RFLOAT x) {
     RFLOAT bt;
     if (x < 0.0 || x > 1.0)
-        nrerror("Bad x in routine BETAI");
+        nr::error("Bad x in routine BETAI");
     if (x == 0.0 || x == 1.0)
         bt = 0.0;
     else
@@ -434,7 +445,7 @@ RFLOAT betacf(RFLOAT a, RFLOAT b, RFLOAT x) {
         if (fabs(az - aold) < (EPS*fabs(az)))
             return az;
     }
-    nrerror("a or b too big, or ITMAX too small in BETACF");
+    nr::error("a or b too big, or ITMAX too small in BETACF");
     return 0;
 }
 #undef ITMAX
@@ -590,7 +601,7 @@ RFLOAT brent(
             }
         }
     }
-    nrerror("Too many iterations in brent");
+    nr::error("Too many iterations in brent");
     *xmin = x;
     free_Tvector(xt, 1, ncom);
     return fx;
@@ -698,7 +709,7 @@ void powell(
             return;
         }
         if (iter == ITMAX)
-            nrerror("Too many iterations in routine POWELL");
+            nr::error("Too many iterations in routine POWELL");
         for (j = 1; j <= n; j++) {
             ptt[j] = 2.0 * p[j] - pt[j];
             xit[j] =       p[j] - pt[j];
@@ -1018,7 +1029,7 @@ void gser(RFLOAT *gamser, RFLOAT a, RFLOAT x, RFLOAT *gln) {
     *gln = gammln(a);
     if (x <= 0.0) {
         if (x < 0.0)
-            nrerror("x less than 0 in routine gser");
+            nr::error("x less than 0 in routine gser");
         *gamser = 0.0;
         return;
     } else {
@@ -1033,7 +1044,7 @@ void gser(RFLOAT *gamser, RFLOAT a, RFLOAT x, RFLOAT *gln) {
                 return;
             }
         }
-        nrerror("a too large, ITMAX too small in routine gser");
+        nr::error("a too large, ITMAX too small in routine gser");
         return;
     }
 }
@@ -1069,7 +1080,7 @@ void gcf(RFLOAT *gammcf, RFLOAT a, RFLOAT x, RFLOAT *gln) {
             break;
     }
     if (i > ITMAX)
-        nrerror("a too large, ITMAX too small in gcf");
+        nr::error("a too large, ITMAX too small in gcf");
     *gammcf = exp(-x + a * log(x) - (*gln)) * h;
 }
 #undef ITMAX
@@ -1080,7 +1091,7 @@ RFLOAT gammp(RFLOAT a, RFLOAT x) {
     RFLOAT gamser, gammcf, gln;
 
     if (x < 0.0 || a <= 0.0)
-        nrerror("Invalid arguments in routine gammp");
+        nr::error("Invalid arguments in routine gammp");
     if (x < a + 1.0) {
         gser(&gamser, a, x, &gln);
         return gamser;

@@ -59,7 +59,11 @@
 //@{
 
 // Utilities -----------------------------------------------------------------
-void nrerror(const char error_text[]);
+namespace nr {
+
+    void error(const char error_text[]);
+
+}
 
 // Bessel functions -----------------------------------------------------------
 RFLOAT bessj0(RFLOAT x);
@@ -127,7 +131,7 @@ void ludcmp(T *a, int n, int *indx, T *d) {
             if ((temp = (T)fabs((RFLOAT)a[i * n + j])) > big)
                 big = temp;
         if (big == (T)0.0)
-            nrerror("Singular matrix in routine LUDCMP");
+            nr::error("Singular matrix in routine LUDCMP");
         vv[i] = (T)1.0 / big;
     }
     for (j = 1; j <= n; j++) {
@@ -222,7 +226,7 @@ void gaussj(T *a, int n, T *b, int m) {
                             icol = k;
                         }
                     } else if (ipiv[k] > 1) {
-                        nrerror("GAUSSJ: Singular Matrix-1");
+                        nr::error("GAUSSJ: Singular Matrix-1");
                     }
                 }
         ++(ipiv[icol]);
@@ -233,7 +237,7 @@ void gaussj(T *a, int n, T *b, int m) {
         indxr[i] = irow;
         indxc[i] = icol;
         if (a[icol * n + icol] == 0.0)
-            nrerror("GAUSSJ: Singular Matrix-2");
+            nr::error("GAUSSJ: Singular Matrix-2");
         pivinv = 1.0f / a[icol * n + icol];
         a[icol * n + icol] = (T)1;
         for (l = 1; l <= n; l++)
