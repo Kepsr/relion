@@ -102,20 +102,9 @@ const double PI = 3.14159265358979323846;
 
 /// @name Numerical functions
 //@{
-/** Absolute value
- *
- * Valid for any numeric type (int, short, float, etc).
- *
- * @code
- * magnitude = ABS(x);
- * @endcode
- */
-#ifndef ABS
-#define ABS(x) ((x) >= 0 ? (x) : -(x))
-#endif
 
 inline int make_even(int n) {
-    return n - n % 2;
+    return n - n % 2;  // n ^ 1;
 }
 
 inline float sinc(float theta) {

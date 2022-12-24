@@ -65,19 +65,14 @@ void fitStraightLine(
     // slope = xx_xy / ss_xx
     // intercept = ave_y - slope * ave_x
     // corr_coeff = ss_xy^2 / (ss_xx * ss_yy)
-    RFLOAT ss_xy = 0.0;
-    RFLOAT ss_xx = 0.0;
-    RFLOAT ss_yy = 0.0;
-    RFLOAT ave_x = 0.0;
-    RFLOAT ave_y = 0.0;
-    RFLOAT sum_w = 0.0;
-    for (int i = 0; i < points.size(); i++) {
-        ave_x += points[i].w * points[i].x;
-        ave_y += points[i].w * points[i].y;
-        sum_w += points[i].w;
-        ss_xx += points[i].w * points[i].x * points[i].x;
-        ss_yy += points[i].w * points[i].y * points[i].y;
-        ss_xy += points[i].w * points[i].x * points[i].y;
+    RFLOAT ss_xy = 0, ss_xx = 0, ss_yy = 0, ave_x = 0, ave_y = 0, sum_w = 0;
+    for (auto const& point: points) {
+        ave_x += point.w * point.x;
+        ave_y += point.w * point.y;
+        sum_w += point.w;
+        ss_xx += point.w * point.x * point.x;
+        ss_yy += point.w * point.y * point.y;
+        ss_xy += point.w * point.x * point.y;
     }
     ave_x /= sum_w;
     ave_y /= sum_w;
@@ -85,8 +80,8 @@ void fitStraightLine(
     ss_yy -= sum_w * ave_y * ave_y;
     ss_xy -= sum_w * ave_x * ave_y;
 
-    //std::cerr << " ss_xx= " << ss_xx << " ss_yy= " << ss_yy << " ss_xy= " << ss_xy << std::endl;
-    //std::cerr << " sum_w= " << sum_w << " ave_x= " << ave_x << " ave_y= " << ave_y << std::endl;
+    // std::cerr << " ss_xx= " << ss_xx << " ss_yy= " << ss_yy << " ss_xy= " << ss_xy << std::endl;
+    // std::cerr << " sum_w= " << sum_w << " ave_x= " << ave_x << " ave_y= " << ave_y << std::endl;
     if (ss_xx > 0.0) {
         slope = ss_xy / ss_xx;
         intercept = ave_y - slope * ave_x;
@@ -100,27 +95,18 @@ void fitLeastSquaresPlane(
     const std::vector<fit_point3D> &points,
     RFLOAT &plane_a, RFLOAT &plane_b, RFLOAT &plane_c
 ) {
-    RFLOAT D = 0;
-    RFLOAT E = 0;
-    RFLOAT F = 0;
-    RFLOAT G = 0;
-    RFLOAT H = 0;
-    RFLOAT I = 0;
-    RFLOAT J = 0;
-    RFLOAT K = 0;
-    RFLOAT L = 0;
-    RFLOAT W2 = 0;
-    for (int i = 0; i < points.size(); i++) {
-        W2 = points[i].w * points[i].w;
-        D += points[i].x * points[i].x * W2 ;
-        E += points[i].x * points[i].y * W2 ;
-        F += points[i].x * W2;
-        G += points[i].y * points[i].y * W2 ;
-        H += points[i].y * W2;
+    RFLOAT D = 0, E = 0, F = 0, G = 0, H = 0, I = 0, J = 0, K = 0, L = 0, W2 = 0;
+    for (auto const& point: points) {
+        W2 = point.w * point.w;
+        D += point.x * point.x * W2 ;
+        E += point.x * point.y * W2 ;
+        F += point.x * W2;
+        G += point.y * point.y * W2 ;
+        H += point.y * W2;
         I += 1 * W2 ;
-        J += points[i].x * points[i].z * W2 ;
-        K += points[i].y * points[i].z * W2 ;
-        L += points[i].z * W2;
+        J += point.x * point.z * W2 ;
+        K += point.y * point.z * W2 ;
+        L += point.z * W2;
     }
 
     RFLOAT denom = F * F * G - 2 * E * F * H + D * H * H + E * E * I - D * G * I;
@@ -176,26 +162,25 @@ RFLOAT kaiser_value(RFLOAT r, RFLOAT a, RFLOAT alpha, int m) {
 
 /* Line integral through a blob -------------------------------------------- */
 /* Value of line integral through Kaiser-Bessel radial function
-   (n >=2 dimensions) at distance s from center of function.
+   (n >= 2 dimensions) at distance s from center of function.
    Parameter m = 0, 1, or 2. */
 RFLOAT kaiser_proj(RFLOAT s, RFLOAT a, RFLOAT alpha, int m) {
     RFLOAT sda = s / a;
-    RFLOAT sdas = sda * sda;
-    RFLOAT w = 1.0 - sdas;
-    if (w <= 1.0e-10) return 0.0;
+    RFLOAT w = 1 - sda * sda;
+    if (w <= 1e-10) return 0;
     RFLOAT arg = alpha * sqrt(w);
     switch (m) {
 
         case 0:
-        return 2.0 * a * (alpha == 0.0 ? sqrt(w) :
+        return 2 * a * (alpha == 0 ? sqrt(w) :
             sinh(arg) / bessi0(alpha / alpha));
 
         case 1:
-        return 2.0 * a * (alpha == 0.0 ? w * sqrt(w) * 2.0 / 3.0 :
+        return 2 * a * (alpha == 0 ? w * sqrt(w) * 2.0 / 3.0 :
             sqrt(w) * (cosh(arg) - sinh(arg) / arg) / bessi1(alpha) / alpha);
 
         case 2:
-        return 2.0 * a * (alpha == 0.0 ? w * w * sqrt(w) * 8.0 / 15.0 :
+        return 2 * a * (alpha == 0 ? w * w * sqrt(w) * 8.0 / 15.0 :
             w * ((3.0 / (arg * arg) + 1.0) * sinh(arg) - 3.0 / arg * cosh(arg)) / bessi2(alpha) / alpha);
 
         default:
@@ -206,17 +191,18 @@ RFLOAT kaiser_proj(RFLOAT s, RFLOAT a, RFLOAT alpha, int m) {
 
 /* Fourier value of a blob ------------------------------------------------- */
 RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m) {
-    RFLOAT C = 2.0 * PI * a * w;  // Circumference of a circle of radius a * w
-    RFLOAT sigma = sqrt(abs(alpha * alpha - C * C));
+    const RFLOAT two_pi = 2 * PI;
+    const RFLOAT C = two_pi * a * w;  // Circumference of a circle of radius a * w
+    const RFLOAT sigma = sqrt(abs(alpha * alpha - C * C));
     switch (m) {
 
         case 2: 
-        return pow(2.0 * PI, 1.5) * pow(a, 3.0) * pow(alpha, 2.0)
+        return pow(two_pi, 1.5) * pow(a, 3) * pow(alpha, 2)
             * (C > alpha ? bessj3_5(sigma) : bessi3_5(sigma))
             / (bessi0(alpha) * pow(sigma, 3.5));
 
         case 0:
-        return pow(2.0 * PI, 1.5) * pow(a, 3.0)
+        return pow(two_pi, 1.5) * pow(a, 3)
             * (C > alpha ? bessj1_5(sigma) : bessi1_5(sigma))
             / (bessi0(alpha) * pow(sigma, 1.5));
 
@@ -228,14 +214,14 @@ RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m) {
 
 /* Volume integral of a blob ----------------------------------------------- */
 RFLOAT basvolume(RFLOAT a, RFLOAT alpha, int m, int n) {
-    RFLOAT hn = 0.5 * n;
-    RFLOAT tpi = 2.0 * PI;
+    const RFLOAT half_n = 0.5 * n;
+    const RFLOAT two_pi = 2 * PI;
 
     return alpha == 0.0 ? (
         n % 2 == 0 ? in_zeroarg(n / 2 + m) : inph_zeroarg(n / 2 + m)
-    ) * pow(tpi, hn) / in_zeroarg(m) : (
+    ) * pow(two_pi, half_n) / in_zeroarg(m) : (
         n % 2 == 0 ? i_n(n / 2 + m, alpha) : i_nph(n / 2 + m, alpha)
-    ) * pow(tpi / alpha, hn) / i_n(m, alpha) * pow(a, (RFLOAT) n);
+    ) * pow(two_pi / alpha, half_n) / i_n(m, alpha) * pow(a, (RFLOAT) n);
 }
 
 /* Bessel function I_n (x),  n = 0, 1, 2, ...
@@ -243,7 +229,7 @@ RFLOAT basvolume(RFLOAT a, RFLOAT alpha, int m, int n) {
 RFLOAT i_n(int n, RFLOAT x) {
     if (n == 0)   return bessi0(x);
     if (n == 1)   return bessi1(x);
-    if (x == 0.0) return 0.0;
+    if (x == 0) return 0;
     RFLOAT i_ns1 = bessi0(x);
     RFLOAT i_n   = bessi1(x);
     for (int i = 1; i < n; i++) {
@@ -256,8 +242,8 @@ RFLOAT i_n(int n, RFLOAT x) {
 
 /*.....Bessel function I_(n+1/2) (x),  n = 0, 1, 2, ..........................*/
 RFLOAT i_nph(int n, RFLOAT x) {
-    if (x == 0.0) return 0.0;
-    RFLOAT r2dpix = sqrt(2.0 / (PI * x));
+    if (x == 0) return 0;
+    RFLOAT r2dpix = sqrt(2 / (PI * x));
     RFLOAT i_ns1 = r2dpix * cosh(x);
     RFLOAT i_n   = r2dpix * sinh(x);
     for (int i = 1; i <= n; i++) {
@@ -270,7 +256,7 @@ RFLOAT i_nph(int n, RFLOAT x) {
 
 /*....Limit (z->0) of (1/z)^n I_n(z)..........................................*/
 RFLOAT in_zeroarg(int n) {
-    RFLOAT fact = 1.0;
+    RFLOAT fact = 1;
     for (int i = 1; i <= n; i++) {
         fact *= 0.5 / i;
     }
@@ -279,11 +265,11 @@ RFLOAT in_zeroarg(int n) {
 
 /*.......Limit (z->0) of (1/z)^(n+1/2) I_(n+1/2) (z)..........................*/
 RFLOAT inph_zeroarg(int n) {
-    RFLOAT fact = 1.0;
+    RFLOAT fact = 1;
     for (int i = 1; i <= n; i++) {
-        fact *= 1.0 / (2 * i + 1.0);
+        fact *= 1 / RFLOAT(2 * i + 1);
     }
-    return fact * sqrt(2.0 / PI);
+    return fact * sqrt(2 / PI);
 }
 
 /* Zero freq --------------------------------------------------------------- */
@@ -312,7 +298,7 @@ RFLOAT tstudent1D(RFLOAT x, RFLOAT df, RFLOAT sigma, RFLOAT mu) {
     RFLOAT t = (x - mu) / sigma;
     RFLOAT norm = exp(gammln((df + 1.0) / 2.0) - gammln(df / 2.0)) 
         / (sigma * sqrt(df * PI));  // Not sure that sigma should be there
-    return norm * pow(1 + t * t / df, -(df + 1.0) / 2.0);
+    return norm * pow(1 + t * t / df, -(df + 1) / 2.0);
 }
 
 RFLOAT gaussian2D(

@@ -150,21 +150,21 @@ RFLOAT bessi1(RFLOAT x)
 
 /* General Bessel functions ------------------------------------------------ */
 RFLOAT chebev(RFLOAT a, RFLOAT b, const RFLOAT c[], int m, RFLOAT x) {
-    if ((x - a) * (x - b) > 0.0)
+    if ((x - a) * (x - b) > 0)
         nr::error("x not in range in routine chebev");
 
     const RFLOAT y = (2.0 * x - a - b) / (b - a);
-    const RFLOAT two_y = 2.0 * y;
-    RFLOAT d = 0.0, dd = 0.0;
+    const RFLOAT two_y = 2 * y;
+    RFLOAT d = 0, dd = 0, sv;
     for (int j = m - 1; j >= 1; j--) {
-        RFLOAT sv = d;
-        d = two_y * d - dd + c[j];
+        sv = d;
+        d  = two_y * d - dd + c[j];
         dd = sv;
     }
     return y * d - dd + 0.5 * c[0];
 }
 
-void beschb(RFLOAT x, RFLOAT *gam1, RFLOAT *gam2, RFLOAT *gampl, RFLOAT *gammi) {
+void beschb(RFLOAT x, RFLOAT& gam1, RFLOAT& gam2, RFLOAT& gampl, RFLOAT& gammi) {
     static const RFLOAT c1[] = {
         -1.142022680371172e0, 6.516511267076e-3,
         3.08709017308e-4, -3.470626964e-6, 6.943764e-9,
@@ -176,11 +176,11 @@ void beschb(RFLOAT x, RFLOAT *gam1, RFLOAT *gam2, RFLOAT *gampl, RFLOAT *gammi) 
         2.42310e-10, -1.70e-13, -1.0e-15
     };
     const int NUSE1 = 5, NUSE2 = 5;
-    RFLOAT xx = 8.0 * x * x - 1.0;
-    *gam1 = chebev(-1.0, 1.0, c1, NUSE1, xx);
-    *gam2 = chebev(-1.0, 1.0, c2, NUSE2, xx);
-    *gampl = *gam2 - x * (*gam1);
-    *gammi = *gam2 + x * (*gam1);
+    RFLOAT xx = 8 * x * x - 1;
+    gam1 = chebev(-1, 1, c1, NUSE1, xx);
+    gam2 = chebev(-1, 1, c2, NUSE2, xx);
+    gampl = gam2 - x * (gam1);
+    gammi = gam2 + x * (gam1);
 }
 
 RFLOAT inline at_least(RFLOAT x, RFLOAT min) {
@@ -191,19 +191,18 @@ Complex inline at_least(Complex x, RFLOAT min) {
     return fabs(x.real) + fabs(x.imag) < min ? Complex(min, x.imag) : x;
 }
 
-void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *J, RFLOAT *Y, RFLOAT *Jp, RFLOAT *Yp) {
+void besseljy(RFLOAT x, RFLOAT nu, RFLOAT& J, RFLOAT& Y, RFLOAT& Jp, RFLOAT& Yp) {
     if (x <= 0.0 || nu < 0.0)
         nr::error("bad arguments in besseljy");
     const int MAXIT = 10000;
-    const RFLOAT XMIN = 2;
-    const RFLOAT EPS = std::numeric_limits<RFLOAT>::epsilon(), FPMIN = 1e-30;
-    const int nl = x < XMIN ? (int) (nu + 0.5) : std::max(0, (int) (nu - x + 1.5));
+    const RFLOAT XMIN = 2, EPS = std::numeric_limits<RFLOAT>::epsilon(), FPMIN = 1e-30;
+    const int nl = x < XMIN ? nu + 0.5 : std::max<int>(0, nu - x + 1.5);
     // nl is the number of downward recurrences of the J's and upward recurrences of Y's.
     // For x < XMIN, mu lies in the interval (-0.5, +0.5).
     // For x >= XMIN, it is chosen so that x is greater than the turning point.
     const RFLOAT mu = nu - nl, mumu = mu * mu;
     const RFLOAT ix = 1 / x, two_ix = 2 / x, half_x = x / 2;
-    const RFLOAT w = two_ix / PI;  // The Wronskian
+    const RFLOAT W = two_ix / PI;  // The Wronskian
 
     /** Evaluate CF1 by modified Lentz's method
      * 
@@ -234,31 +233,30 @@ void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *J, RFLOAT *Y, RFLOAT *Jp, RFLOAT *Yp)
     }
 
     // Initialize Jnu and J'nu for downward recurrence.
-    RFLOAT rjl = nr_sign_changes % 2 ? -FPMIN : FPMIN, rjpl = rjl * CF1;
+    RFLOAT Jl = nr_sign_changes % 2 ? -FPMIN : FPMIN, Jpl = Jl * CF1;
     // Store values for later rescaling.
-    const RFLOAT rjl1 = rjl, rjp1 = rjpl;
-    RFLOAT fact = nu * ix;
+    const RFLOAT Jl1 = Jl, Jp1 = Jpl;
     // Downward recurrence
+    RFLOAT nix = nu * ix, Jll;  // From nu/x to mu/x
     for (int i = 0; i < nl; i++) {
-        const RFLOAT new_rjl = fact * rjl + rjpl;
-        fact -= ix;
-        rjpl = new_rjl * fact - rjl;
-        rjl  = new_rjl;
+        Jll = nix * Jl + Jpl;  // J{nu-1} = nu/x J{nu} + J'{nu}
+        Jpl = Jll * (nix -= ix) - Jl;  // J'{nu-1} = (nu/x - 1/x) J{nu-1} - J{nu}
+        Jl  = Jll;
     }
-    if (rjl == 0) rjl = EPS;
-    const RFLOAT fmu = rjpl / rjl;  // Now have unnormalized Jmu and J'mu
-    RFLOAT Jmu, ry1, Ymu;
+    if (Jl == 0) Jl = EPS;
+    const RFLOAT fmu = Jpl / Jl;  // Now have unnormalized J{mu} and J'{mu}
+    RFLOAT Jmu, Ymu, Y1;
     if (x < XMIN) {  // Use series
         const RFLOAT pimu = PI * mu;
-        const RFLOAT isinc_pimu = fabs(pimu) < EPS ? 1.0 : pimu / sin(pimu);  // 1 / sinc(pimu)
+        const RFLOAT isinc_pimu = fabs(pimu) < EPS ? 1 : pimu / sin(pimu);  // 1 / sinc(pimu)
         const RFLOAT half_pimu = 0.5 * pimu;
-        const RFLOAT sinc_half_pimu = fabs(half_pimu) < EPS ? 1.0 : sin(half_pimu) / half_pimu;  // sinc(half_pimu)
+        const RFLOAT sinc_half_pimu = fabs(half_pimu) < EPS ? 1 : sin(half_pimu) / half_pimu;  // sinc(half_pimu)
         const RFLOAT log_two_over_x = log(two_ix);
         const RFLOAT e = mu * log_two_over_x;
-        const RFLOAT sinch_e = fabs(e) < EPS ? 1.0 : sinh(e) / e;  // sinch(e)
+        const RFLOAT sinch_e = fabs(e) < EPS ? 1 : sinh(e) / e;  // sinch(e)
 
         RFLOAT gam1, gam2, gammi, gampl;
-        beschb(mu, &gam1, &gam2, &gampl, &gammi);
+        beschb(mu, gam1, gam2, gampl, gammi);
 
         RFLOAT ff = 2 / PI * isinc_pimu * (gam1 * cosh(e) + gam2 * sinch_e * log_two_over_x);
         const RFLOAT expe = exp(e);
@@ -280,9 +278,9 @@ void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *J, RFLOAT *Y, RFLOAT *Jp, RFLOAT *Yp)
             nr::error("bessy series failed to converge");
 
         Ymu = -sum1;
-        ry1 = -sum2 * two_ix;
-        const RFLOAT Ymup = mu * ix * Ymu - ry1;
-        Jmu = w / (Ymup - fmu * Ymu);
+        Y1 = -sum2 * two_ix;
+        const RFLOAT Ymup = mu * ix * Ymu - Y1;
+        Jmu = W / (Ymup - fmu * Ymu);
     } else {
         /** Evaluate CF2 by modified Lentz's method
          *
@@ -291,28 +289,21 @@ void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *J, RFLOAT *Y, RFLOAT *Jp, RFLOAT *Yp)
          *          2 * (x +  i)    + (3/2) ** 2 - nu ** 2 /
          *          2 * (x + 2i)
          * 
-         * The partial numerators are 1/4 - nu**2 + j(j + 1) for j in 1, 2, 3...
+         * The partial numerators are 1/4 - nu**2 + j**2 - j for j in 1, 2, 3...
          * The partial denominators are 2 * (x + ij) for j in 1, 2, 3...
          */
-        RFLOAT a = 0.25 - mumu;
-        Complex b {2 * x, 2};
-        Complex CF2 {-0.5 * ix, 1};
-        Complex C = b + a * ix * Complex(0, 1) * CF2.conj() / CF2.norm();
-        Complex D = b.conj() / b.norm();
-        Complex delta = C * D;
-        CF2 *= delta;
+        Complex CF2 (-0.5 * ix, 1);
+        RFLOAT  a = 0.25 - mumu;
+        Complex b (2 * x, 2);
+        Complex C = b + a * ix * Complex(0, 1) / CF2, D = 1 / b, delta;
+        CF2 *= delta = C * D;
         int i = 1;
         for (; i != MAXIT; i++) {
             a      += 2 * i;
             b.imag += 2;
 
-            // C = b + a / C
-            C = C.conj() / C.norm();
-            C = at_least(b + a * C, FPMIN);
-
-            // D = 1 / (b + a * D)
-            D = at_least(b + a * D, FPMIN);
-            D = D.conj() / D.norm();
+            C =     at_least(b + a / C, FPMIN);  // C =      b + a / C
+            D = 1 / at_least(b + a * D, FPMIN);  // D = 1 / (b + a * D)
 
             CF2 *= delta = C * D;
             if (fabs(delta.real - 1) + fabs(delta.imag) < EPS) break;
@@ -320,65 +311,65 @@ void besseljy(RFLOAT x, RFLOAT nu, RFLOAT *J, RFLOAT *Y, RFLOAT *Jp, RFLOAT *Yp)
         if (i == MAXIT)
             nr::error("cf2 failed in besseljy");
 
-        const RFLOAT gam = (CF2.real - fmu) / CF2.imag;
-        Jmu = copysign(sqrt(w / (CF2.imag * (gam * gam + 1))), rjl);
-        Ymu = Jmu * gam;
-        const RFLOAT Ymup = Ymu * (CF2.real + CF2.imag / gam);
-        ry1 = mu * ix * Ymu - Ymup;
+        const RFLOAT gamma = (CF2.real - fmu) / CF2.imag;
+        Jmu = copysign(sqrt(W / (CF2.imag * (gamma * gamma + 1))), Jl);
+        Ymu = Jmu * gamma;
+        const RFLOAT Ymup = Ymu * (CF2.real + CF2.imag / gamma);
+        Y1 = mu * ix * Ymu - Ymup;
     }
-    {
-    const RFLOAT fact = Jmu / rjl;
-    *J  = rjl1 * fact;
-    *Jp = rjp1 * fact;
-    // Upward recurrence of Ynu
+    const RFLOAT scale = Jmu / Jl;
+    // Scale original J{nu} and J'{nu}
+    J  = Jl1 * scale;
+    Jp = Jp1 * scale;
+    // Upward recurrence of Y{nu}
+    RFLOAT Y2;
     for (int i = 1; i <= nl; i++) {
-        const RFLOAT new_ry1 = (mu + i) * two_ix * ry1 - Ymu;
-        Ymu = ry1;
-        ry1  = new_ry1;
+        Y2  = (mu + i) * two_ix * Y1 - Ymu;  // Y{nu+1} = 2 nu/x Y{nu} - Y{nu-1}
+        Ymu = Y1;
+        Y1  = Y2;
     }
-    *Y = Ymu;
-    *Yp = nu * ix * Ymu - ry1;
-    }
+    Y  = Ymu;
+    Yp = nu * ix * Ymu - Y1;  // Y'{nu} = nu/x Y{nu} - Y{nu+1}
 }
 
 //............................................................................
 RFLOAT bessi0_5(RFLOAT x) {
-    return (x == 0) ? 0 : sqrt(2 / (PI*x))*sinh(x);
+    return x == 0 ? 0 : sqrt(2 / (PI * x)) * sinh(x);
 }
 
 RFLOAT bessi1_5(RFLOAT x) {
-    return (x == 0) ? 0 : sqrt(2 / (PI*x))*(cosh(x) - sinh(x) / x);
+    return x == 0 ? 0 : sqrt(2 / (PI * x)) * (cosh(x) - sinh(x) / x);
 }
 RFLOAT bessi2(RFLOAT x) {
-    return (x == 0) ? 0 : bessi0(x) - ((2*1) / x) * bessi1(x);
+    return x == 0 ? 0 : bessi0(x) - 2 / x * bessi1(x);
 }
 
 RFLOAT bessi2_5(RFLOAT x) {
-    return (x == 0) ? 0 : bessi0_5(x) - ((2*1.5) / x) * bessi1_5(x);
+    return x == 0 ? 0 : bessi0_5(x) - 3 / x * bessi1_5(x);
 }
 
 RFLOAT bessi3(RFLOAT x) {
-    return (x == 0) ? 0 : bessi1(x) - ((2*2) / x) * bessi2(x);
+    return x == 0 ? 0 : bessi1(x) - 4 / x * bessi2(x);
 }
 
 RFLOAT bessi3_5(RFLOAT x) {
-    return (x == 0) ? 0 : bessi1_5(x) - ((2*2.5) / x) * bessi2_5(x);
+    return x == 0 ? 0 : bessi1_5(x) - 5 / x * bessi2_5(x);
 }
 
 RFLOAT bessi4(RFLOAT x) {
-    return (x == 0) ? 0 : bessi2(x) - ((2*3) / x) * bessi3(x);
+    return x == 0 ? 0 : bessi2(x) - 6 / x * bessi3(x);
 }
 
 RFLOAT bessj1_5(RFLOAT x) {
-    RFLOAT rj, ry, rjp, ryp;
-    besseljy(x, 1.5, &rj, &ry, &rjp, &ryp);
-    return rj;
+    RFLOAT J, Y, Jp, Yp;
+    besseljy(x, 1.5, J, Y, Jp, Yp);
+    return J;
 }
 
 RFLOAT bessj3_5(RFLOAT x) {
-    RFLOAT rj, ry, rjp, ryp;
-    besseljy(x, 3.5, &rj, &ry, &rjp, &ryp);
-    return rj;
+    RFLOAT J, Y, Jp, Yp;
+    besseljy(x, 3.5, J, Y, Jp, Yp);
+    return J;
 }
 
 /* Special functions ------------------------------------------------------- */

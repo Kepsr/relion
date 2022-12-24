@@ -198,6 +198,11 @@ tComplex<T1> operator / (const tComplex<T1>& z, const T2& x) {
     return tComplex<T1>(z.real / x, z.imag / x);
 }
 
+template <class T1, class T2> inline
+tComplex<T1> operator / (const T2& x, const tComplex<T1>& z) {
+    return x * z.conj() / z.norm();
+}
+
 // Dot/inner product
 template <class T> inline
 T dot(const tComplex<T>& z, const tComplex<T>& w) {

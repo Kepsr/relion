@@ -79,7 +79,7 @@ RFLOAT bessi3(RFLOAT x);
 RFLOAT bessi2_5(RFLOAT x);
 RFLOAT bessi3_5(RFLOAT x);
 RFLOAT bessi4(RFLOAT x);
-void besseljy(RFLOAT x, RFLOAT xnu, RFLOAT *rj, RFLOAT *ry, RFLOAT *rjp, RFLOAT *ryp);
+void besseljy(RFLOAT x, RFLOAT xnu, RFLOAT& rj, RFLOAT& ry, RFLOAT& rjp, RFLOAT& ryp);
 
 // Special functions ----------------------------------------------------------
 RFLOAT gammln(RFLOAT xx);
