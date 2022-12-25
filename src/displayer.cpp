@@ -1439,7 +1439,7 @@ int singleViewerCanvas::handle(int ev) {
                 const int dy = postdrag_yc - predrag_yc;
                 const int midx = (postdrag_xc + predrag_xc) / 2;
                 const int midy = (postdrag_yc + predrag_yc) / 2;
-                RFLOAT dist = Pythag(dx, dy) / boxes[0]->scale;
+                RFLOAT dist = std::hypot(dx, dy) / boxes[0]->scale;
                 fl_draw((floatToString(dist) + " pixels").c_str(), midx, midy);
                 // Also write to the screen, in case the text falls outside the screen
                 std::cout << "distance= " << dist << " pixels" << std::endl;

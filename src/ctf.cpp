@@ -46,7 +46,6 @@
 #include "src/args.h"
 #include "src/fftw.h"
 #include <src/jaz/gravis/t2Matrix.h>
-#include "src/numerical_recipes.h" // For Pythag
 
 using namespace gravis;
 

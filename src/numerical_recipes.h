@@ -104,8 +104,6 @@ void powell(RFLOAT *p, RFLOAT *xi, int n, RFLOAT ftol, int &iter,
 
 // Matrix operations ----------------------------------------------------------
 
-RFLOAT Pythag(RFLOAT a, RFLOAT b);
-
 /** Compute numerical derivative
  *
  * https://en.wikipedia.org/wiki/Five-point_stencil

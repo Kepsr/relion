@@ -680,14 +680,14 @@ void CtfHelper::applyWeightEwaldSphereCurvature_noAniso(
     RFLOAT xs = (RFLOAT) orixdim * angpix;
     RFLOAT ys = (RFLOAT) oriydim * angpix;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(result) {
-        RFLOAT x = (RFLOAT) ip / xs;
-        RFLOAT y = (RFLOAT) jp / ys;
+        RFLOAT x = ip / xs;
+        RFLOAT y = jp / ys;
         RFLOAT deltaf = fabs(ctf.getDeltaF(x, y));
-        RFLOAT inv_d = Pythag(x, y);
-        RFLOAT aux = 2.0 * deltaf * ctf.lambda * inv_d / particle_diameter;
-        RFLOAT A = aux > 1.0 ? 0.0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2.0 / PI;
+        RFLOAT inv_d = std::hypot(x, y);
+        RFLOAT aux = 2 * deltaf * ctf.lambda * inv_d / particle_diameter;
+        RFLOAT A = aux > 1 ? 0 : (acos(aux) - aux * sqrt(1 - aux * aux)) * 2 / PI;
         if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));
-        direct::elem(result, i, j) = 0.5 * (A * (2.0 * fabs(ctf.getCTF(x, y)) - 1.0) + 1.0);
+        direct::elem(result, i, j) = 0.5 * (A * (2 * fabs(ctf.getCTF(x, y)) - 1) + 1);
         // Within RELION, sin(chi) is used rather than 2 * sin(chi).
         // Hence the 0.5 above to keep everything on the same scale.
     }

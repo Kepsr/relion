@@ -718,25 +718,6 @@ void powell(
     }
 }
 
-// Used in singular value decomposition (SVD) ---------------------------------
-// https://en.wikipedia.org/wiki/Singular_value_decomposition
-RFLOAT Pythag(RFLOAT a, RFLOAT b) {
-    // Return the hypotenuse length of a right triangle with side lengths a and b.
-    // Pythagoras' theorem: a^2 + b^2 = c^2 => c = sqrt(a^2 + b^2)
-    // The difficulty with the naive implementation sqrt(a * a + b * b) is that x2 or y2 may overflow or underflow.
-    // https://en.wikipedia.org/wiki/Pythagorean_addition#Implementation
-    // The original code was copied from XmippCore's Bilib library:
-    // https://github.com/I2PC/xmippCore/blob/devel/core/bilib/linearalgebra.cc
-    // (btw, c++11 has std::hypot)
-
-    // Don't waste time computing sqrt(0 * 0 + 0 * 0)
-    if (a == 0 && b == 0) return 0;
-
-    RFLOAT greater = fabs(a), lesser = fabs(b);
-    if (greater < lesser) std::swap(greater, lesser);
-    return greater * sqrt(1 + (lesser * lesser) / (greater * greater));
-}
-
 void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
     // https://en.wikipedia.org/wiki/Singular_value_decomposition
     // Decompose a matrix into two square unitary matrice U and V,
@@ -892,7 +873,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                         break;
                     }
                     g = W[i];
-                    RFLOAT h = Pythag(f, g);
+                    RFLOAT h = std::hypot(f, g);
                     W[i] = h;
                     h = 1 / h;
                     c = g * h;
@@ -925,7 +906,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
             g = rv1[nm];
             RFLOAT h = rv1[k];
             RFLOAT f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2 * h * y);
-            g = Pythag(f, 1);
+            g = std::hypot(f, 1);
             f = ((x - z) * (x + z) + h * (y / (f + copysign(fabs(g), f)) - h)) / x;
             RFLOAT c = 1, s = 1;
             for (long j = l; j <= nm; j++) {
@@ -934,7 +915,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                 y = W[i];
                 h = s * g;
                 g = c * g;
-                z = Pythag(f, h);
+                z = std::hypot(f, h);
                 rv1[j] = z;
                 c = f / z;
                 s = h / z;
@@ -948,7 +929,7 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                     V[jj * Columns + j] = x * c + z * s;
                     V[jj * Columns + i] = z * c - x * s;
                 }
-                z = Pythag(f, h);
+                z = std::hypot(f, h);
                 W[j] = z;
                 if (z != 0) {
                     z = 1 / z;

@@ -883,7 +883,7 @@ MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix<RFLOA
 
         for (int j = 0; j <= x_max; j++) {
 
-            // Guaranteed that: Pythag(x, y) < r_max_out
+            // Guaranteed that: std::hypot(x, y) < r_max_out
             // Get logical coordinates in the 3D map
             const auto coords = matmul2_3(Ainv, RFLOAT(j), RFLOAT(y));
             const auto &xp = coords[0];
@@ -1002,7 +1002,7 @@ MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix<RFLO
         const int x_max = floor(sqrt(r_max_out_2 - y * y));
 
         for (int x = 0; x <= x_max; x++) {
-            // Pythag(x, y) guaranteed to be < r_max_out
+            // std::hypot(x, y) guaranteed to be < r_max_out
             const auto coords = matmul2_2(Ainv, RFLOAT(x), RFLOAT(y));
             const auto &xp = coords[0];
             const auto &yp = coords[1];
