@@ -46,6 +46,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <limits>
+#include <algorithm>
 #include "src/complex.h"
 #include "src/numerical_recipes.h"
 
@@ -67,7 +68,7 @@ namespace nr {
 //  Bessel function of the first kind for order 0 (J_{0})
 RFLOAT bessj0(RFLOAT x) {
     const RFLOAT ax = fabs(x);
-    if (ax < 8.0) {
+    if (ax < 8) {
         const RFLOAT x2 = x * x;
         // Polynomial in x2
         return (
@@ -83,14 +84,13 @@ RFLOAT bessj0(RFLOAT x) {
             + x2 * (9.494680718e6
             + x2 * (5.927264853e4
             + x2 * (2.678532712e2
-            + x2 *           1.0
+            + x2
         )))));
     } else {
         const RFLOAT z = 8.0 / ax;
         const RFLOAT z2 = z * z;
         const RFLOAT xx = ax - 0.785398164;  // ax - 45 degrees
-        return sqrt(0.636619772 / ax) * (cos(xx) * (
-            1.0
+        return sqrt(0.636619772 / ax) * (cos(xx) * (1
             + z2 * (-0.1098628627e-2
             + z2 * ( 0.2734510407e-4
             + z2 * (-0.2073370639e-5
@@ -100,7 +100,7 @@ RFLOAT bessj0(RFLOAT x) {
             + z2 * ( 0.1430488765e-3
             + z2 * (-0.6911147651e-5
             + z2 * ( 0.7621095161e-6
-            + z2 * -0.934935152e-7
+            + z2 *  -0.934935152e-7
         )))));
     }
 }
@@ -108,44 +108,60 @@ RFLOAT bessj0(RFLOAT x) {
 //............................................................................
 // Modified Bessel function of the first kind for order 0
 RFLOAT bessi0(RFLOAT x) {
-    RFLOAT y, ax, ans;
-    if ((ax = fabs(x)) < 3.75) {
-        y = x / 3.75;
-        y *= y;
-        ans = 1.0 + y * (3.5156229 + y * (3.0899424 + y * (1.2067492
-                                          + y * (0.2659732 + y * (0.360768e-1 + y * 0.45813e-2)))));
+    RFLOAT ans;
+    const RFLOAT ax = fabs(x);
+    if (ax < 3.75) {
+        const RFLOAT y = (x * x) / (3.75 * 3.75);
+        ans = 1.0 
+            + y * (3.5156229 
+            + y * (3.0899424 
+            + y * (1.2067492
+            + y * (2.659732e-1 
+            + y * (3.60768e-2
+            + y *  4.5813e-3)))));
     } else {
-        y = 3.75 / ax;
-        ans = (exp(ax) / sqrt(ax)) * (0.39894228 + y * (0.1328592e-1
-                                      + y * (0.225319e-2 + y * (-0.157565e-2 + y * (0.916281e-2
-                                                                + y * (-0.2057706e-1 + y * (0.2635537e-1 + y * (-0.1647633e-1
-                                                                                            + y * 0.392377e-2))))))));
+        const RFLOAT y = 3.75 / ax;
+        ans = (exp(ax) / sqrt(ax)) * (0.39894228
+            + y * (+1.328592e-2
+            + y * (+2.25319e-3 
+            + y * (-1.57565e-3
+            + y * (+9.16281e-3
+            + y * (-2.057706e-2
+            + y * (+2.635537e-2
+            + y * (-1.647633e-2
+            + y *  +3.92377e-3))))))));
     }
     return ans;
 }
 
 //............................................................................
-RFLOAT bessi1(RFLOAT x)
-{
-    RFLOAT ax, ans;
-    RFLOAT y;
-    if ((ax = fabs(x)) < 3.75)
-    {
-        y = x / 3.75;
-        y *= y;
-        ans = ax * (0.5 + y * (0.87890594 + y * (0.51498869 + y * (0.15084934
-                               + y * (0.2658733e-1 + y * (0.301532e-2 + y * 0.32411e-3))))));
+RFLOAT bessi1(RFLOAT x) {
+    RFLOAT ans;
+    const RFLOAT ax = fabs(x);
+    if (ax < 3.75) {
+        const RFLOAT y = (x * x) / (3.75 * 3.75);
+        ans = ax * (0.5
+        + y * (0.87890594
+        + y * (0.51498869
+        + y * (0.15084934
+        + y * (0.2658733e-1
+        + y * (0.301532e-2
+        + y *  0.32411e-3))))));
+    } else {
+        const RFLOAT y = 3.75 / ax;
+        ans =       0.2282967e-1
+            + y * (-0.2895312e-1
+            + y * (+0.1787654e-1
+            + y *  -0.420059e-2));
+        ans =       0.39894228
+            + y * (-0.3988024e-1
+            + y * (-0.362018e-2
+            + y * ( 0.163801e-2
+            + y * (-0.1031555e-1
+            + y * ans))));
+        ans *= exp(ax) / sqrt(ax);
     }
-    else
-    {
-        y = 3.75 / ax;
-        ans = 0.2282967e-1 + y * (-0.2895312e-1 + y * (0.1787654e-1
-                                  - y * 0.420059e-2));
-        ans = 0.39894228 + y * (-0.3988024e-1 + y * (-0.362018e-2
-                                + y * (0.163801e-2 + y * (-0.1031555e-1 + y * ans))));
-        ans *= (exp(ax) / sqrt(ax));
-    }
-    return x < 0.0 ? -ans : ans;
+    return copysign(ans, x);
 }
 
 /* General Bessel functions ------------------------------------------------ */
@@ -153,7 +169,7 @@ RFLOAT chebev(RFLOAT a, RFLOAT b, const RFLOAT c[], int m, RFLOAT x) {
     if ((x - a) * (x - b) > 0)
         nr::error("x not in range in routine chebev");
 
-    const RFLOAT y = (2.0 * x - a - b) / (b - a);
+    const RFLOAT y = (2 * x - a - b) / (b - a);
     const RFLOAT two_y = 2 * y;
     RFLOAT d = 0, dd = 0, sv;
     for (int j = m - 1; j >= 1; j--) {
@@ -164,13 +180,13 @@ RFLOAT chebev(RFLOAT a, RFLOAT b, const RFLOAT c[], int m, RFLOAT x) {
     return y * d - dd + 0.5 * c[0];
 }
 
-void beschb(RFLOAT x, RFLOAT& gam1, RFLOAT& gam2, RFLOAT& gampl, RFLOAT& gammi) {
-    static const RFLOAT c1[] = {
+void beschb(RFLOAT x, RFLOAT& gam1, RFLOAT& gam2, RFLOAT& gamma_1add, RFLOAT& gamma_1sub) {
+    static const RFLOAT c1[] {
         -1.142022680371172e0, 6.516511267076e-3,
         3.08709017308e-4, -3.470626964e-6, 6.943764e-9,
         3.6780e-11, -1.36e-13
     };
-    static const RFLOAT c2[] = {
+    static const RFLOAT c2[] {
         1.843740587300906e0, -7.6852840844786e-2,
         1.271927136655e-3, -4.971736704e-6, -3.3126120e-8,
         2.42310e-10, -1.70e-13, -1.0e-15
@@ -179,8 +195,8 @@ void beschb(RFLOAT x, RFLOAT& gam1, RFLOAT& gam2, RFLOAT& gampl, RFLOAT& gammi) 
     RFLOAT xx = 8 * x * x - 1;
     gam1 = chebev(-1, 1, c1, NUSE1, xx);
     gam2 = chebev(-1, 1, c2, NUSE2, xx);
-    gampl = gam2 - x * (gam1);
-    gammi = gam2 + x * (gam1);
+    gamma_1add = gam2 - x * gam1;
+    gamma_1sub = gam2 + x * gam1;
 }
 
 RFLOAT inline at_least(RFLOAT x, RFLOAT min) {
@@ -192,7 +208,7 @@ Complex inline at_least(Complex x, RFLOAT min) {
 }
 
 void besseljy(RFLOAT x, RFLOAT nu, RFLOAT& J, RFLOAT& Y, RFLOAT& Jp, RFLOAT& Yp) {
-    if (x <= 0.0 || nu < 0.0)
+    if (x <= 0 || nu < 0)
         nr::error("bad arguments in besseljy");
     const int MAXIT = 10000;
     const RFLOAT XMIN = 2, EPS = std::numeric_limits<RFLOAT>::epsilon(), FPMIN = 1e-30;
@@ -205,12 +221,12 @@ void besseljy(RFLOAT x, RFLOAT nu, RFLOAT& J, RFLOAT& Y, RFLOAT& Jp, RFLOAT& Yp)
     const RFLOAT W = two_ix / PI;  // The Wronskian
 
     /** Evaluate CF1 by modified Lentz's method
-     * 
+     *
      * J'{nu} / J{nu} = nu / x - J{nu + 1} / J{nu}
      *                = nu / x - 1 /
      *                  2 * (nu + 1) / x - 1 /
      *                  2 * (nu + 2) / x - ...
-     * 
+     *
      * The partial numerators (a) are all -1.
      * The partial denominators (b) are given by 2 * (nu + i) / x for i = 1, 2, 3...
      */
@@ -250,35 +266,47 @@ void besseljy(RFLOAT x, RFLOAT nu, RFLOAT& J, RFLOAT& Y, RFLOAT& Jp, RFLOAT& Yp)
         const RFLOAT pimu = PI * mu;
         const RFLOAT isinc_pimu = fabs(pimu) < EPS ? 1 : pimu / sin(pimu);  // 1 / sinc(pimu)
         const RFLOAT half_pimu = 0.5 * pimu;
-        const RFLOAT sinc_half_pimu = fabs(half_pimu) < EPS ? 1 : sin(half_pimu) / half_pimu;  // sinc(half_pimu)
+        const RFLOAT sinc_half_pimu = fabs(half_pimu) < EPS ? 1 : sin(half_pimu) / half_pimu;
         const RFLOAT log_two_over_x = log(two_ix);
-        const RFLOAT e = mu * log_two_over_x;
-        const RFLOAT sinch_e = fabs(e) < EPS ? 1 : sinh(e) / e;  // sinch(e)
+        /*
+         * sigma = nu ln(2/x)
+         * Gamma{1}(nu) = 1/2nu [ 1/Gamma(1 - nu) - 1/Gamma(1 + nu) ]
+         * Gamma{2}(nu) = 1/2   [ 1/Gamma(1 - nu) + 1/Gamma(1 + nu) ]
+         */
+        const RFLOAT sigma = mu * log_two_over_x;
+        const RFLOAT exp_sigma = exp(sigma);  // (x/2)**-mu
+        const RFLOAT cosh_sigma = cosh(sigma);
+        const RFLOAT sinch_sigma = fabs(sigma) < EPS ? 1 : sinh(sigma) / sigma;
 
-        RFLOAT gam1, gam2, gammi, gampl;
-        beschb(mu, gam1, gam2, gampl, gammi);
+        // Evaluate Gamma{1} and Gamma{2} by Chebyshev expansion for |x| <= 1/2
+        // Also calculates 1/Gamma(1 + x) and 1/Gamma(1 - x)
+        RFLOAT G1, G2, iG1addx, iG1subx;
+        beschb(mu, G1, G2, iG1addx, iG1subx);
 
-        RFLOAT ff = 2 / PI * isinc_pimu * (gam1 * cosh(e) + gam2 * sinch_e * log_two_over_x);
-        const RFLOAT expe = exp(e);
-        const RFLOAT r = PI * half_pimu * sinc_half_pimu * sinc_half_pimu;
-        Complex CF2 = {expe / (gampl * PI), 1 / (expe * gammi * PI)};
-        RFLOAT sum1 = ff + r * CF2.imag, sum2 = CF2.real;
-        RFLOAT C = 1, D = half_x * -half_x, delta1, delta2;
-        int i = 1;
-        for (; i != MAXIT; i++) {
-            ff = (i * ff + CF2.real + CF2.imag) / (i * i - mumu);
-            C *= D / i;
-            CF2.real /= i - mu;
-            CF2.imag /= i + mu;
-            sum1 += delta1 = C * (ff + r * CF2.imag);
-            sum2 += delta2 = C * CF2.real - i * delta1;
-            if (fabs(delta1) < EPS + EPS * fabs(sum1)) break;
+        const RFLOAT r = PI * half_pimu * sinc_half_pimu * sinc_half_pimu;  // 2/nu sin2(nu pi/2)
+        const RFLOAT neg_half_x_sq = half_x * -half_x;
+        RFLOAT f = 2 / PI * isinc_pimu * (cosh_sigma * G1 + sinch_sigma * log_two_over_x * G2);
+        RFLOAT p = exp_sigma / (iG1addx * PI);
+        RFLOAT q = 1 / (exp_sigma * iG1subx * PI);
+        RFLOAT g = f + r * q, h = p, c = 1;
+        RFLOAT S1 = g, S2 = h, delta1, delta2;
+        int k = 1;
+        for (; k != MAXIT; k++) {
+            f = (k * f + p + q) / (k * k - mumu);  // f{k} = k f{k-1} + p{k-1} + q{k-1}
+            p /= k + mu;    // p{k} = p{k-1} / (k - nu)
+            q /= k - mu;    // q{k} = q{k-1} / (k + nu)
+            g = f + r * q;  // g{k} = f{k} + 2/nu sin2(nu pi/2) q{k}
+            h = p - k * g;  // h{k} = p{k} - k g{k}
+            c *= neg_half_x_sq / k;
+            S1 += delta1 = c * g;
+            S2 += delta2 = c * h;
+            if (fabs(delta1) < EPS + EPS * fabs(S1)) break;
         }
-        if (i == MAXIT)
+        if (k == MAXIT)
             nr::error("bessy series failed to converge");
 
-        Ymu = -sum1;
-        Y1 = -sum2 * two_ix;
+        Ymu = -S1;
+        Y1  = -S2 * two_ix;
         const RFLOAT Ymup = mu * ix * Ymu - Y1;
         Jmu = W / (Ymup - fmu * Ymu);
     } else {
@@ -288,7 +316,7 @@ void besseljy(RFLOAT x, RFLOAT nu, RFLOAT& J, RFLOAT& Y, RFLOAT& Jp, RFLOAT& Yp)
          *        = -1/2x + i + i/x * (1/2) ** 2 - nu ** 2 /
          *          2 * (x +  i)    + (3/2) ** 2 - nu ** 2 /
          *          2 * (x + 2i)
-         * 
+         *
          * The partial numerators are 1/4 - nu**2 + j**2 - j for j in 1, 2, 3...
          * The partial denominators are 2 * (x + ij) for j in 1, 2, 3...
          */
@@ -360,221 +388,210 @@ RFLOAT bessi4(RFLOAT x) {
     return x == 0 ? 0 : bessi2(x) - 6 / x * bessi3(x);
 }
 
-RFLOAT bessj1_5(RFLOAT x) {
-    RFLOAT J, Y, Jp, Yp;
-    besseljy(x, 1.5, J, Y, Jp, Yp);
-    return J;
-}
+namespace Bessel {
 
-RFLOAT bessj3_5(RFLOAT x) {
-    RFLOAT J, Y, Jp, Yp;
-    besseljy(x, 3.5, J, Y, Jp, Yp);
-    return J;
+    RFLOAT J(RFLOAT x, RFLOAT nu) {
+        RFLOAT J, Y, Jp, Yp;
+        besseljy(x, nu, J, Y, Jp, Yp);
+        return J;
+    }
+
 }
 
 /* Special functions ------------------------------------------------------- */
 RFLOAT gammln(RFLOAT xx) {
-    RFLOAT x, tmp, ser;
-    static RFLOAT cof[6] = {
+    static RFLOAT const cof[6] {
         76.18009173, -86.50532033, 24.01409822,
         -1.231739516, 0.120858003e-2, -0.536382e-5
     };
-    int j;
 
-    x = xx - 1.0;
-    tmp = x + 5.5;
+    RFLOAT x = xx - 1;
+    RFLOAT tmp = x + 5.5;
     tmp -= (x + 0.5) * log(tmp);
-    ser = 1.0;
-    for (j = 0;j <= 5;j++) {
-        x += 1.0;
+    RFLOAT ser = 1;
+    for (int j = 0; j <= 5; j++) {
+        x += 1;
         ser += cof[j] / x;
     }
-    return -tmp + log(2.50662827465*ser);
+    return -tmp + log(2.50662827465 * ser);
 }
 
 
 RFLOAT betai(RFLOAT a, RFLOAT b, RFLOAT x) {
-    RFLOAT bt;
-    if (x < 0.0 || x > 1.0)
+    if (x < 0 || x > 1)
         nr::error("Bad x in routine BETAI");
-    if (x == 0.0 || x == 1.0)
-        bt = 0.0;
-    else
-        bt = exp(gammln(a + b) - gammln(a) - gammln(b) + a * log(x) + b * log(1.0 - x));
-    if (x < (a + 1.0) / (a + b + 2.0))
+    const RFLOAT bt = x == 0.0 || x == 1 ? 0 :
+        exp(gammln(a + b) - gammln(a) - gammln(b) + a * log(x) + b * log(1 - x));
+    if (x < (a + 1) / (a + b + 2))
         return bt * betacf(a, b, x) / a;
     else
-        return 1.0 - bt * betacf(b, a, 1.0 - x) / b;
+        return 1 - bt * betacf(b, a, 1 - x) / b;
 }
 
-#define ITMAX 100
-#define EPS 3.0e-7
 RFLOAT betacf(RFLOAT a, RFLOAT b, RFLOAT x) {
-    RFLOAT qap, qam, qab, em, tem, d;
-    RFLOAT bz, bm = 1.0, bp, bpp;
-    RFLOAT az = 1.0, am = 1.0, ap, app, aold;
-    int m;
-
-    qab = a + b;
-    qap = a + 1.0;
-    qam = a - 1.0;
-    bz = 1.0 - qab * x / qap;
-    for (m = 1; m <= ITMAX; m++) {
-        em = (RFLOAT) m;
-        tem = em + em;
-        d = em * (b - em) * x / ((qam + tem) * (a + tem));
-        ap = az + d * am;
-        bp = bz + d * bm;
-        d = -(a + em) * (qab + em) * x / ((qap + tem) * (a + tem));
-        app = ap + d * az;
-        bpp = bp + d * bz;
-        aold = az;
-        am = ap / bpp;
-        bm = bp / bpp;
+    const int ITMAX = 100;
+    const RFLOAT EPS = 3e-7;
+    RFLOAT qab = a + b, qap = a + 1, qam = a - 1;
+    RFLOAT az = 1, am = 1, bz = 1 - qab * x / qap, bm = 1;
+    for (int m = 1; m <= ITMAX; m++) {
+        const int two_m = m + m;
+        RFLOAT d = m * (b - m) * x / ((qam + two_m) * (a + two_m));
+        const RFLOAT ap = az + d * am;
+        const RFLOAT bp = bz + d * bm;
+        d = -(a + m) * (qab + m) * x / ((qap + two_m) * (a + two_m));
+        const RFLOAT app = ap + d * az;
+        const RFLOAT bpp = bp + d * bz;
+        RFLOAT aold = az;
+        am = ap  / bpp;
+        bm = bp  / bpp;
         az = app / bpp;
-        bz = 1.0;
-        if (fabs(az - aold) < (EPS*fabs(az)))
-            return az;
+        bz = 1;
+        if (fabs(az - aold) < EPS * fabs(az)) return az;
     }
     nr::error("a or b too big, or ITMAX too small in BETACF");
     return 0;
 }
-#undef ITMAX
-#undef EPS
 
 /* Powell optimization ------------------------------------------------------------ */
-#undef MAX
-#undef SIGN
-#define GOLD 1.618034
-#define GLIMIT 100.0
-#define TINY 1.0e-20
-#define SIGN(a,b) ((b) > 0.0 ? fabs(a) : -fabs(a))
-#define SHFT(a,b,c,d) (a)=(b); (b)=(c); (c)=(d);
-#define F1DIM(x,f) {\
-    for (int j = 1; j<=ncom; j++) \
-        xt[j] = pcom[j] + x * xicom[j]; \
-    f = (*func)(xt,prm);}
 
 void mnbrak(
-    RFLOAT *ax, RFLOAT *bx, RFLOAT *cx,
-    RFLOAT *fa, RFLOAT *fb, RFLOAT *fc, RFLOAT(*func)(RFLOAT *, void*),
+    RFLOAT& ax, RFLOAT& bx, RFLOAT& cx,
+    RFLOAT& fa, RFLOAT& fb, RFLOAT& fc, RFLOAT(*func)(RFLOAT *, void*),
     void *prm, int ncom, RFLOAT *pcom, RFLOAT *xicom
 ) {
+    const RFLOAT GOLD = 1.618034;
+    const RFLOAT GLIMIT = 100;
+    const RFLOAT TINY = 1e-20;
     RFLOAT ulim, u, r, q, fu, dum;
-    RFLOAT *xt=NULL;
-    ask_Tvector(xt, 1, ncom);
+    RFLOAT* xt = ask_vector<RFLOAT>(1, ncom);
 
-    F1DIM(*ax,*fa);
-    F1DIM(*bx,*fb);
-    if (*fb > *fa) {
-        SHFT(dum, *ax, *bx, dum)
-        SHFT(dum, *fb, *fa, dum)
+    for (int j = 1; j <= ncom; j++)
+        xt[j] = pcom[j] + ax * xicom[j];
+    fa = func(xt, prm);
+    for (int j = 1; j <= ncom; j++)
+        xt[j] = pcom[j] + bx * xicom[j];
+    fb = func(xt, prm);
+    if (fb > fa) {
+        std::swap(ax, bx);
+        std::swap(fa, fb);
     }
-    *cx = (*bx) + GOLD * (*bx - *ax);
-    F1DIM(*cx,*fc);
-    while (*fb > *fc) {
-        r = (*bx - *ax) * (*fb - *fc);
-        q = (*bx - *cx) * (*fb - *fa);
-        u = (*bx) - ((*bx - *cx) * q - (*bx - *ax) * r) /
-            (2.0 * SIGN(std::max(fabs(q - r), TINY), q - r));
-        ulim = (*bx) + GLIMIT * (*cx - *bx);
-        if ((*bx - u)*(u - *cx) > 0.0) {
-            F1DIM(u,fu);
-            if (fu < *fc) {
-                *ax = (*bx);
-                *bx = u;
-                *fa = (*fb);
-                *fb = fu;
+    cx = bx + GOLD * (bx - ax);
+    for (int j = 1; j <= ncom; j++)
+        xt[j] = pcom[j] + cx * xicom[j];
+    fc = func(xt, prm);
+    while (fb > fc) {
+        r = (bx - ax) * (fb - fc);
+        q = (bx - cx) * (fb - fa);
+        u = bx - ((bx - cx) * q - (bx - ax) * r) /
+            (2 * copysign(std::max(fabs(q - r), TINY), q - r));
+        ulim = bx + GLIMIT * (cx - bx);
+        if ((bx - u) * (u - cx) > 0) {
+            for (int j = 1; j <= ncom; j++)
+                xt[j] = pcom[j] + u * xicom[j];
+            fu = func(xt, prm);
+            if (fu < fc) {
+                ax = bx;
+                bx = u;
+                fa = fb;
+                fb = fu;
                 return;
-            } else if (fu > *fb) {
-                *cx = u;
-                *fc = fu;
+            } else if (fu > fb) {
+                cx = u;
+                fc = fu;
                 return;
             }
-            u = (*cx) + GOLD * (*cx - *bx);
-            F1DIM(u,fu);
-        } else if ((*cx - u) * (u - ulim) > 0.0) {
-            F1DIM(u,fu);
-            if (fu < *fc) {
-                SHFT(*bx, *cx, u, *cx + GOLD*(*cx - *bx))
-                RFLOAT aux; F1DIM(u,aux);
-                SHFT(*fb, *fc, fu, aux)
+            u = cx + GOLD * (cx - bx);
+            for (int j = 1; j <= ncom; j++)
+                xt[j] = pcom[j] + u * xicom[j];
+            fu = func(xt, prm);
+        } else if ((cx - u) * (u - ulim) > 0) {
+            for (int j = 1; j <= ncom; j++)
+                xt[j] = pcom[j] + u * xicom[j];
+            fu = func(xt, prm);
+            if (fu < fc) {
+                bx = cx; cx = u; u = cx + GOLD * (cx - bx);
+                for (int j = 1; j <= ncom; j++)
+                    xt[j] = pcom[j] + u * xicom[j];
+                RFLOAT aux = func(xt, prm);
+                fb = fc; fc = fu; fu = aux;
             }
-        } else if ((u - ulim) * (ulim - *cx) >= 0.0) {
+        } else if ((u - ulim) * (ulim - cx) >= 0) {
             u = ulim;
-            F1DIM(u,fu);
+            for (int j = 1; j <= ncom; j++)
+                xt[j] = pcom[j] + u * xicom[j];
+            fu = func(xt, prm);
         } else {
-            u = (*cx) + GOLD * (*cx - *bx);
-            F1DIM(u,fu);
+            u = cx + GOLD * (cx - bx);
+            for (int j = 1; j <= ncom; j++)
+                xt[j] = pcom[j] + u * xicom[j];
+            fu = func(xt, prm);
         }
-        SHFT(*ax, *bx, *cx, u)
-        SHFT(*fa, *fb, *fc, fu)
+        ax = bx; bx = cx; cx = u;
+        fa = fb; fb = fc; fc = fu;
     }
-    free_Tvector(xt, 1, ncom);
+    free_vector<RFLOAT>(xt, 1, ncom);
 }
 
-#undef GOLD
-#undef GLIMIT
-#undef TINY
-#undef MAX
-
-#define ITMAX 100
-#define CGOLD 0.3819660
-#define ZEPS 1.0e-10
 RFLOAT brent(
     RFLOAT ax, RFLOAT bx, RFLOAT cx, RFLOAT(*func)(RFLOAT *,void*),
     void *prm, RFLOAT tol, RFLOAT *xmin,
     int ncom, RFLOAT *pcom, RFLOAT *xicom
 ) {
-    RFLOAT a, b, d, etemp, fu, fv, fw, fx, p, q, r, tol1, tol2, u, v, w, x, xm;
-    RFLOAT e = 0.0;
-    RFLOAT *xt = NULL;
-    ask_Tvector(xt, 1, ncom);
+    const RFLOAT ZEPS = 1e-10;
+    const RFLOAT CGOLD = 0.3819660;
+    const int ITMAX = 100;
+    RFLOAT d, etemp, fu, p, q, r, tol1, tol2, u, xm;
+    RFLOAT e = 0;
+    RFLOAT* xt = ask_vector<RFLOAT>(1, ncom);
 
-    a = (ax < cx ? ax : cx);
-    b = (ax > cx ? ax : cx);
-    x = w = v = bx;
-    F1DIM(x,fx);
-    fw = fv = fx;
+    RFLOAT a = ax < cx ? ax : cx;
+    RFLOAT b = ax > cx ? ax : cx;
+    RFLOAT v, w, x, fv, fw, fx;
+    v = w = x = bx;
+    for (int j = 1; j <= ncom; j++)
+        xt[j] = pcom[j] + x * xicom[j];
+    fx = func(xt, prm);
+    fv = fw = fx;
     for (int i = 1; i <= ITMAX; i++) {
         xm = 0.5 * (a + b);
-        tol2 = 2.0 * (tol1 = tol * fabs(x) + ZEPS);
-        if (fabs(x - xm) <= (tol2 - 0.5*(b - a))) {
+        tol2 = 2 * (tol1 = tol * fabs(x) + ZEPS);
+        if (fabs(x - xm) <= tol2 - 0.5 * (b - a)) {
             *xmin = x;
-            free_Tvector(xt, 1, ncom);
+            free_vector<RFLOAT>(xt, 1, ncom);
             return fx;
         }
         if (fabs(e) > tol1) {
             r = (x - w) * (fx - fv);
             q = (x - v) * (fx - fw);
             p = (x - v) * q - (x - w) * r;
-            q = 2.0 * (q - r);
-            if (q > 0.0)
-                p = -p;
+            q = 2 * (q - r);
+            if (q > 0.0) p = -p;
             q = fabs(q);
             etemp = e;
             e = d;
-            if (fabs(p) >= fabs(0.5*q*etemp) || p <= q*(a - x) || p >= q*(b - x)) {
-                d = CGOLD * (e = (x >= xm ? a - x : b - x));
+            if (fabs(p) >= fabs(0.5 * q * etemp) || p <= q * (a - x) || p >= q * (b - x)) {
+                d = CGOLD * (e = x >= xm ? a - x : b - x);
             } else {
                 d = p / q;
                 u = x + d;
                 if (u - a < tol2 || b - u < tol2)
-                    d = SIGN(tol1, xm - x);
+                    d = copysign(tol1, xm - x);
             }
         } else {
             d = CGOLD * (e = (x >= xm ? a - x : b - x));
         }
-        u = (fabs(d) >= tol1 ? x + d : x + SIGN(tol1, d));
-        F1DIM(u,fu);
+        u = (fabs(d) >= tol1 ? x + d : x + copysign(tol1, d));
+        for (int j = 1; j <= ncom; j++)
+            xt[j] = pcom[j] + u * xicom[j];
+        fu = func(xt, prm);
         if (fu <= fx) {
             if (u >= x) {
                 a = x;
             } else {
                 b = x;
             }
-            SHFT(v, w, x, u)
-            SHFT(fv, fw, fx, fu)
+             v =  w;  w =  x;  x =  u;
+            fv = fw; fw = fx; fx = fu;
         } else {
             if (u < x) {
                 a = u;
@@ -594,63 +611,47 @@ RFLOAT brent(
     }
     nr::error("Too many iterations in brent");
     *xmin = x;
-    free_Tvector(xt, 1, ncom);
+    free_vector<RFLOAT>(xt, 1, ncom);
     return fx;
 }
-#undef ITMAX
-#undef CGOLD
-#undef ZEPS
-#undef SHFT
-#undef F1DIM
 
-#define TOL 2.0e-4
 void linmin(
     RFLOAT *p, RFLOAT *xi, int n, RFLOAT &fret,
     RFLOAT(*func)(RFLOAT *, void*), void *prm
 ) {
-    int j;
-    RFLOAT xx, xmin, fx, fb, fa, bx, ax;
-
-    int ncom = n;
-    RFLOAT *pcom=NULL;
-    RFLOAT *xicom=NULL;
-    ask_Tvector(pcom, 1, n);
-    ask_Tvector(xicom, 1, n);
-    for (j = 1; j <= n; j++) {
-        pcom[j] = p[j];
+    const RFLOAT TOL = 2e-4;
+    const int ncom = n;
+    RFLOAT* pcom  = ask_vector<RFLOAT>(1, n);
+    RFLOAT* xicom = ask_vector<RFLOAT>(1, n);
+    for (int j = 1; j <= n; j++) {
+        pcom [j] = p [j];
         xicom[j] = xi[j];
     }
-    ax = 0.0;
-    xx = 1.0;
-    bx = 2.0;
-    mnbrak(&ax, &xx, &bx, &fa, &fx, &fb, func, prm, ncom, pcom, xicom);
+    RFLOAT ax = 0, xx = 1, bx = 2, fa, fx, fb;
+    mnbrak(ax, xx, bx, fa, fx, fb, func, prm, ncom, pcom, xicom);
+    RFLOAT xmin;
     fret = brent(ax, xx, bx, func, prm, TOL, &xmin, ncom, pcom, xicom);
-    for (j = 1; j <= n; j++) {
-        xi[j] *= xmin;
-        p[j] += xi[j];
+    for (int j = 1; j <= n; j++) {
+        p[j] += xi[j] *= xmin;
     }
-    free_Tvector(xicom, 1, n);
-    free_Tvector(pcom, 1, n);
+    free_vector<RFLOAT>(xicom, 1, n);
+    free_vector<RFLOAT>(pcom,  1, n);
 }
-#undef TOL
 
-#define ITMAX 200
 void powell(
     RFLOAT *p, RFLOAT *xi, int n, RFLOAT ftol, int &iter,
     RFLOAT &fret, RFLOAT(*func)(RFLOAT *, void *), void *prm,
     bool show
 ) {
+    const int ITMAX = 200;
     int i, ibig, j;
     RFLOAT t, fptt, fp, del;
-    RFLOAT *pt, *ptt, *xit;
-    bool different_from_0;
 
-    ask_Tvector(pt, 1, n);
-    ask_Tvector(ptt, 1, n);
-    ask_Tvector(xit, 1, n);
-    fret = (*func)(p, prm);
-    for (j = 1; j <= n; j++)
-        pt[j] = p[j];
+    RFLOAT* pt  = ask_vector<RFLOAT>(1, n);
+    RFLOAT* ptt = ask_vector<RFLOAT>(1, n);
+    RFLOAT* xit = ask_vector<RFLOAT>(1, n);
+    fret = func(p, prm);
+    std::copy_n(pt + 1, n, p + 1);
 
     for (iter = 1;; iter++) {
         /* By coss ----- */
@@ -664,14 +665,14 @@ void powell(
 
         fp = fret;
         ibig = 0;
-        del = 0.0;
-        for (i = 1;i <= n;i++) {
-            different_from_0 = false; // CO
+        del = 0;
+        for (i = 1; i <= n; i++) {
+            bool any_nonzero = false; // CO
             for (j = 1; j <= n; j++) {
                 xit[j] = xi[j * n + i];
-                if (xit[j] != 0) { different_from_0 = true; }
+                any_nonzero |= xit[j] != 0;
             }
-            if (different_from_0) {
+            if (any_nonzero) {
                 fptt = fret;
                 linmin(p, xit, n, fret, func, prm);
                 if (fabs(fptt - fret) > del) {
@@ -693,34 +694,29 @@ void powell(
                 /* ------------- */
             }
         }
-        if (2.0 * fabs(fp - fret) <= ftol * (fabs(fp) + fabs(fret))) {
-            free_Tvector(xit, 1, n);
-            free_Tvector(ptt, 1, n);
-            free_Tvector(pt,  1, n);
+        if (2 * fabs(fp - fret) <= ftol * (fabs(fp) + fabs(fret))) {
+            free_vector<RFLOAT>(xit, 1, n);
+            free_vector<RFLOAT>(ptt, 1, n);
+            free_vector<RFLOAT>(pt,  1, n);
             return;
         }
         if (iter == ITMAX)
             nr::error("Too many iterations in routine POWELL");
         for (j = 1; j <= n; j++) {
-            ptt[j] = 2.0 * p[j] - pt[j];
-            xit[j] =       p[j] - pt[j];
-            pt [j] =       p[j];
+            ptt[j] = 2 * p[j] - pt[j];
+            xit[j] =     p[j] - pt[j];
+            pt [j] =     p[j];
         }
-        fptt = (*func)(ptt, prm);
+        fptt = func(ptt, prm);
         if (fptt < fp) {
-            #define SQR(a) ((a)*(a))
-            t = 2.0 * (fp - 2.0 * fret + fptt) * SQR(fp - fret - del) - del * SQR(fp - fptt);
-            if (t < 0.0) {
+            t = 2 * (fp - 2.0 * fret + fptt) * (fp - fret - del) * (fp - fret - del) - del * (fp - fptt) * (fp - fptt);
+            if (t < 0) {
                 linmin(p, xit, n, fret, func, prm);
-                for (j = 1; j <= n; j++) {
-                    xi[j * n + ibig] = xit[j];
-                }
+                std::copy_n(xit + 1, n, xi + n + ibig);
             }
         }
     }
 }
-#undef ITMAX
-#undef SQR
 
 // Used in singular value decomposition (SVD) ---------------------------------
 // https://en.wikipedia.org/wiki/Singular_value_decomposition
@@ -732,217 +728,208 @@ RFLOAT Pythag(RFLOAT a, RFLOAT b) {
     // The original code was copied from XmippCore's Bilib library:
     // https://github.com/I2PC/xmippCore/blob/devel/core/bilib/linearalgebra.cc
     // (btw, c++11 has std::hypot)
-    if (a == 0.0 && b == 0.0)
-        // Don't waste time computing sqrt((0.0 * 0.0) + (0.0 * 0.0))
-        return 0.0;
 
-    RFLOAT absa = fabs(a);
-    RFLOAT absb = fabs(b);
-    RFLOAT greater, lesser;
-    if (absb < absa) {
-        greater = absa;
-        lesser = absb;
-    } else {
-        greater = absb;
-        lesser = absa;
-    }
-    return greater * sqrt(1.0 + (lesser * lesser) / (greater * greater));
+    // Don't waste time computing sqrt(0 * 0 + 0 * 0)
+    if (a == 0 && b == 0) return 0;
+
+    RFLOAT greater = fabs(a), lesser = fabs(b);
+    if (greater < lesser) std::swap(greater, lesser);
+    return greater * sqrt(1 + (lesser * lesser) / (greater * greater));
 }
 
-#define SVDMAXITER 1000000
 void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
     // https://en.wikipedia.org/wiki/Singular_value_decomposition
     // Decompose a matrix into two square unitary matrice U and V,
     // and a diagonal matrix W.
-    RFLOAT *rv1 = (RFLOAT *)NULL;
-    RFLOAT Norm, Scale;
-    RFLOAT c, f, g, h, s;
-    RFLOAT x, y, z;
-    long i, its, j, jj, k, l = 0L, nm = 0L;
-    bool    Flag;
-    int     MaxIterations = SVDMAXITER;
+    // #define SVDMAXITER 1000000
+    const int MaxIterations = 1000000;
 
-    ask_Tvector(rv1, 0, Columns * Columns - 1);
-    g = Scale = Norm = 0.0;
-    for (i = 0L; i < Columns; i++) {
-        l = i + 1L;
+    RFLOAT* rv1 = ask_vector<RFLOAT>(0, Columns * Columns - 1);
+    RFLOAT Norm = 0, Scale = 0, g = 0;
+    long l = 0;
+    for (long i = 0; i < Columns; i++) {
+        l = i + 1;
         rv1[i] = Scale * g;
-        g = s = Scale = 0.0;
+        RFLOAT s = 0;
+        g = Scale = 0;
         if (i < Lines) {
-            for (k = i; k < Lines; k++) {
+            for (long k = i; k < Lines; k++) {
                 Scale += fabs(U[k * Columns + i]);
             }
-            if (Scale != 0.0) {
-                for (k = i; k < Lines; k++) {
+            if (Scale != 0) {
+                for (long k = i; k < Lines; k++) {
                     U[k * Columns + i] /= Scale;
                     s += U[k * Columns + i] * U[k * Columns + i];
                 }
-                f = U[i * Columns + i];
-                g = (0.0 <= f) ? (-sqrt(s)) : (sqrt(s));
-                h = f * g - s;
+                RFLOAT f = U[i * Columns + i];
+                g = -copysign(sqrt(s), f);
+                RFLOAT h = f * g - s;
                 U[i * Columns + i] = f - g;
-                for (j = l; j < Columns; j++) {
-                    for (s = 0.0, k = i; k < Lines; k++) {
+                for (long j = l; j < Columns; j++) {
+                    RFLOAT s = 0;
+                    for (long k = i; k < Lines; k++) {
                         s += U[k * Columns + i] * U[k * Columns + j];
                     }
                     f = s / h;
-                    for (k = i; k < Lines; k++) {
+                    for (long k = i; k < Lines; k++) {
                         U[k * Columns + j] += f * U[k * Columns + i];
                     }
                 }
-                for (k = i; k < Lines; k++) {
+                for (long k = i; k < Lines; k++) {
                     U[k * Columns + i] *= Scale;
                 }
             }
         }
         W[i] = Scale * g;
-        g = s = Scale = 0.0;
-        if (i < Lines && i != Columns - 1L) {
-            for (k = l; k < Columns; k++) {
+        g = s = Scale = 0;
+        if (i < Lines && i != Columns - 1) {
+            for (long k = l; k < Columns; k++) {
                 Scale += fabs(U[i * Columns + k]);
             }
-            if (Scale != 0.0) {
-                for (k = l; k < Columns; k++) {
+            if (Scale != 0) {
+                for (long k = l; k < Columns; k++) {
                     U[i * Columns + k] /= Scale;
                     s += U[i * Columns + k] * U[i * Columns + k];
                 }
-                f = U[i * Columns + l];
-                g = 0.0 <= f ? -sqrt(s) : sqrt(s);
-                h = f * g - s;
+                RFLOAT f = U[i * Columns + l];
+                g = -copysign(sqrt(s), f);
+                RFLOAT h = f * g - s;
                 U[i * Columns + l] = f - g;
-                for (k = l; k < Columns; k++) {
+                for (long k = l; k < Columns; k++) {
                     rv1[k] = U[i * Columns + k] / h;
                 }
-                for (j = l; j < Lines; j++) {
-                    for (s = 0.0, k = l; k < Columns; k++) {
+                for (long j = l; j < Lines; j++) {
+                    RFLOAT s = 0;
+                    for (long k = l; k < Columns; k++) {
                         s += U[j * Columns + k] * U[i * Columns + k];
                     }
-                    for (k = l; k < Columns; k++) {
+                    for (long k = l; k < Columns; k++) {
                         U[j * Columns + k] += s * rv1[k];
                     }
                 }
-                for (k = l; k < Columns; k++) {
+                for (long k = l; k < Columns; k++) {
                     U[i * Columns + k] *= Scale;
                 }
             }
         }
         Norm = std::max(Norm, fabs(W[i]) + fabs(rv1[i]));
     }
-    for (i = Columns - 1L; (0L <= i); i--) {
-        if (i < (Columns - 1L)) {
-            if (g != 0.0) {
-                for (j = l; j < Columns; j++) {
+    for (long i = Columns - 1; i >= 0; i--) {
+        if (i < Columns - 1) {
+            if (g != 0) {
+                for (long j = l; j < Columns; j++) {
                     V[j * Columns + i] = U[i * Columns + j] / (U[i * Columns + l] * g);
                 }
-                for (j = l; j < Columns; j++) {
-                    for (s = 0.0, k = l; k < Columns; k++) {
+                for (long j = l; j < Columns; j++) {
+                    RFLOAT s = 0;
+                    for (long k = l; k < Columns; k++) {
                         s += U[i * Columns + k] * V[k * Columns + j];
                     }
-                    for (k = l; k < Columns; k++) {
-                        if (s != 0.0) {
-                            V[k * Columns + j] += s * V[k * Columns + i];
-                        }
+                    if (s != 0)
+                    for (long k = l; k < Columns; k++) {
+                        V[k * Columns + j] += s * V[k * Columns + i];
                     }
                 }
             }
-            for (j = l; j < Columns; j++) {
-                V[i * Columns + j] = V[j * Columns + i] = 0.0;
+            for (long j = l; j < Columns; j++) {
+                V[i * Columns + j] = V[j * Columns + i] = 0;
             }
         }
-        V[i * Columns + i] = 1.0;
+        V[i * Columns + i] = 1;
         g = rv1[i];
         l = i;
     }
-    for (i = Lines < Columns ? Lines - 1L : Columns - 1L; 0L <= i; i--) {
-        l = i + 1L;
+    for (long i = std::min(Lines, Columns) - 1; i >= 0; i--) {
+        long l = i + 1;
         g = W[i];
-        for (j = l; j < Columns; j++) {
-            U[i * Columns + j] = 0.0;
+        for (long j = l; j < Columns; j++) {
+            U[i * Columns + j] = 0;
         }
-        if (g != 0.0) {
-            g = 1.0 / g;
-            for (j = l; j < Columns; j++) {
-                for (s = 0.0, k = l; k < Lines; k++) {
+        if (g != 0) {
+            g = 1 / g;
+            for (long j = l; j < Columns; j++) {
+                RFLOAT s = 0;
+                for (long k = l; k < Lines; k++) {
                     s += U[k * Columns + i] * U[k * Columns + j];
                 }
-                f = s * g / U[i * Columns + i];
-                for (k = i; k < Lines; k++) {
-                    if (f != 0.0) {
-                        U[k * Columns + j] += f * U[k * Columns + i];
-                    }
+                RFLOAT f = s * g / U[i * Columns + i];
+                if (f != 0)
+                for (long k = i; k < Lines; k++) {
+                    U[k * Columns + j] += f * U[k * Columns + i];
                 }
             }
-            for (j = i; j < Lines; j++) {
+            for (long j = i; j < Lines; j++) {
                 U[j * Columns + i] *= g;
             }
         } else {
-            for (j = i; j < Lines; j++) {
-                U[j * Columns + i] = 0.0;
+            for (long j = i; j < Lines; j++) {
+                U[j * Columns + i] = 0;
             }
         }
-        U[i * Columns + i] += 1.0;
+        U[i * Columns + i] += 1;
     }
-    for (k = Columns - 1L; 0L <= k; k--) {
-        for (its = 1L; its <= MaxIterations; its++) {
-            Flag = true;
-            for (l = k; 0L <= l; l--) {
-                nm = l - 1L;
+    for (long k = Columns - 1; k >= 0; k--) {
+        for (long its = 1; its <= MaxIterations; its++) {
+            bool flag = true;
+            long nm = 0;
+            long l = 0;
+            for (l = k; l >= 0; l--) {
+                nm = l - 1;
                 if (fabs(rv1[l]) + Norm == Norm) {
-                    Flag = false;
+                    flag = false;
                     break;
                 }
                 if (fabs(W[nm]) + Norm == Norm) {
                     break;
                 }
             }
-            if (Flag) {
-                c = 0.0;
-                s = 1.0;
-                for (i = l; i <= k; i++) {
-                    f = s * rv1[i];
+            if (flag) {
+                RFLOAT c = 0, s = 1;
+                for (long i = l; i <= k; i++) {
+                    RFLOAT f = s * rv1[i];
                     rv1[i] *= c;
                     if (fabs(f) + Norm == Norm) {
                         break;
                     }
                     g = W[i];
-                    h = Pythag(f, g);
+                    RFLOAT h = Pythag(f, g);
                     W[i] = h;
-                    h = 1.0 / h;
+                    h = 1 / h;
                     c = g * h;
                     s = -f * h;
-                    for (j = 0L; j < Lines; j++) {
-                        y = U[j * Columns + nm];
-                        z = U[j * Columns + i];
+                    for (long j = 0; j < Lines; j++) {
+                        RFLOAT y = U[j * Columns + nm];
+                        RFLOAT z = U[j * Columns + i];
                         U[j * Columns + nm] = y * c + z * s;
                         U[j * Columns + i]  = z * c - y * s;
                     }
                 }
             }
-            z = W[k];
+            RFLOAT z = W[k];
             if (l == k) {
-                if (z < 0.0) {
+                if (z < 0) {
                     W[k] = -z;
-                    for (j = 0L; j < Columns; j++) {
+                    for (long j = 0; j < Columns; j++) {
                         V[j * Columns + k] = -V[j * Columns + k];
                     }
                 }
                 break;
             }
             if (its == MaxIterations) {
-                free_Tvector(rv1, 0, Columns * Columns - 1);
+                free_vector<RFLOAT>(rv1, 0, Columns * Columns - 1);
                 return;
             }
-            x = W[l];
-            nm = k - 1L;
-            y = W[nm];
+            RFLOAT x = W[l];
+            nm = k - 1;
+            RFLOAT y = W[nm];
             g = rv1[nm];
-            h = rv1[k];
-            f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
-            g = Pythag(f, 1.0);
-            f = ((x - z) * (x + z) + h * ((y / (f + (0.0 <= f ? fabs(g) : -fabs(g)))) - h)) / x;
-            c = s = 1.0;
-            for (j = l; (j <= nm); j++) {
-                i = j + 1L;
+            RFLOAT h = rv1[k];
+            RFLOAT f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2 * h * y);
+            g = Pythag(f, 1);
+            f = ((x - z) * (x + z) + h * (y / (f + copysign(fabs(g), f)) - h)) / x;
+            RFLOAT c = 1, s = 1;
+            for (long j = l; j <= nm; j++) {
+                long i = j + 1;
                 g = rv1[i];
                 y = W[i];
                 h = s * g;
@@ -955,139 +942,121 @@ void svdcmp(RFLOAT *U, int Lines, int Columns, RFLOAT *W, RFLOAT *V) {
                 g = g * c - x * s;
                 h = y * s;
                 y *= c;
-                for (jj = 0L; jj < Columns; jj++) {
-                    x = V[jj * Columns + j];
-                    z = V[jj * Columns + i];
+                for (long jj = 0; jj < Columns; jj++) {
+                    RFLOAT x = V[jj * Columns + j];
+                    RFLOAT z = V[jj * Columns + i];
                     V[jj * Columns + j] = x * c + z * s;
                     V[jj * Columns + i] = z * c - x * s;
                 }
                 z = Pythag(f, h);
                 W[j] = z;
-                if (z != 0.0) {
-                    z = 1.0 / z;
+                if (z != 0) {
+                    z = 1 / z;
                     c = f * z;
                     s = h * z;
                 }
                 f = c * g + s * y;
                 x = c * y - s * g;
-                for (jj = 0L; jj < Lines; jj++) {
-                    y = U[jj * Columns + j];
-                    z = U[jj * Columns + i];
+                for (long jj = 0; jj < Lines; jj++) {
+                    RFLOAT y = U[jj * Columns + j];
+                    RFLOAT z = U[jj * Columns + i];
                     U[jj * Columns + j] = y * c + z * s;
                     U[jj * Columns + i] = z * c - y * s;
                 }
             }
-            rv1[l] = 0.0;
+            rv1[l] = 0;
             rv1[k] = f;
             W[k] = x;
         }
     }
-    free_Tvector(rv1, 0, Columns * Columns - 1);
+    free_vector<RFLOAT>(rv1, 0, Columns * Columns - 1);
 }
 
 void svbksb(RFLOAT *u, RFLOAT *w, RFLOAT *v, int m, int n, RFLOAT *b, RFLOAT *x) {
-    int jj, j, i;
-    RFLOAT s, *tmp;
-
-    ask_Tvector(tmp, 1, n);
-    for (j = 1; j <= n; j++) {
-        s = 0.0;
+    RFLOAT* tmp = ask_vector<RFLOAT>(1, n);
+    for (int j = 1; j <= n; j++) {
+        RFLOAT s = 0;
         if (w[j]) {
-            for (i = 1; i <= m; i++)
+            for (int i = 1; i <= m; i++)
                 s += u[i * n + j] * b[i];
             s /= w[j];
         }
         tmp[j] = s;
     }
-    for (j = 1; j <= n; j++) {
-        s = 0.0;
-        for (jj = 1; jj <= n; jj++)
+    for (int j = 1; j <= n; j++) {
+        RFLOAT s = 0;
+        for (int jj = 1; jj <= n; jj++)
             s += v[j * n + jj] * tmp[jj];
         x[j] = s;
     }
-    free_Tvector(tmp, 1, n);
+    free_vector<RFLOAT>(tmp, 1, n);
 }
 
 
 /* Gamma function ---------------------------------------------------------- */
-#define ITMAX 100
-#define EPS 3.0e-7
 
-void gser(RFLOAT *gamser, RFLOAT a, RFLOAT x, RFLOAT *gln) {
-    int n;
-    RFLOAT sum, del, ap;
+// Series expansion of Gamma function
+void gser(RFLOAT& gamser, RFLOAT a, RFLOAT x, RFLOAT& gln) {
+    const int ITMAX = 100;
+    const RFLOAT EPS = 3.0e-7;
 
-    *gln = gammln(a);
-    if (x <= 0.0) {
-        if (x < 0.0)
-            nr::error("x less than 0 in routine gser");
-        *gamser = 0.0;
-        return;
-    } else {
-        ap = a;
-        del = sum = 1.0 / a;
-        for (n = 1; n <= ITMAX; n++) {
-            ++ap;
-            del *= x / ap;
-            sum += del;
-            if (fabs(del) < fabs(sum) * EPS) {
-                *gamser = sum * exp(-x + a * log(x) - (*gln));
-                return;
-            }
-        }
-        nr::error("a too large, ITMAX too small in routine gser");
+    gln = gammln(a);
+
+    if (x < 0) nr::error("x less than 0 in routine gser");
+
+    if (x == 0) {
+        gamser = 0;
         return;
     }
+
+    RFLOAT sum, delta, ap = a;
+    sum = delta = 1 / a;
+    for (int n = 1; n <= ITMAX; n++) {
+        sum += delta *= x / ++ap;
+        if (fabs(delta) < fabs(sum) * EPS) {
+            gamser = sum * exp(-x + a * log(x) - gln);
+            return;
+        }
+    }
+    nr::error("a too large, ITMAX too small in routine gser");
+    return;
 }
-#undef ITMAX
-#undef EPS
 
-#define ITMAX 100
-#define EPS 3.0e-7
-#define FPMIN 1.0e-30
+// Continued-fraction evaluation of Gamma function
+void gcf(RFLOAT& gammcf, RFLOAT a, RFLOAT x, RFLOAT& gln) {
+    const int ITMAX = 100;
+    const RFLOAT EPS = 3e-7;
+    const RFLOAT FPMIN = 1e-30;
 
-void gcf(RFLOAT *gammcf, RFLOAT a, RFLOAT x, RFLOAT *gln) {
-    int i;
-    RFLOAT an, b, c, d, del, h;
-
-    *gln = gammln(a);
-    b = x + 1.0 - a;
-    c = 1.0 / FPMIN;
-    d = 1.0 / b;
-    h = d;
-    for (i = 1; i <= ITMAX; i++) {
-        an = -i * (i - a);
-        b += 2.0;
-        d = an * d + b;
-        if (fabs(d) < FPMIN)
-            d = FPMIN;
-        c = b + an / c;
-        if (fabs(c) < FPMIN)
-            c = FPMIN;
-        d = 1.0 / d;
-        del = d * c;
-        h *= del;
-        if (fabs(del - 1.0) < EPS)
-            break;
+    gln = gammln(a);
+    RFLOAT an;
+    RFLOAT b = x + 1 - a;
+    RFLOAT C = 1 / FPMIN, D = 1 / b, Delta;
+    RFLOAT h = D;
+    int i = 1;
+    for (; i <= ITMAX; i++) {
+        an = i * (a - i);
+        b += 2;
+        C =     at_least(b + an / C, FPMIN);
+        D = 1 / at_least(an * D + b, FPMIN);
+        h *= Delta = C * D;
+        if (fabs(Delta - 1) < EPS) break;
     }
     if (i > ITMAX)
         nr::error("a too large, ITMAX too small in gcf");
-    *gammcf = exp(-x + a * log(x) - (*gln)) * h;
+    gammcf = exp(-x + a * log(x) - gln) * h;
 }
-#undef ITMAX
-#undef EPS
-#undef FPMIN
 
 RFLOAT gammp(RFLOAT a, RFLOAT x) {
-    RFLOAT gamser, gammcf, gln;
-
-    if (x < 0.0 || a <= 0.0)
-        nr::error("Invalid arguments in routine gammp");
-    if (x < a + 1.0) {
-        gser(&gamser, a, x, &gln);
+    if (x < 0 || a <= 0) nr::error("Invalid arguments in routine gammp");
+    RFLOAT gln;
+    if (x < a + 1) {
+        RFLOAT gamser;
+        gser(gamser, a, x, gln);
         return gamser;
     } else {
-        gcf(&gammcf, a, x, &gln);
-        return 1.0 - gammcf;
+        RFLOAT gammcf;
+        gcf(gammcf, a, x, gln);
+        return 1 - gammcf;
     }
 }

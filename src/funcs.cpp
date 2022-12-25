@@ -198,12 +198,12 @@ RFLOAT kaiser_Fourier_value(RFLOAT w, RFLOAT a, RFLOAT alpha, int m) {
 
         case 2: 
         return pow(two_pi, 1.5) * pow(a, 3) * pow(alpha, 2)
-            * (C > alpha ? bessj3_5(sigma) : bessi3_5(sigma))
+            * (C > alpha ? Bessel::J(sigma, 3.5) : bessi3_5(sigma))
             / (bessi0(alpha) * pow(sigma, 3.5));
 
         case 0:
         return pow(two_pi, 1.5) * pow(a, 3)
-            * (C > alpha ? bessj1_5(sigma) : bessi1_5(sigma))
+            * (C > alpha ? Bessel::J(1.5, sigma) : bessi1_5(sigma))
             / (bessi0(alpha) * pow(sigma, 1.5));
 
         default:

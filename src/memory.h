@@ -53,24 +53,19 @@
 //@{
 /** Ask memory for any type vector.
     The valid values range from v[nl] to v[nh]. If no memory is available
-    an exception is thrown. NULL is returned if nh is not greater than nl*/
-template <class T> void ask_Tvector(T* &v, int nl, int nh) {
-    if (nh - nl + 1 > 1) {
-        v = (T *)malloc((unsigned)(nh - nl + 1) * sizeof(T));
-        if (!v)
-            REPORT_ERROR("allocation failure in vector()");
-        v -= nl;
-    }
-    else v = NULL;
+    an exception is thrown. nullptr is returned if nh is not greater than nl*/
+template <typename T>
+T* ask_vector(int nl, int nh) {
+    if (nh - nl + 1 <= 1) return nullptr;
+    T* v = (T*) malloc((unsigned) (nh - nl + 1) * sizeof(T));
+    if (!v) REPORT_ERROR("allocation failure in vector()");
+    return v - nl;
 }
 
-/** Free memory associated to any type vector.
-    After freeing v=NULL*/
-template <class T> void free_Tvector(T* &v, int nl, int nh) {
-    if (v != NULL) {
-        free((char*)(v + nl));
-        v = NULL;
-    }
+/** Free memory associated to any type vector. */
+template <typename T>
+void free_vector(T* v, int nl, int nh) {
+    if (v) free((char*) (v + nl));
 }
 
 /** Ask memory for any type matrix.

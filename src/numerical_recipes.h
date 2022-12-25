@@ -66,6 +66,12 @@ namespace nr {
 }
 
 // Bessel functions -----------------------------------------------------------
+namespace Bessel {
+
+    RFLOAT J(RFLOAT x, RFLOAT nu);
+
+}
+
 RFLOAT bessj0(RFLOAT x);
 RFLOAT bessj3_5(RFLOAT x);
 RFLOAT bessj1_5(RFLOAT x);
@@ -107,7 +113,7 @@ RFLOAT Pythag(RFLOAT a, RFLOAT b);
  * However, the first two and the last two samples are set to 0,
  * because this method does not predict the derivative there.
  */
-static std::vector<RFLOAT> numericalDerivative(const std::vector<RFLOAT> &f) {
+static std::vector<RFLOAT> five_point_stencil(const std::vector<RFLOAT> &f) {
     std::vector<RFLOAT> result (f.size());
     for (int i = 2; i < f.size() - 2; i++)
         result[i] = (- f[i + 2] + 8 * f[i + 1] + f[i - 2] - 8 * f[i - 1]) / 12;
@@ -116,14 +122,12 @@ static std::vector<RFLOAT> numericalDerivative(const std::vector<RFLOAT> &f) {
 
 // LU decomposition
 /* Chapter 2 Section 3: LU DECOMPOSITION */
-#define EPSILON 1.0e-20;
 template <class T>
 void ludcmp(T *a, int n, int *indx, T *d) {
+    const RFLOAT EPSILON = 1.0e-20;
     int i, imax, j, k;
     T big, dum, sum, temp;
-    T *vv;
-
-    ask_Tvector(vv, 1, n);
+    T *vv = ask_vector<T>(1, n);
     *d = (T)1.0;
     for (i = 1; i <= n; i++) {
         big = (T)0.0;
@@ -170,9 +174,8 @@ void ludcmp(T *a, int n, int *indx, T *d) {
                 a[i * n + j] *= dum;
         }
     }
-    free_Tvector(vv, 1, n);
+    free_vector<T>(vv, 1, n);
 }
-#undef EPSILON
 
 // Solve Ax=b
 /* Chapter 2 Section 3: LU BACKWARD-FORWARD SUBSTITUTION */
@@ -204,18 +207,14 @@ void lubksb(T *a, int n, int *indx, T b[]) {
 // Solve Ax=b (b=matrix)
 template <class T>
 void gaussj(T *a, int n, T *b, int m) {
-    int *indxc, *indxr, *ipiv;
     int i, icol, irow, j, k, l, ll;
-    T big, dum;
-    RFLOAT pivinv;
-
-    ask_Tvector(indxc, 1, n);
-    ask_Tvector(indxr, 1, n);
-    ask_Tvector(ipiv, 1, n);
+    int* indxc = ask_vector<int>(1, n);
+    int* indxr = ask_vector<int>(1, n);
+    int* ipiv  = ask_vector<int>(1, n);
     for (j = 1; j <= n; j++)
         ipiv[j] = 0;
     for (i = 1; i <= n; i++) {
-        big = (T) 0;
+        T big = 0;
         for (j = 1; j <= n; j++)
             if (ipiv[j] != 1)
                 for (k = 1; k <= n; k++) {
@@ -229,7 +228,7 @@ void gaussj(T *a, int n, T *b, int m) {
                         nr::error("GAUSSJ: Singular Matrix-1");
                     }
                 }
-        ++(ipiv[icol]);
+        ++ipiv[icol];
         if (irow != icol) {
             for (l = 1; l <= n; l++) std::swap(a[irow * n + l], a[icol * n + l]);
             for (l = 1; l <= m; l++) std::swap(b[irow * n + l], b[icol * n + l]);
@@ -238,7 +237,7 @@ void gaussj(T *a, int n, T *b, int m) {
         indxc[i] = icol;
         if (a[icol * n + icol] == 0.0)
             nr::error("GAUSSJ: Singular Matrix-2");
-        pivinv = 1.0f / a[icol * n + icol];
+        RFLOAT pivinv = 1.0f / a[icol * n + icol];
         a[icol * n + icol] = (T)1;
         for (l = 1; l <= n; l++)
             a[icol * n + l] = (T)(pivinv * a[icol * n + l]);
@@ -246,7 +245,7 @@ void gaussj(T *a, int n, T *b, int m) {
             b[icol * n + l] = (T)(pivinv * b[icol * n + l]);
         for (ll = 1; ll <= n; ll++)
             if (ll != icol) {
-                dum = a[ll * n + icol];
+                T dum = a[ll * n + icol];
                 a[ll * n + icol] = (T)0;
                 for (l = 1; l <= n; l++)
                     a[ll * n + l] -= a[icol * n + l] * dum;
@@ -259,9 +258,9 @@ void gaussj(T *a, int n, T *b, int m) {
             for (k = 1; k <= n; k++)
                 std::swap(a[k * n + indxr[l]], a[k * n + indxc[l]]);
     }
-    free_Tvector(ipiv,  1, n);
-    free_Tvector(indxr, 1, n);
-    free_Tvector(indxc, 1, n);
+    free_vector<int>(ipiv,  1, n);
+    free_vector<int>(indxr, 1, n);
+    free_vector<int>(indxc, 1, n);
 }
 
 #endif
