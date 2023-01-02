@@ -49,6 +49,7 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         double dd = dx * dx + dy * dy + dz * dz;
 
         if (dd > 1.0) continue;
+
         goodAngles++;
 
         if (goodAngles % 10 == 0) std::cout << goodAngles << "/" << nangles << "\n";
@@ -70,83 +71,65 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
 
         FilterHelper::modulate(spec(), ctf0, obsModel, opticsGroup, angpix);
 
-        Image<Complex> ccspec(s, sh);
-        for (long int yy = 0; yy < s; yy++)
-        for (long int xx = 0; xx < sh; xx++) {
-            direct::elem(  spec.data, xx, yy) *= sqrt(direct::elem(dmgWeight.data, xx, yy));
-            direct::elem(ccspec.data, xx, yy) = direct::elem(spec.data, xx, yy).norm();
+        Image<Complex> ccspec (s, sh);
+        for (long int j = 0; j < s; j++)
+        for (long int i = 0; i < sh; i++) {
+            direct::elem(  spec.data, i, j) *= sqrt(direct::elem(dmgWeight.data, i, j));
+            direct::elem(ccspec.data, i, j) = direct::elem(spec.data, i, j).norm();
         }
 
-        Image<RFLOAT> mu0(s,s), img(s,s);
         FourierTransformer ft;
-        mu0.data = ft.inverseFourierTransform(ccspec.data);
-        img.data = ft.inverseFourierTransform(spec.data);
+        Image<RFLOAT> mu0 (ft.inverseFourierTransform(ccspec.data));
+        Image<RFLOAT> img (ft.inverseFourierTransform(spec.data));
 
         const Image<RFLOAT> mu = mu0;
 
         double varScale = 0.0;
-
-        for (long int yy = 0; yy < s; yy++)
-        for (long int xx = 0; xx < s; xx++) {
-            double m = direct::elem(img.data, xx, yy) / (s * s);
-            varScale += m * m;
+        for (auto const& x: img.data) {
+            varScale += x * x;
         }
+        varScale /= s * s;
 
-        const double sigma2CC = sigma2*varScale;
+        const double sigma2CC = sigma2 * varScale;
         const double sigmaCC = sqrt(sigma2CC);
 
-        RFLOAT vMin = +std::numeric_limits<RFLOAT>::max();
-        RFLOAT vMax = -std::numeric_limits<RFLOAT>::max();
+        const auto minmax = std::minmax_element(mu.data.begin(), mu.data.end());
+        const RFLOAT vMin = *minmax.first;
+        const RFLOAT vMax = *minmax.second;
 
-        for (long int y = 0; y < s; y++)
-        for (long int x = 0; x < s; x++) {
-            double v = direct::elem(mu.data, x, y);
-            if (v > vMax) { vMax = v; }
-            if (v < vMin) { vMin = v; }
-        }
+        std::vector<double> plausibleVals;
+        std::vector<std::pair<int, int>> plausiblePixels;
+        plausibleVals.reserve(s * sh);
+        plausiblePixels.reserve(s * sh);
 
-
-        std::vector<double> plausibleVals(0);
-        std::vector<std::pair<int,int>> plausiblePixels(0);
-        plausibleVals.reserve(s*sh);
-        plausiblePixels.reserve(s*sh);
-
-        for (long int y = 0; y < sh; y++)
-        for (long int x = 0; x < s;  x++) {
-            double m = direct::elem(mu.data, x, y);
-            double dm = vMax - m;
-
-            if (dm <= 6.0 * sigmaCC) {
-                plausibleVals.push_back(m);
-                plausiblePixels.emplace_back(x, y);
+        for (long int j = 0; j < sh; j++)
+        for (long int i = 0; i < s;  i++) {
+            const double x = direct::elem(mu.data, i, j);
+            if (vMax - x <= 6.0 * sigmaCC) {
+                plausibleVals.push_back(x);
+                plausiblePixels.emplace_back(i, j);
             }
         }
 
         const int npp = plausibleVals.size();
-
         if (npp == 1) {
             std::pair<int, int> origin = plausiblePixels[0];
             direct::elem(confusion.data, origin.second, origin.first) += 1.0;
-
             continue;
         }
 
-        const int nsamples = std::min((int)(npp*nsamples_ppp), max_nsamples);
+        const int nsamples = std::min((int) (npp * nsamples_ppp), max_nsamples);
 
-        std::vector<int> hitsPerBin(vbins, 0), ppixelsPerBin(vbins, 0);
+        std::vector<int> hitsPerBin (vbins, 0), ppixelsPerBin (vbins, 0);
 
         const double floorBin = vMax - vMin < 6.0 * sigmaCC ? vMin : vMax - 6.0 * sigmaCC;
         const double binRange = vMax - floorBin;
 
         if (binValues) {
-            for (long int y = 0; y < sh; y++)
-            for (long int x = 0; x < s;  x++) {
-                double m = direct::elem(mu.data, x, y);
-                double dm = vMax - m;
-
-                if (dm <= 6.0 * sigmaCC) {
-                    const int b = (vbins - 1) * (m - floorBin) / binRange;
-                    ppixelsPerBin[b]++;
+            for (double const& x: mu.data) {
+                if (vMax - x <= 6.0 * sigmaCC) {
+                    const int i = (vbins - 1) * (x - floorBin) / binRange;
+                    ppixelsPerBin[i]++;
                 }
             }
         }
@@ -156,11 +139,11 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
         const double max_double = std::numeric_limits<RFLOAT>::max();
 
         if (threads > 1) {
-            const int stride = 2048;
-            std::vector<unsigned int> randThreadStates(threads * stride);
 
-            for (int i = 0; i < threads; i++) {
-                randThreadStates[stride * i] = rand();
+            const int stride = 2048;
+            std::vector<unsigned int> randThreadStates (threads * stride);
+            for (int i = 0; i < threads * stride; i += stride) {
+                randThreadStates[i] = rand();
             }
 
             #pragma omp parallel num_threads(threads)
@@ -172,14 +155,12 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                     int jmax = 0;
 
                     for (long int j = 0; j < npp; j++) {
-                        double m = plausibleVals[j];
 
-                        double u1 = rand_r(&randThreadStates[stride * threadnum]) / (double) RAND_MAX;
-                        double u2 = rand_r(&randThreadStates[stride * threadnum]) / (double) RAND_MAX;
-
-                        double z = sqrt(-2.0 * log(u1)) * cos(2.0 * PI * u2);
-
-                        double v = m + sigmaCC * z;
+                        const double m = plausibleVals[j];
+                        const double u1 = rand_r(&randThreadStates[stride * threadnum]) / (double) RAND_MAX;
+                        const double u2 = rand_r(&randThreadStates[stride * threadnum]) / (double) RAND_MAX;
+                        const double z = sqrt(-2.0 * log(u1)) * cos(2.0 * PI * u2);
+                        const double v = m + sigmaCC * z;
 
                         if (v > vmax) {
                             vmax = v;
@@ -193,11 +174,10 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                         #pragma omp atomic
                         hitsPerBin[b]++;
                     } else {
-                        int x = plausiblePixels[jmax].first;
-                        int y = plausiblePixels[jmax].second;
-
+                        const int i = plausiblePixels[jmax].first;
+                        const int j = plausiblePixels[jmax].second;
                         #pragma omp atomic
-                        direct::elem(confusion.data, x, y) += 1.0;
+                        direct::elem(confusion.data, i, j) += 1.0;
                     }
                 }
             }
@@ -207,14 +187,12 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                 int jmax = 0;
 
                 for (long int j = 0; j < npp; j++) {
-                    double m = plausibleVals[j];
 
-                    double u1 = rand() / (double) RAND_MAX;
-                    double u2 = rand() / (double) RAND_MAX;
-
-                    double z = sqrt(-2.0 * log(u1)) * cos(2.0 * PI * u2);
-
-                    double v =  m + sigmaCC * z;
+                    const double m = plausibleVals[j];
+                    const double u1 = rand() / (double) RAND_MAX;
+                    const double u2 = rand() / (double) RAND_MAX;
+                    const double z = sqrt(-2.0 * log(u1)) * cos(2.0 * PI * u2);
+                    const double v =  m + sigmaCC * z;
 
                     if (v > vmax) {
                         vmax = v;
@@ -226,25 +204,25 @@ Image<RFLOAT> NoiseHelper::predictCCNoise(
                     const int b = (vbins - 1) * (plausibleVals[jmax] - floorBin) / binRange;
                     hitsPerBin[b]++;
                 } else {
-                    int x = plausiblePixels[jmax].first;
-                    int y = plausiblePixels[jmax].second;
-
-                    direct::elem(confusion.data, x, y) += 1.0;
+                    const int i = plausiblePixels[jmax].first;
+                    const int j = plausiblePixels[jmax].second;
+                    direct::elem(confusion.data, i, j) += 1.0;
                 }
             }
         }
 
         if (binValues) {
-            for (long int y = 0; y < sh; y++)
-            for (long int x = 0; x < s;  x++) {
-                const double m = direct::elem(mu.data, x, y);
+            for (long int j = 0; j < sh; j++)
+            for (long int i = 0; i < s;  i++) {
 
-                if (m < floorBin) continue;
+                const double x = direct::elem(mu.data, i, j);
 
-                const int b = (vbins - 1) * (m - floorBin) / binRange;
+                if (x < floorBin) continue;
+
+                const int b = (vbins - 1) * (x - floorBin) / binRange;
 
                 if (b >= 0 && hitsPerBin[b] > 0) {
-                    direct::elem(confusion.data, x, y) += hitsPerBin[b] / (double) ppixelsPerBin[b];
+                    direct::elem(confusion.data, i, j) += hitsPerBin[b] / (double) ppixelsPerBin[b];
                 }
             }
         }
@@ -258,32 +236,35 @@ std::vector<double> NoiseHelper::radialAverage(Image<RFLOAT> &map, bool half) {
     const int h = map.data.ydim;
     const int b = (w + h) / 4;
 
-    std::vector<double> out(b, 0.0);
-    std::vector<double> wgh(b, 0.0);
+    std::vector<double> out (b, 0.0);
+    std::vector<double> wgh (b, 0.0);
 
     const int ha = half ? h / 2 : h;
 
-    for (int yy = 0; yy < ha; yy++)
-    for (int xx = 0; xx < w;  xx++) {
-        double x = xx < w / 2.0 ? xx : xx - w;
-        double y = yy < h / 2.0 ? yy : yy - h;
-        double rd = sqrt(x * x + y * y);
+    for (int j = 0; j < ha; j++)
+    for (int i = 0; i < w;  i++) {
 
-        int r0 = rd;
-        double a = rd - r0;
+        const auto v = direct::elem(map.data, i, j);
+        const double x = i < w / 2.0 ? i : i - w;
+        const double y = j < h / 2.0 ? j : j - h;
+        const double r = std::hypot(x, y);
+        const int ri = r;
+        const double rf = r - ri;
 
-        if (r0 < b) {
-            out[r0] += (1.0 - a) * direct::elem(map.data, xx, yy);
-            wgh[r0] += 1.0 - a;
+        if (ri < b) {
+            out[ri] += (1.0 - rf) * v;
+            wgh[ri] += (1.0 - rf);
         }
 
-        if (r0 < b - 1) {
-            out[r0 + 1] += a * direct::elem(map.data, xx, yy);
-            wgh[r0 + 1] += a;
+        if (ri < b - 1) {
+            out[ri + 1] += rf * v;
+            wgh[ri + 1] += rf;
         }
     }
 
-    for (int i = 0; i < b; i++) { if (wgh[i] > 0.0) { out[i] /= wgh[i]; } }
+    for (int i = 0; i < b; i++)
+        if (wgh[i] > 0.0)
+            out[i] /= wgh[i];
 
     return out;
 }
@@ -292,33 +273,30 @@ Image<RFLOAT> NoiseHelper::radialMap(std::vector<double> &radAvg, bool centered)
     const int b = radAvg.size();
     const int s = 2 * b;
 
-    Image<RFLOAT> out(s, s);
+    MultidimArray<RFLOAT> out (s, s);
 
-    for (int yy = 0; yy < s; yy++)
-    for (int xx = 0; xx < s; xx++) {
+    for (int j = 0; j < s; j++)
+    for (int i = 0; i < s; i++) {
+
         double x, y;
-
         if (centered) {
-            x = xx - s / 2;
-            y = yy - s / 2;
+            x = i - s / 2;
+            y = j - s / 2;
         } else {
-            x = xx < s / 2 ? xx : xx - s;
-            y = yy < s / 2 ? yy : yy - s;
+            x = i < s / 2 ? i : i - s;
+            y = j < s / 2 ? j : j - s;
         }
 
-        double rd = sqrt(x * x + y * y);
+        const double r = std::hypot(x, y);
+        const int ri = r;          // Integral part
+        const double rf = r - ri;  // Fractional part
 
-        int r0 = rd;
-        double a = rd - r0;
-
-        if (r0 < b - 1) {
-            direct::elem(out.data, xx, yy) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
-        } else {
-            direct::elem(out.data, xx, yy) = radAvg[b - 1];
-        }
+        direct::elem(out, i, j) = ri < b - 1 ?
+            rf * radAvg[ri + 1] + (1 - rf) * radAvg[ri] :
+            radAvg[b - 1];
     }
 
-    return out;
+    return {out};
 }
 
 std::vector<Complex> NoiseHelper::radialAverage(Image<Complex> &map, bool skipAxes) {
@@ -326,59 +304,58 @@ std::vector<Complex> NoiseHelper::radialAverage(Image<Complex> &map, bool skipAx
     const int h = map.data.ydim;
     const int b = w;
 
-    std::vector<Complex> out(b, 0.0);
-    std::vector<double> wgh(b, 0.0);
+    std::vector<Complex> out (b, 0);
+    std::vector<double>  wgh (b, 0);
 
-    for (int yy = 0; yy < h; yy++)
-    for (int xx = 0; xx < w; xx++) {
-        if (skipAxes && (xx == 0 || yy == 0)) continue;
+    for (int j = 0; j < h; j++)
+    for (int i = 0; i < w; i++) {
 
-        double x = xx;
-        double y = yy < h / 2.0 ? yy : yy - h;
-        double rd = sqrt(x * x + y * y);
+        if (skipAxes && (i == 0 || j == 0)) continue;
 
-        int r0 = rd;
-        double a = rd - r0;
+        const double x = i, y = j < h / 2.0 ? j : j - h;
+        const double r = std::hypot(x, y);
+        const int ri = r;
+        const double rf = r - ri;
 
-        if (r0 < b) {
-            out[r0] += (1.0 - a) * direct::elem(map.data, xx, yy);
-            wgh[r0] += 1.0 - a;
+        if (ri < b) {
+            out[ri] += (1 - rf) * direct::elem(map.data, i, j);
+            wgh[ri] += (1 - rf);
         }
 
-        if (r0 < b-1) {
-            out[r0 + 1] += a * direct::elem(map.data, xx, yy);
-            wgh[r0 + 1] += a;
+        if (ri < b - 1) {
+            out[ri + 1] += rf * direct::elem(map.data, i, j);
+            wgh[ri + 1] += rf;
         }
     }
 
-    for (int i = 0; i < b; i++) if (wgh[i] > 0.0) { out[i] /= wgh[i]; }
+    for (int i = 0; i < b; i++)
+        if (wgh[i] > 0)
+            out[i] /= wgh[i];
 
     return out;
 }
 
 Image<Complex> NoiseHelper::radialMap(std::vector<Complex> &radAvg) {
     const int b = radAvg.size();
-    const int s = 2*b - 2;
-    Image<Complex> out(b,s);
+    const int s = 2 * b - 2;
 
-    for (int yy = 0; yy < s; yy++)
-    for (int xx = 0; xx < b; xx++) {
-        double x = xx;
-        double y = yy < s / 2 ? yy : yy - s;
+    MultidimArray<Complex> out (b, s);
 
-        double rd = sqrt(x * x + y * y);
+    for (int j = 0; j < s; j++)
+    for (int i = 0; i < b; i++) {
 
-        int r0 = rd;
-        double a = rd - r0;
+        const double x = i, y = j < s / 2 ? j : j - s;
 
-        if (r0 < b - 1) {
-            direct::elem(out.data, xx, yy) = a * radAvg[r0 + 1] + (1 - a) * radAvg[r0];
-        } else {
-            direct::elem(out.data, xx, yy) = radAvg[b - 1];
-        }
+        const double r = std::hypot(x, y);
+        const int ri = r;
+        const double rf = r - ri;
+
+        direct::elem(out, i, j) = ri < b - 1 ?
+            rf * radAvg[ri + 1] + (1 - rf) * radAvg[ri] :
+            radAvg[b - 1];
     }
 
-	return out;
+	return {out};
 }
 
 std::vector<std::pair<double,double>> NoiseHelper::radialAverageAndStdDevFFTW(Image<RFLOAT> &map) {
@@ -386,67 +363,60 @@ std::vector<std::pair<double,double>> NoiseHelper::radialAverageAndStdDevFFTW(Im
     const int h = map.data.ydim;
     const int b = w;
 
-    std::vector<double> avg(b, 0.0);
-	std::vector<double> wgh(b, 0.0);
-	std::vector<double> var(b, 0.0);
+    std::vector<double> avg (b, 0.0), wgh (b, 0.0), var (b, 0.0);
 
-    for (int yy = 0; yy < h; yy++)
-    for (int xx = 0; xx < w; xx++) {
-        double x = xx;
-        double y = yy < h / 2.0 ? yy : yy - h;
-        double rd = sqrt(x * x + y * y);
-
-        int r = rd + 0.5;
+    for (int j = 0; j < h; j++)
+    for (int i = 0; i < w; i++) {
+        const double x = i, y = j < h / 2.0 ? j : j - h;
+        const int r = std::hypot(x, y) + 0.5;
 
         if (r < b) {
-            avg[r] += direct::elem(map.data, xx, yy);
+            avg[r] += direct::elem(map.data, i, j);
             wgh[r] += 1.0;
         }
     }
 
-    for (int i = 0; i < b; i++) if (wgh[i] > 0.0) { avg[i] /= wgh[i]; }
+    for (int i = 0; i < b; i++)
+        if (wgh[i] > 0.0)
+            avg[i] /= wgh[i];
 
-	for (int yy = 0; yy < h; yy++)
-    for (int xx = 0; xx < w; xx++) {
-        double x = xx;
-        double y = yy < h / 2.0 ? yy : yy - h;
-        double rd = sqrt(x * x + y * y);
+	for (int j = 0; j < h; j++)
+    for (int i = 0; i < w; i++) {
 
-		int r = rd + 0.5;
-
-		double mu = avg[r];
-		double v = direct::elem(map.data, xx, yy) - mu;
+        const double x = i, y = j < h / 2.0 ? j : j - h;
+		const int r = std::hypot(x, y) + 0.5;
+		const double mu = avg[r];
+		const double v = direct::elem(map.data, i, j) - mu;
 
         if (r < b) { var[r] += v * v; }
     }
 
-	for (int i = 0; i < b; i++) if (wgh[i] > 1.0) { var[i] /= wgh[i] - 1; }
+	for (int i = 0; i < b; i++)
+        if (wgh[i] > 1.0)
+            var[i] /= wgh[i] - 1;
 
-	std::vector<std::pair<double,double>> out(b);
-
+	std::vector<std::pair<double, double>> out;
+    out.reserve(b);
 	for (int i = 0; i < b; i++) {
-		out[i] = std::make_pair(avg[i], sqrt(var[i]));
+		out.emplace_back(avg[i], sqrt(var[i]));
 	}
-
     return out;
 }
 
 std::vector<double> NoiseHelper::radialWeight(int w, int h, bool half) {
     const int b = (w + h) / 4;
-
-    std::vector<double> wgh(b, 0.0);
-
     const int ha = half ? h / 2 : h;
 
-    for (int yy = 0; yy < ha; yy++)
-    for (int xx = 0; xx < w;  xx++) {
-        double x = xx < w / 2.0 ? xx : xx - w;
-        double y = yy < h / 2.0 ? yy : yy - h;
-        double rd = sqrt(x * x + y * y);
+    std::vector<double> wgh (b, 0.0);
 
-        int r = rd + 0.5;
+    for (int j = 0; j < ha; j++)
+    for (int i = 0; i < w;  i++) {
+        const double x = i < w / 2.0 ? i : i - w;
+        const double y = j < h / 2.0 ? j : j - h;
+        const int r = std::hypot(x, y) + 0.5;
 
-        if (r < b) { wgh[r] += 1.0; }
+        if (r < b)
+            wgh[r] += 1.0;
     }
 
     return wgh;
@@ -455,61 +425,49 @@ std::vector<double> NoiseHelper::radialWeight(int w, int h, bool half) {
 std::vector<double> NoiseHelper::fill(Image<RFLOAT>& confusion, double lambda, int iterations) {
     const int s0 = confusion.data.xdim;
 
-    std::vector<double> ra = radialAverage(confusion, true);
-    std::vector<double> rw = radialWeight(s0, s0, true);
+    const std::vector<double> ra = radialAverage(confusion, true);
+    const std::vector<double> rw = radialWeight(s0, s0, true);
 
     const int s = ra.size();
 
-    std::vector<double> w(s);
-
-    for (int x = 0; x < s; x++) {
-        w[x] = rw[x] * rw[x] * ra[x] * ra[x] + 1.0;
-    }
+    std::vector<double> w;
+    w.reserve(s);
+    for (int i = 0; i < s; i++)
+        w.push_back(rw[i] * rw[i] * ra[i] * ra[i] + 1.0);
 
     std::vector<double> v = ra, vn = ra;
 
     for (int it = 0; it < iterations; it++) {
-        for (int x = 1; x < s-1; x++) {
-            vn[x] = (lambda * 0.5 * (v[x + 1] + v[x - 1]) + w[x] * ra[x]) 
-                  / (lambda + w[x]);
+        for (int i = 1; i < s - 1; i++) {
+            vn[i] = (lambda * 0.5 * (v[i + 1] + v[i - 1]) + w[i] * ra[i])
+                  / (lambda + w[i]);
         }
 
-        vn[s - 1] = (lambda * 0.5 * v[s - 2] + w[s - 1] * ra[s - 1]) 
+        vn[s - 1] = (lambda * 0.5 * v[s - 2] + w[s - 1] * ra[s - 1])
                   / (lambda * 0.5 + w[s - 1]);
 
-        for (int x = 0; x < s; x++) { v[x] = vn[x]; }
+        std::copy_n(vn.begin(), s, v.begin());
     }
 
     return v;
 }
 
 Image<RFLOAT> NoiseHelper::normalize(const Image<RFLOAT> &confusion) {
-    const int w = confusion.data.xdim;
-    const int h = confusion.data.ydim;
+    const int w = confusion.data.xdim, h = confusion.data.ydim;
+    const double sum = std::accumulate(confusion.data.begin(),
+                                       confusion.data.end(), 0.0);
 
-    double sum = 0.0;
-    for (int y = 0; y < h; y++)
-    for (int x = 0; x < w; x++) {
-        sum += direct::elem(confusion.data, x, y);
-    }
-
-    if (sum <= 0.0) return Image<RFLOAT>::zeros(w, h);
-
-    Image<RFLOAT> out(w, h);
-
-    for (int y = 0; y < h; y++)
-    for (int x = 0; x < w; x++) {
-        direct::elem(out.data, x, y) = direct::elem(confusion.data, x, y) / sum;
-    }
-
-    return out;
+    if (sum <= 0.0)
+        return {MultidimArray<RFLOAT>::zeros(w, h)};
+    else
+        return {confusion.data / sum};
 }
 
 void NoiseHelper::testVariance(Image<RFLOAT> img) {
     const int s = img.data.xdim;
     const int sh = s / 2 + 1;
 
-    Image<Complex> spec = Image<Complex>::zeros(s, sh);
+    Image<Complex> spec (MultidimArray<Complex>::zeros(s, sh));
 
     FourierTransformer ft;
     spec() = ft.FourierTransform(img());
@@ -520,23 +478,18 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
         direct::elem(ccspec.data, xx, yy) = direct::elem(spec.data, xx, yy).norm();
     }
 
-    Image<RFLOAT> mu(s,s);
-    mu.data = ft.inverseFourierTransform(ccspec.data);
+    Image<RFLOAT> mu (ft.inverseFourierTransform(ccspec.data));
 
-    double varScale = 0.0;
-
-    for (long int yy = 0; yy < s; yy++)
-    for (long int xx = 0; xx < s; xx++) {
-        double m = direct::elem(img.data, xx, yy) / (s * s);
-        varScale += m * m;
-    }
+    const double varScale = std::accumulate(img.data.begin(), img.data.end(), 0.0,
+        [] (double const& acc, double const& x) { return acc + x * x; }
+    ) / (s * s);
 
     Image<RFLOAT> imgD = img;
     const double sig2 = 2.0;
     const double sig = sqrt(sig2);
 
     Image<RFLOAT> varImg = img;
-    varImg.data.initZeros();
+    std::fill_n(varImg.data.begin(), varImg.data.end(), 0.0);
 
     Image<Complex> imgDs(s, sh), ccDs(s, sh);
 
@@ -544,43 +497,26 @@ void NoiseHelper::testVariance(Image<RFLOAT> img) {
     for (int i = 0; i < N; i++) {
         if (i % 10 == 0) std::cout << i << "\n";
 
-        for (long int yy = 0; yy < s; yy++)
-        for (long int xx = 0; xx < s; xx++) {
-            double v = direct::elem(img.data, xx, yy);
-            direct::elem(imgD.data, xx, yy) = DistributionHelper::sampleGauss(v, sig);
-        }
+        for (long int i = 0; i < imgD.data.size(); i++)
+            imgD.data[i] = DistributionHelper::sampleGauss(img.data[i], sig);
 
         imgDs() = ft.FourierTransform(imgD());
 
-        for (long int yy = 0; yy < s;  yy++)
-        for (long int xx = 0; xx < sh; xx++) {
-            direct::elem(ccDs.data, xx, yy) = 
-                direct::elem(spec.data, xx, yy)
-              * direct::elem(imgDs.data, xx, yy).conj();
-        }
+        for (long int i = 0; i < ccDs.data.size(); i++)
+            ccDs.data[i] = spec.data[i] * imgDs.data[i].conj();
 
-        MultidimArray<RFLOAT> ccD(s,s);
-        ccD = ft.inverseFourierTransform(ccDs.data);
+        MultidimArray<RFLOAT> ccD = ft.inverseFourierTransform(ccDs.data);
 
-        for (long int yy = 0; yy < s; yy++)
-        for (long int xx = 0; xx < s; xx++) {
-            double m0 = direct::elem(mu.data, xx, yy);
-            double md = direct::elem(ccD, xx, yy);
-            double d = md - m0;
-
-            direct::elem(varImg.data, xx, yy) += d * d / N;
+        // varImg += (ccD - mu) * (ccD - mu) / N;
+        for (long int i = 0; i < s; i++) {
+            const double d = ccD[i] - mu.data[i];
+            varImg.data[i] += d * d / N;
         }
 
     }
 
-    double varSum = 0.0;
-
-    for (long int yy = 0; yy < s; yy++)
-    for (long int xx = 0; xx < s; xx++) {
-        varSum += direct::elem(varImg.data, xx, yy);
-    }
-
-    varSum /= s * s;
+    const double varSum = std::accumulate(varImg.data.begin(),
+                                          varImg.data.end(), 0.0) / (s * s);
 
     std::cout << varSum << " vs. " << sig2 * varScale << "\n";
 }
@@ -589,40 +525,36 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
     const int s = img.data.xdim;
     const int sh = s / 2 + 1;
 
-    Image<Complex> spec(s, sh);
-
     FourierTransformer ft;
-    spec() = ft.FourierTransform(img());
+    Image<Complex> spec (ft.FourierTransform(img()));
 
     VtkHelper::writeVTK(spec, "debug/spec.vtk");
 
-    for (long int y = 0; y < s;  y++)
-    for (long int x = 0; x < sh; x++) {
-        if (x == 0 && y == 0) continue;
+    for (long int j = 0; j < s;  j++)
+    for (long int i = 0; i < sh; i++) {
+        if (i == 0 && j == 0) continue;
 
-        const double yy = y < sh ? y : y - s;
-        const double xx = x;
+        const double y = j < sh ? j : j - s;
+        const double x = i;
+        const int r = std::hypot(x, y);
 
-        const int r = sqrt(xx * xx + yy * yy);
-
-        if (r >= sh) direct::elem(spec.data, x, y) = Complex(0.0, 0.0);
+        if (r >= sh) direct::elem(spec.data, i, j) = Complex(0.0, 0.0);
     }
 
 
     double varPred = 0.0;
 
-    for (long int y = 0; y < s;  y++)
-    for (long int x = 0; x < sh; x++) {
-        if (x == 0 && y == 0) continue;
+    for (long int j = 0; j < s;  j++)
+    for (long int i = 0; i < sh; i++) {
+        if (i == 0 && j == 0) continue;
 
-        const double yy = y < sh ? y : y - s;
-        const double xx = x;
-
-        const int r = sqrt(xx * xx + yy * yy);
+        const double y = j < sh ? j : j - s;
+        const double x = i;
+        const int r = std::hypot(x, y);
 
         if (r < sh && r > 0) {
-            double a = direct::elem(spec.data, x, y).norm() / sig2[r];
-            varPred += x == 0 ? a : 2.0 * a;
+            const double a = direct::elem(spec.data, i, j).norm() / sig2[r];
+            varPred += i == 0 ? a : 2.0 * a;
         }
     }
 
@@ -630,72 +562,65 @@ void NoiseHelper::testColorVariance(Image<RFLOAT> img, std::vector<double> sig2)
 
     std::cout << "pred: " << varPred << "\n";
 
-    std::vector<double> sig(sh);
+    std::vector<double> sig;
+    sig.reserve(sh);
+    for (double const& x: sig2)
+        sig.push_back(sqrt(x));
 
-    for (int i = 0; i < sh; i++) { sig[i] = sqrt(sig2[i]); }
+    MultidimArray<RFLOAT> varImg (img.data.xdim, img.data.ydim);
+    std::fill(varImg.begin(), varImg.end(), 0.0);
 
-    Image<RFLOAT> varImg = img;
-    varImg.data.initZeros();
-
-    Image<Complex> ccDs(s, sh);
+    Image<Complex> ccDs (s, sh);
 
     const int N = 10000;
-    const double sqrtH = sqrt(0.5);
+    const double sqrt_half = sqrt(0.5);
 
     double varTest = 0.0;
 
     for (int i = 0; i < N; i++) {
         if (i % 100 == 0) std::cout << i << "\n";
 
-        for (long int y = 0; y < s;  y++)
-        for (long int x = 0; x < sh; x++) {
-            const double yy = y < sh ? y : y - s;
-            const double xx = x;
+        for (long int j = 0; j < s;  j++)
+        for (long int i = 0; i < sh; i++) {
 
-            const int r = sqrt(xx * xx + yy * yy);
+            const double y = j < sh ? j : j - s;
+            const double x = i;
+            const int r = std::hypot(x, y);
 
             if (r < sh && r > 0) {
-                Complex z0 = direct::elem(spec.data, x, y);
 
-                double r0 = DistributionHelper::sampleGauss(0, sqrtH);
-                double r1 = DistributionHelper::sampleGauss(0, sqrtH);
+                const double r0 = DistributionHelper::sampleGauss(0, sqrt_half);
+                const double r1 = DistributionHelper::sampleGauss(0, sqrt_half);
+                Complex z0 = direct::elem(spec.data, i, j);
                 Complex z1 = Complex(r0, r1) * z0 / sig[r];
 
-                direct::elem(ccDs.data, x, y) = z1;
+                direct::elem(ccDs.data, i, j) = z1;
 
-                if (x == 0 && y >= sh) {
-                    direct::elem(ccDs.data, x, y) = direct::elem(ccDs.data, x, s - y).conj();
+                if (i == 0 && j >= sh) {
+                    direct::elem(ccDs.data, i, j) = direct::elem(ccDs.data, i, s - j).conj();
                 }
 
-                varTest += x == 0 ? direct::elem(ccDs.data, x, y).norm() :
-                              2.0 * direct::elem(ccDs.data, x, y).norm();
+                varTest += i == 0 ? direct::elem(ccDs.data, i, j).norm() :
+                              2.0 * direct::elem(ccDs.data, i, j).norm();
             } else {
-                direct::elem(ccDs.data, x, y) = 0.0;
+                direct::elem(ccDs.data, i, j) = 0.0;
             }
         }
 
-        MultidimArray<RFLOAT> ccD(s, s);
-        ccD = ft.inverseFourierTransform(ccDs.data);
+        MultidimArray<RFLOAT> ccD = ft.inverseFourierTransform(ccDs.data);
 
-        for (long int y = 0; y < s; y++)
-        for (long int x = 0; x < s; x++) {
-            double d = direct::elem(ccD, x, y);
-            direct::elem(varImg.data, x, y) += d * d / (N * varPred);
+        for (long int i = 0; i < s; i++) {
+            const double d = ccD[i];
+            varImg[i] += d * d / (N * varPred);
         }
     }
 
     varTest /= N;
 
-    VtkHelper::writeVTK(varImg, "debug/varImg_cn.vtk");
+    VtkHelper::writeVTK({varImg}, "debug/varImg_cn.vtk");
 
-    double varSum = 0.0;
-
-    for (long int yy = 0; yy < s; yy++)
-    for (long int xx = 0; xx < s; xx++) {
-        varSum += direct::elem(varImg.data, xx, yy);
-    }
-
-    varSum /= s * s;
+    const double varSum = std::accumulate(varImg.begin(),
+                                          varImg.end(), 0.0) / (s * s);
 
     std::cout << varSum << " @ " << varPred << " vs. " << varTest << "\n";
 
@@ -705,74 +630,59 @@ void NoiseHelper::testParseval() {
     const int s = 512;
     const int sh = s / 2 + 1;
 
-    Image<RFLOAT> real(s,s);
-    Image<Complex> freq(s, sh);
+    MultidimArray<RFLOAT>  real (s, s);
+    MultidimArray<Complex> freq (s, sh);
 
     for (int i = 0; i < 10; i++) {
+
         double varr = 0.0;
-
-        for (int y = 0; y < s; y++)
-        for (int x = 0; x < s; x++) {
-            direct::elem(real.data, x, y) = DistributionHelper::sampleGauss(0, 2);
-
-            double v = direct::elem(real.data, x, y);
-
-            varr += v * v;
+        for (RFLOAT& x: real) {
+            x = DistributionHelper::sampleGauss(0, 2);
+            varr += x * x;
         }
-
         varr /= s * s;
 
         FourierTransformer ft;
-        freq() = ft.FourierTransform(real());
+        freq = ft.FourierTransform(real);
 
         double var = 0.0;
-
-        for (int y = 0; y < s;  y++)
-        for (int x = 0; x < sh; x++) {
-            const Complex z = direct::elem(freq.data, x, y);
-            var += x == 0 ? z.norm() : 2 * z.norm();
+        for (int j = 0; j < s;  j++)
+        for (int i = 0; i < sh; i++) {
+            const Complex z = direct::elem(freq, i, j);
+            var += i == 0 ? z.norm() : 2 * z.norm();
         }
-
         var /= s * s;
 
         std::cout << varr << " vs. " << var << " (" << var * (double) (s * s) << ")\n";
-        // varr = varf*A
+        // varr = varf * A
     }
 
     std::cout << "\n";
 
-    for (int i = 0; i < 10; i++) {
+    const double sqrt_2 = sqrt(2.0);
+    for (int iter = 0; iter < 10; iter++) {
+
         double varf = 0.0;
+        for (int j = 0; j < s;  j++)
+        for (int i = 0; i < sh; i++) {
+            direct::elem(freq, i, j).real = DistributionHelper::sampleGauss(0, sqrt_2);
+            direct::elem(freq, i, j).imag = i > 0 && i < sh - 1 ?
+                DistributionHelper::sampleGauss(0, sqrt_2) : 0.0;
 
-        for (int y = 0; y < s;  y++)
-        for (int x = 0; x < sh; x++) {
-            direct::elem(freq.data, x, y).real = DistributionHelper::sampleGauss(0, sqrt(2.0));
-            if (x > 0 && x < sh - 1) {
-                direct::elem(freq.data, x, y).imag = DistributionHelper::sampleGauss(0, sqrt(2.0));
-            } else {
-                direct::elem(freq.data, x, y).imag = 0.0;
-            }
-
-            varf += x == 0 ? direct::elem(freq.data, x, y).norm() :
-                             direct::elem(freq.data, x, y).norm();
+            varf += i == 0 ? direct::elem(freq, i, j).norm() :
+                       2.0 * direct::elem(freq, i, j).norm();
         }
-
         varf /= s * s;
 
         FourierTransformer ft;
-        real() = ft.inverseFourierTransform(freq());
+        real = ft.inverseFourierTransform(freq);
 
         double var = 0.0;
-
-        for (int y = 0; y < s; y++)
-        for (int x = 0; x < s; x++) {
-            double v = direct::elem(real.data, x, y);
-            var += v * v;
-        }
-
+        for (RFLOAT const& x: real)
+            var += x * x;
         var /= s * s;
 
         std::cout << varf << " vs. " << var << " (" << var / (double) (s * s) << ")\n";
-        // varr/A = varf
+        // varf = varr / A
     }
 }

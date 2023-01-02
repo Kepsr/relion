@@ -87,7 +87,7 @@ class CTF {
     // Electron wavelength (Angstroms)
     RFLOAT lambda;
 
-    // Radius of the aperture (in micras)
+    // Radius of the aperture (in microns)
     // RFLOAT aperture;
 
     // Spherical aberration (in millimeters).
@@ -138,34 +138,24 @@ class CTF {
         RFLOAT defU, RFLOAT defV, RFLOAT defAng,
         RFLOAT voltage, RFLOAT Cs, RFLOAT Q0,
         RFLOAT Bfac = 0.0, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
-    ) {
-        setValues(defU, defV, defAng, voltage, Cs, Q0, Bfac, scale, phase_shift);
+    ):  DeltafU(defU), DeltafV(defV), azimuthal_angle(defAng), 
+        kV(voltage), Cs(Cs), Q0(Q0),
+        scale(scale), phase_shift(phase_shift), Bfac(Bfac) {
+        initialise();
     }
 
-    /** Just set all values explicitly */
-    void setValues(
-        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
-        RFLOAT voltage, RFLOAT Cs, RFLOAT Q0,
-        RFLOAT Bfac, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
-    );
-
-    // Initialise a CTF
     void initialise();
 
-    RFLOAT operator () (RFLOAT X, RFLOAT Y) {
-        return getCTF(X, Y);
-    }
-
     // Compute CTF at (U,V). Continuous frequencies
-    inline RFLOAT getCTF(
+    inline RFLOAT operator () (
         RFLOAT X, RFLOAT Y,
         bool do_only_flip_phases = false,
         bool do_intact_until_first_peak = false, bool do_damping = true,
         double gammaOffset = 0.0, bool do_intact_after_first_peak = false
     ) const {
 
-        RFLOAT u2 = X * X + Y * Y;  // u2 is the squared hypotenuse length of a right triangle with side lengths X, Y
-        RFLOAT u4 = u2 * u2;
+        const RFLOAT u2 = X * X + Y * Y;
+        const RFLOAT u4 = u2 * u2;
 
         // if (u2>=ua2) return 0;
         // RFLOAT deltaf = getDeltaF(X, Y);
@@ -173,49 +163,43 @@ class CTF {
         RFLOAT gamma = K1 * astigDefocus(X, Y) + K2 * u4 - K5 - K3 + gammaOffset;
         // Quadratic: xx + 2xy + yy
 
-        RFLOAT retval = (
-            do_intact_until_first_peak && abs(gamma) < PI / 2.0 ||
-            do_intact_after_first_peak && abs(gamma) > PI / 2.0
-        ) ? 1.0 : -sin(gamma);
+        RFLOAT CT = do_intact_until_first_peak && 2 * abs(gamma) < PI ||
+                    do_intact_after_first_peak && 2 * abs(gamma) > PI ? 1 : -sin(gamma);
 
-        if (do_damping) {
-            RFLOAT E = exp(K4 * u2); // B-factor decay (K4 = -Bfac/4);
-            retval *= E;
-        }
+        if (do_damping)
+            CT *= exp(K4 * u2);  // B-factor decay (K4 = -Bfac/4);
 
-        if (do_only_flip_phases) {
-            retval = float(retval >= 0.0);
-        }
+        if (do_only_flip_phases)
+            CT = float(CT >= 0);
 
-        retval *= scale;
+        CT *= scale;
 
         // SHWS 25-2-2019: testing a new idea to improve code stability
         // In order to prevent division by zero in GPU code, 
         // don't allow very small CTF values.
-        if (fabs(retval) < 1e-8) {
-            retval = 1e-8 * float(retval >= 0.0);
-        }
+        if (fabs(CT) < 1e-8)
+            CT = copysign(1e-8, CT);
 
-        return retval;
+        return CT;
     }
 
     RFLOAT getGamma(RFLOAT X, RFLOAT Y) const;
 
     // compute the local frequency of the ctf
-    // (i.e. the radial slope of 'double gamma' in getCTF())
+    // (i.e. the radial slope of 'double gamma' in operator ())
     // -- deprecated, use getGammaGrad().length()
     RFLOAT getCtfFreq(RFLOAT X, RFLOAT Y);
 
     gravis::t2Vector<RFLOAT> getGammaGrad(RFLOAT X, RFLOAT Y) const;
 
     inline Complex getCTFP(RFLOAT X, RFLOAT Y, double gammaOffset = 0.0) const {
-        RFLOAT u2 = X * X + Y * Y;
-        RFLOAT u4 = u2 * u2;
-        RFLOAT gamma = K1 * astigDefocus(X, Y) + K2 * u4 - K5 - K3 + gammaOffset + PI / 2.0;
+        const RFLOAT u2 = X * X + Y * Y;
+        const RFLOAT u4 = u2 * u2;
+        const RFLOAT gamma = K1 * astigDefocus(X, Y) + K2 * u4 - K5 - K3 + gammaOffset + PI / 2.0;
         return Complex::unit(gamma);
     }
 
-    // Compute Deltaf at a given direction (no longer used by getCTF)
+    // Compute Deltaf at a given direction (no longer used by operator ())
     inline RFLOAT getDeltaF(RFLOAT X, RFLOAT Y) const {
         if (abs(X) < Xmipp::epsilon && abs(Y) < Xmipp::epsilon)
             return 0;
@@ -235,14 +219,17 @@ class CTF {
     }
 
     std::vector<double> getK();
+
     double getAxx();
+
     double getAxy();
+
     double getAyy();
 
     inline RFLOAT getLambda() const { return lambda; }
 
     inline double astigDefocus(RFLOAT x, RFLOAT y) const {
-        return Axx * x * x + 2.0 * Axy * x * y + Ayy * y * y;
+        return Axx * x * x + 2 * Axy * x * y + Ayy * y * y;
     }
 
 };

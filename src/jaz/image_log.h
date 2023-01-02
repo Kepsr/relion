@@ -106,14 +106,11 @@ void ImageLog::write(
     }
 
     if (JazConfig::writeMrc)
-    {
-        img.write(fn+".mrc");
-    }
+        img.write(fn + ".mrc");
 
     if (JazConfig::writeVtk)
-    {
-        VtkHelper::writeVTK(img, fn+".vtk", originX, originY, originZ, spacingX, spacingY, spacingZ);
-    }
+        VtkHelper::writeVTK(img, fn + ".vtk", originX, originY, originZ, spacingX, spacingY, spacingZ);
+
 }
 
 template <typename T>

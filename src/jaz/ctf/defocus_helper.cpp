@@ -123,9 +123,9 @@ void DefocusHelper::findAstigmatismAndPhaseNM(
 
     std::vector<double> params = NelderMead::optimize(initial, opt, 5.0, 0.01, 100000);
 
-    *destU = opt.getU(params);
-    *destV = opt.getV(params);
-    *destPhi = opt.getPhi(params);
+    *destU     = opt.getU(params);
+    *destV     = opt.getV(params);
+    *destPhi   = opt.getPhi(params);
     *destPhase = opt.getPhase(params);
 }
 
@@ -143,11 +143,11 @@ void DefocusHelper::findAstigmatismPhaseAndCsNM(
 
     std::vector<double> params = NelderMead::optimize(initial, opt, 5.0, 0.01, 100000);
 
-    *destU = opt.getU(params);
-    *destV = opt.getV(params);
-    *destPhi = opt.getPhi(params);
+    *destU     = opt.getU(params);
+    *destV     = opt.getV(params);
+    *destPhi   = opt.getPhi(params);
     *destPhase = opt.getPhase(params);
-    *destCs = opt.getCs(params);
+    *destCs    = opt.getCs(params);
 }
 
 void DefocusHelper::findAstigmatismNM(

@@ -57,47 +57,43 @@ int main(int argc, char *argv[]) {
 
     const int sh = s / 2 + 1;
 
-    Image<RFLOAT> ctfImg(s, sh), one(s, sh);
-    one.data = 1.0;
+    Image<RFLOAT> one(s, sh);
+    std::fill(one.data.begin(), one.data.end(), 1);
 
     const double angpix = obsModel.getPixelSize(opticsGroup);
 
-    CTF ctf = CtfHelper::makeCTF(allMdts[mg], &obsModel, 0);
-    ctfImg() = CtfHelper::getFftwImage(
+    const CTF ctf = CtfHelper::makeCTF(allMdts[mg], &obsModel, 0);
+    const auto ctfImg = CtfHelper::getFftwImage(
         ctf, s, sh, s, s, angpix, &obsModel,
         allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1
     );
 
     const int tc = sh / step + 1;
 
-    const int maxBin = sh;
-
-    std::vector<Image<RFLOAT>> mask(tc + 1), psf(tc + 1), maskedCTF(tc + 1), slopeHistRad(tc + 1);
-    std::vector<std::vector<double>> slopeHist(tc + 1, std::vector<double>(maxBin));
+    std::vector<Image<RFLOAT>> mask (tc + 1), psf (tc + 1), maskedCTF (tc + 1), slopeHistRad(tc + 1);
+    std::vector<std::vector<double>> slopeHist (tc + 1, std::vector<double>(sh));
 
     for (int t = 0; t < tc + 1; t++) {
-        const double k0 = t * step;
-        const double k1 = (t + 1) * step;
+        const double k0 = t * step, k1 = t * step + step;
 
         mask[t] = t < tc ? FilterHelper::raisedCosEnvRingFreq2D(one, k0, k1, flankWidth) : one;
 
-        Image<Complex> ctfZ(s, sh);
-        Image<RFLOAT> maskedCTF_half(s, sh);
+        MultidimArray<Complex> ctfZ (s, sh);           // ctfImg * mask[t]
+        MultidimArray<RFLOAT> maskedCTF_half (s, sh);  // ctfImg * mask[t]
 
-        for (int y = 0; y < s;  y++)
-        for (int x = 0; x < sh; x++) {
-            maskedCTF_half(y, x) = ctfImg(y, x) * mask[t](y, x);
-            ctfZ(y, x) = ctfImg(y, x) * mask[t](y, x);
+        for (long int i = 0; i < ctfImg.size(); i++) {
+            maskedCTF_half[i] = ctfImg[i] * mask[t].data[i];
+            ctfZ[i]           = ctfImg[i] * mask[t].data[i];
         }
 
-        FftwHelper::decenterDouble2D(maskedCTF_half.data, maskedCTF[t].data);
+        FftwHelper::decenterDouble2D(maskedCTF_half, maskedCTF[t].data);
 
-        NewFFT::inverseFourierTransform(ctfZ.data, psf[t].data);
+        NewFFT::inverseFourierTransform(ctfZ, psf[t].data);
 
         const double as = s * angpix;
 
-        double minSlope = 100, maxSlope = -100;
-        int opticsGroup = allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1;
+        double minSlope = +100, maxSlope = -100;
+        const int opticsGroup = allMdts[mg].getValue<int>(EMDL::IMAGE_OPTICS_GROUP, 0) - 1;
 
         for (int y = 0; y < s;  y++)
         for (int x = 0; x < sh; x++) {
@@ -105,33 +101,24 @@ int main(int argc, char *argv[]) {
             double yy = y < sh ? y / as : (y - s) / as;
 
             obsModel.magnify(xx, yy, obsModel.getMagMatrix(opticsGroup));
-            double slope = ctf.getGammaGrad(xx,yy).length() / (as * PI);
+            const double slope = ctf.getGammaGrad(xx, yy).length() / (as * PI);
 
             if (mask[t](y, x) >= 0.5) {
                 if (slope < minSlope) { minSlope = slope; }
                 if (slope > maxSlope) { maxSlope = slope; }
             }
 
-            int si = slope * sh;
-
-            if (si < maxBin) {
-                slopeHist[t][si] += mask[t](y, x);
-            }
+            const int si = slope * sh;
+            if (si < slopeHist[t].size())
+            slopeHist[t][si] += mask[t](y, x);
         }
 
-        double maxHist = 0.0;
+        const auto it = std::max_element(slopeHist[t].begin(), slopeHist[t].end());
+        const double maxHist = slopeHist[t].empty() ? 0 : *it;
 
-        for (int b = 0; b < maxBin; b++) {
-            if (slopeHist[t][b] > maxHist) {
-                maxHist = slopeHist[t][b];
-            }
-        }
-
-        if (maxHist > 0.0) {
-            for (int b = 0; b < maxBin; b++) {
-                slopeHist[t][b] /= maxHist;
-            }
-        }
+        if (maxHist > 0)
+            for (double& x: slopeHist[t])
+                x /= maxHist;
 
         std::cout << t << ": " << minSlope << " - " << maxSlope << "\n";
 
@@ -141,8 +128,8 @@ int main(int argc, char *argv[]) {
     JazConfig::writeMrc = false;
     JazConfig::writeVtk = true;
 
-    ImageLog::write(maskedCTF, outPath + "_maskedCTF");
-    ImageLog::write(mask, outPath + "_mask");
-    ImageLog::write(psf, outPath + "_psf", CenterXY);
+    ImageLog::write(maskedCTF,    outPath + "_maskedCTF");
+    ImageLog::write(mask,         outPath + "_mask");
+    ImageLog::write(psf,          outPath + "_psf",       CenterXY);
     ImageLog::write(slopeHistRad, outPath + "_slopeHist", CenterXY);
 }

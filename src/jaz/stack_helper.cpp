@@ -438,7 +438,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 out[p][f].data = fts[t].FourierTransform(raux[t].data);
             } else {
                 caux[t].data = fts[t].FourierTransform(raux[t].data);
-                out[p][f] = FilterHelper::cropCorner2D(caux[t], squareSize / 2 + 1, squareSize);
+                out[p][f] = FilterHelper::cropCorner2D_fftw(caux[t], squareSize / 2 + 1, squareSize);
             }
 
             out[p][f].data.elem(0, 0) = Complex(0.0, 0.0);
@@ -545,7 +545,7 @@ std::vector<std::vector<Image<Complex>>> StackHelper::extractMovieStackFS(
                 out[p][f].data = fts[t].FourierTransform(raux[t].data);
             } else {
                 caux[t].data = fts[t].FourierTransform(raux[t].data);
-                out[p][f] = FilterHelper::cropCorner2D(caux[t], squareSize / 2 + 1, squareSize);
+                out[p][f] = FilterHelper::cropCorner2D_fftw(caux[t], squareSize / 2 + 1, squareSize);
             }
 
             out[p][f].data.elem(0, 0) = Complex(0.0, 0.0);

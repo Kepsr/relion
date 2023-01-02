@@ -44,27 +44,26 @@ MotionEM::MotionEM(
     double sig_cutoff,
     int threads
 ):
-projector0(projector0), projector1(projector1),
-obsModel(obsModel),
-viewParams(viewParams),
-movie(movie),
-globalPositions(globalPositions),
-sigma2(sigma2),
-damageWeights(damageWeights),
-sig_pos(sig_pos), sig_vel(movie[0].size() - 1),
-sig_div(movie[0].size() - 1),
-sig_cutoff(sig_cutoff),
-threads(threads),
-
-fts_full(threads),
-fts_pos(threads), fts_vel(threads * sig_vel_initial.size()),
-pc(movie.size()),
-fc(movie[0].size()),
-s_full(movie[0][0].data.ydim),           sh_full(movie[0][0].data.ydim / 2 + 1),
-s_pos(2 * (int) (sig_cutoff * sig_pos)), sh_pos((int) (sig_cutoff * sig_pos) + 1),
-s_vel(movie[0].size() - 1),              sh_vel(movie[0].size() - 1),
-sig_vel_class(movie[0].size() - 1),
-initialized(false) {
+    projector0(projector0), projector1(projector1),
+    obsModel(obsModel),
+    viewParams(viewParams),
+    movie(movie),
+    globalPositions(globalPositions),
+    sigma2(sigma2),
+    damageWeights(damageWeights),
+    sig_pos(sig_pos), sig_vel(movie[0].size() - 1),
+    sig_div(movie[0].size() - 1),
+    sig_cutoff(sig_cutoff),
+    threads(threads),
+    fts_full(threads),
+    fts_pos(threads), fts_vel(threads * sig_vel_initial.size()),
+    pc(movie.size()),
+    fc(movie[0].size()),
+    s_full(movie[0][0].data.ydim),           sh_full(movie[0][0].data.ydim / 2 + 1),
+    s_pos(2 * (int) (sig_cutoff * sig_pos)), sh_pos((int) (sig_cutoff * sig_pos) + 1),
+    s_vel(movie[0].size() - 1),              sh_vel(movie[0].size() - 1),
+    sig_vel_class(movie[0].size() - 1),
+    initialized(false) {
     if (s_pos > s_full) {
         s_pos = s_full;
         sh_pos = sh_full;
@@ -92,22 +91,20 @@ initialized(false) {
 }
 
 void MotionEM::computeInitial() {
-    posProb = std::vector<std::vector<Image<RFLOAT>>>(pc);
-    velProb = std::vector<std::vector<Image<RFLOAT>>>(pc);
-    pred = std::vector<Image<Complex>>(pc);
+    pred      =             std::vector<Image<Complex>>(pc);
+    posProb   = std::vector<std::vector<Image<RFLOAT>>>(pc);
+    velProb   = std::vector<std::vector<Image<RFLOAT>>>(pc);
     initialCC = std::vector<std::vector<Image<RFLOAT>>>(pc);
 
     // Loop over particles
     for (int p = 0; p < pc; p++) {
-        initialCC[p] = std::vector<Image<RFLOAT>>(fc, Image<RFLOAT>(s_full,s_full));
+        initialCC[p] = std::vector<Image<RFLOAT>>(fc, Image<RFLOAT>(s_full, s_full));
         posProb[p] = std::vector<Image<RFLOAT>>(fc);
         velProb[p] = std::vector<Image<RFLOAT>>(fc - 1);
 
-        int randSubset = viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p) - 1;
-
+        const int randSubset = viewParams.getValue(EMDL::PARTICLE_RANDOM_SUBSET, p);
         pred[p] = obsModel.predictObservation(
-            randSubset == 0 ? projector0 : projector1, viewParams, p, true, true
-        );
+            randSubset == 1 ? projector0 : projector1, viewParams, p, true, true);
 
         MotionRefinement::noiseNormalize(pred[p], sigma2, pred[p]);
 
@@ -116,26 +113,22 @@ void MotionEM::computeInitial() {
             std::stringstream stsf;
             stsf << f;
 
-            int threadnum = omp_get_thread_num();
+            const int threadnum = omp_get_thread_num();
 
-            Image<Complex> ccFs(sh_full,s_full);
-            ccFs.data.xinit = 0;
-            ccFs.data.yinit = 0;
+            Image<Complex> ccFs (sh_full, s_full);
+            ccFs.data.setOrigin(0, 0, 0);
+            for (long int i = 0; i != sh_full * s_full)
+                ccFs.data[i] = movie[p][f].data[i] * damageWeights[f].data[i] * pred[p].data[i].conj();
 
-            for (int y = 0; y < s_full; y++)
-            for (int x = 0; x < sh_full; x++) {
-                ccFs(y, x) = movie[p][f](y, x) * damageWeights[f](y, x) * pred[p](y, x).conj();
-            }
+            // s_full × s_full
+            Image<RFLOAT> ccRs (fts_full[threadnum].inverseFourierTransform(ccFs()));
 
-            Image<RFLOAT> ccRs(s_full,s_full);
-            ccRs() = fts_full[threadnum].inverseFourierTransform(ccFs());
+            for (long int i = 0; i != s_full * s_full; i++)
+                initialCC[p][f][i] = s_full * s_full * ccRs.data[i];
 
-            for (int y = 0; y < s_full; y++)
-            for (int x = 0; x < s_full; x++) {
-                initialCC[p][f](y, x) = s_full * s_full * ccRs(y, x);
-            }
-
-            RFLOAT offCC = FilterHelper::maxValue(ccRs);
+            const RFLOAT offCC = ccRs.data.size() ?
+                 std::max_element(ccRs.data.begin(), ccRs.data.end()) :
+                -std::numeric_limits<double>::max();
 
             ImageOp::linearCombination(ccRs, offCC, 1.0, -1.0, ccRs);
 
@@ -151,7 +144,7 @@ void MotionEM::computeInitial() {
 void MotionEM::iterate() {
     updateVelocities();
     consolidateVelocities();
-    //smoothVelocities();
+    // smoothVelocities();
     updatePositions(false);
     updatePositions(true);
 }
@@ -349,41 +342,33 @@ void MotionEM::updatePositions(bool backward, int maxPc) {
     for (int p = 0; p < debug_pc; p++) {
         int threadnum = omp_get_thread_num();
 
-        Image<Complex> posProbFs(sh_pos, s_pos), velProbLargeFs(sh_pos, s_pos);
+        Image<Complex> posProbFs (sh_pos, s_pos), velProbLargeFs (sh_pos, s_pos);
 
         for (int f = f0; f != f1; f += df) {
             const int ff = f + df;
             const int fv = backward ? ff : f;
 
-            Image<RFLOAT> velProbLarge = FilterHelper::padCorner2D(velProb[p][fv], s_pos, s_pos);
+            const Image<RFLOAT> velProbLarge = FilterHelper::padCorner2D(velProb[p][fv], s_pos, s_pos);
 
-            velProbLargeFs() = fts_pos[threadnum].FourierTransform(velProbLarge());
-            posProbFs()      = fts_pos[threadnum].FourierTransform(posProb[p][f]());
+            velProbLargeFs.data = fts_pos[threadnum].FourierTransform(velProbLarge.data);
+            posProbFs.data      = fts_pos[threadnum].FourierTransform(posProb[p][f].data);
 
-            for (int y = 0; y < s_pos; y++)
-            for (int x = 0; x < sh_pos; x++) {
-                posProbFs(y, x) = s_pos * s_pos * posProbFs(y, x) * (
-                    backward ? velProbLargeFs(y, x).conj() : velProbLargeFs(y, x)
+            for (long int i = 0; i != s_pos * sh_pos; i ++)  {
+                posProbFs.data[i] = s_pos * s_pos * posProbFs.data[i] * (
+                    backward ? velProbLargeFs.data[i].conj() : velProbLargeFs.data[i]
                 );
             }
 
-            Image<RFLOAT> posProbMapped(s_pos, s_pos);
-            posProbMapped() = fts_pos[threadnum].inverseFourierTransform(posProbFs());
+            // s_pos × s_pos
+            const MultidimArray<RFLOAT> posProbMapped = fts_pos[threadnum].inverseFourierTransform(posProbFs());
 
             double sum = 0.0;
-
-            for (int y = 0; y < s_pos; y++)
-            for (int x = 0; x < s_pos; x++) {
-                posProb[p][ff](y, x) *= std::max(eps, posProbMapped(y, x));
-                sum += posProb[p][ff](y, x);
+            for (long int i = 0; i != s_pos * s_pos; i++) {
+                sum += (posProb[p][ff].data[i] *= std::max(eps, posProbMapped[i]));
             }
 
-            if (sum > 0.0) {
-                for (int y = 0; y < s_pos; y++)
-                for (int x = 0; x < s_pos; x++) {
-                    posProb[p][ff](y, x) /= sum;
-                }
-            }
+            if (sum > 0.0)
+                posProb[p][ff].data /= sum;
         }
     }
 }

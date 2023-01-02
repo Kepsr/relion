@@ -2304,7 +2304,7 @@ void AutoPicker::autoPickLoGOneMicrograph(const FileName &fn_mic, long int imic)
                 &obsModel,
                 false, false, false, false, false, true
             );
-            Fmic /= Fctf;  // this is safe because getCTF does not return 0.
+            Fmic /= Fctf;
         }
 
         Image<RFLOAT> Maux(workSize, workSize);

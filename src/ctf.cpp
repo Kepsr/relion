@@ -49,24 +49,6 @@
 
 using namespace gravis;
 
-void CTF::setValues(
-    RFLOAT _defU,    RFLOAT _defV,  RFLOAT _defAng,
-    RFLOAT _voltage, RFLOAT _Cs,    RFLOAT _Q0,
-    RFLOAT _Bfac,    RFLOAT _scale, RFLOAT _phase_shift
-) {
-    kV              = _voltage;
-    DeltafU         = _defU;
-    DeltafV         = _defV;
-    azimuthal_angle = _defAng;
-    Cs              = _Cs;
-    Bfac            = _Bfac;
-    scale           = _scale;
-    Q0              = _Q0;
-    phase_shift     = _phase_shift;
-
-    initialise();
-}
-
 void CTF::initialise() {
     // Change units
     RFLOAT local_Cs = Cs * 1e7;
@@ -92,12 +74,12 @@ void CTF::initialise() {
     K1 = PI / 2 * 2 * lambda;
     K2 = PI / 2 * local_Cs * lambda * lambda * lambda;
     K3 = atan(Q0 / sqrt(1 - Q0 * Q0));
-    K4 = -Bfac / 4.0;
+    K4 = -Bfac / 4;
 
     // Phase shift in radians
     K5 = radians(phase_shift);
 
-    if (Q0 < 0.0 || Q0 > 1.0)
+    if (Q0 < 0 || Q0 > 1)
         REPORT_ERROR("CTF::initialise ERROR: AmplitudeContrast Q0 cannot be smaller than zero or larger than one!");
 
     if (abs(DeltafU) < 1e-6 && abs(DeltafV) < 1e-6 && abs(Q0) < 1e-6 && abs(Cs) < 1e-6)
@@ -120,37 +102,35 @@ void CTF::initialise() {
 }
 
 RFLOAT CTF::getGamma(RFLOAT X, RFLOAT Y) const {
-    RFLOAT u2 = X * X + Y * Y;
-    RFLOAT u4 = u2 * u2;
+    const RFLOAT u2 = X * X + Y * Y;
+    const RFLOAT u4 = u2 * u2;
     return K1 * astigDefocus(X, Y) + K2 * u4 - K5 - K3;
 }
 
 RFLOAT CTF::getCtfFreq(RFLOAT X, RFLOAT Y) {
-    RFLOAT u2 = X * X + Y * Y;
-    RFLOAT u = sqrt(u2);
-
-    RFLOAT deltaf = getDeltaF(X, Y);
-
-    return 2.0 * K1 * deltaf * u + 4.0 * K2 * u * u * u;
+    const RFLOAT u2 = X * X + Y * Y;
+    const RFLOAT u = sqrt(u2);
+    const RFLOAT deltaf = getDeltaF(X, Y);
+    return 2 * K1 * deltaf * u + 4 * K2 * u * u * u;
 }
 
 t2Vector<RFLOAT> CTF::getGammaGrad(RFLOAT X, RFLOAT Y) const {
 
-    RFLOAT u2 = X * X + Y * Y;
+    const RFLOAT u2 = X * X + Y * Y;
     // RFLOAT u4 = u2 * u2;
 
     // u4 = (X² + Y²)²
     // du4/dx = 2 (X² + Y²) 2 X = 4 (X³ + XY²) = 4 u2 X
 
     return t2Vector<RFLOAT>(
-        2.0 * (K1 * Axx * X + K1 * Axy * Y + 2.0 * K2 * u2 * X),
-        2.0 * (K1 * Ayy * Y + K1 * Axy * X + 2.0 * K2 * u2 * Y)
+        2 * (K1 * Axx * X + K1 * Axy * Y + 2 * K2 * u2 * X),
+        2 * (K1 * Ayy * Y + K1 * Axy * X + 2 * K2 * u2 * Y)
     );
 }
 
 std::vector<double> CTF::getK() {
     // offset by one to maintain indices (K[1] = K1)
-    return std::vector<double>{0, K1, K2, K3, K4, K5};
+    return {0, K1, K2, K3, K4, K5};
 }
 
 double CTF::getAxx() {

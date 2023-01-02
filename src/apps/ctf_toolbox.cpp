@@ -112,9 +112,8 @@ class ctf_toolbox_parameters {
                 const RFLOAT x = (RFLOAT) i / xs;
                 const RFLOAT y = (RFLOAT) j / ys;
 
-                Ictf().elem(i, j) = ctf.getCTF(
-                    x, y,
-                    false, do_intact_ctf_until_first_peak,
+                Ictf().elem(i, j) = ctf(x, y,
+                    false,     do_intact_ctf_until_first_peak,
                     true, 0.0, do_intact_ctf_after_first_peak
                 );
             }
@@ -159,7 +158,7 @@ class ctf_toolbox_parameters {
                 if (!do_intact_ctf_after_first_peak) {
                     Fimg *= Fctf;
                 } else {
-                    Fimg /= Fctf;  // this is safe because getCTF does not return RELION_EXIT_SUCCESS.
+                    Fimg /= Fctf;
                 }
 
                 img() = transformer.inverseFourierTransform(Fimg);

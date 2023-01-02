@@ -148,6 +148,19 @@ inline T euclid(T a, T b) { return sqrt(RFLOAT(a * a + b * b)); }
 template <typename T>
 inline T euclid(T a, T b, T c) { return sqrt(RFLOAT(a * a + b * b + c * c)); }
 
+// Part of namespace std since C++17
+inline float hypot(float a, float b, float c) {
+    return sqrt(a * a + b * b + c * c);
+}
+
+inline double hypot(double a, double b, double c) {
+    return sqrt(a * a + b * b + c * c);
+}
+
+inline long double hypot(long double a, long double b, long double c) {
+    return sqrt(a * a + b * b + c * c);
+}
+
 // Squared Euclidean distance in 2D
 template <typename T>
 inline T euclidsq(T a, T b) { return a * a + b * b; }
@@ -156,34 +169,10 @@ inline T euclidsq(T a, T b) { return a * a + b * b; }
 template <typename T>
 inline T euclidsq(T a, T b, T c) { return a * a + b * b + c * c; }
 
-/** Clip in a saturation fashion
- *
- * clip acts like a saturation curve.
- * It returns the value of x "clipped" to the closed interval [x0, xF].
- * x, x0, xF are required to be of identical type T,
- * which must implement a total ordering via the operators < and >.
- * For example the following code:
- * @code
- * for (int x = -4; x <= +4; x++) {
- *     std::cout << "(" << x << " " << clip(x, -2, +2) << ") ";
- * }
- * std::cout << std::endl;
- * @endcode
- * will output
- * @code
- * (-4 -2) (-3 -2) (-2 -2) (-1 -1) (0 0) (1 1) (2 2) (3 2) (4 2)
- * @endcode
- *
- * This function template replaces a macro CLIP.
- * @code
- * #define CLIP(x, x0, xF) ((x) < (x0) ? (x0) : ((x) > (xF) ? (xF) : (x)))
- * @endcode
- */
+// std::clamp from C++17
 template <typename T>
-T clip(T x, T x0, T xF) {
-    if (x < x0) return x0;
-    if (x > xF) return xF;
-                return x;
+const T& clamp(const T& v, const T& lo, const T& hi) {
+    return v < lo ? lo : hi < v ? hi : v;
 }
 
 /** Wrapping for integers

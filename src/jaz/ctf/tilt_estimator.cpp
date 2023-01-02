@@ -200,15 +200,15 @@ void TiltEstimator::parametricFit(
 
         if (!groupUsed[og]) continue;
 
-        Image<RFLOAT> wgh, phase, fit, phaseFull, fitFull;
+        Image<RFLOAT> fit, phaseFull, fitFull;
 
-        FilterHelper::getPhase(xyAccSum, phase);
+        Image<RFLOAT> phase = FilterHelper::getPhase(xyAccSum);
 
         Image<Complex> xyNrm(sh[og], s[og]);
 
         Image<RFLOAT> wgh0 = reference->getHollowWeight(kmin, s[og], angpix[og]);
 
-        FilterHelper::multiply(wAccSum, wgh0, wgh);
+        Image<RFLOAT> wgh (wAccSum.data * wgh0.data);
 
         if (xring1 > 0.0) {
             for (int y = 0; y < s[og]; y++)

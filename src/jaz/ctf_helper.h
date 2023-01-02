@@ -44,39 +44,23 @@ namespace CtfHelper {
         double voltage, double Cs, double Q0, double Bfac, double scale
     );
 
-    /** Set all values explicitly in 3.1 */
-    void setValuesByGroup(
-        CTF &ctf, ObservationModel *obs, int opticsGroup,
-        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
-        RFLOAT Bfac = 0.0, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
-    );
-
-    // Read CTF parameters from particle table partMdt and optics table opticsMdt.
-    void readByGroup(
-        CTF &ctf, const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1
-    );
-
-    CTF makeCTF(const MetaDataTable &mdt, long int objectID = -1);
-    CTF makeCTF(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID = -1);
-    CTF makeCTF(const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1);
-
-    CTF makeCTF(
-        ObservationModel *obs, int opticsGroup,
-        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
-        RFLOAT Bfac = 0.0, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
-    );
-
     // Read from a MetaDataTable
-    void read(CTF &ctf, const MetaDataTable &MD, long int objectID = -1);
+    CTF makeCTF(const MetaDataTable &mdt, long int objectID = -1);
 
     /** Read CTF parameters from MetaDataTables MD1 and MD2 (deprecated).
      * If a parameter is not found in MD1 it is tried to be read from MD2.
      * If it is also not found in the second then a default value is used.
      * This is useful if micrograph-specific parameters are stored in a separate MD from the image-specific parameters.
      */
-    void read(
-        CTF &ctf, const MetaDataTable &MD1, const MetaDataTable &MD2,
-        long int objectID = -1
+    CTF makeCTF(const MetaDataTable &MD1, const MetaDataTable &MD2, long int objectID = -1);
+
+    // Read CTF parameters from particle table partMdt and optics table opticsMdt
+    CTF makeCTF(const MetaDataTable &partMdt, ObservationModel *obs, long int particle = -1);
+
+    CTF makeCTF(
+        ObservationModel *obs, int opticsGroup,
+        RFLOAT defU, RFLOAT defV, RFLOAT defAng,
+        RFLOAT Bfac = 0.0, RFLOAT scale = 1.0, RFLOAT phase_shift = 0.0
     );
 
     RFLOAT readValue(

@@ -30,68 +30,62 @@
 #include <src/jaz/parallel_ft.h>
 #include <vector>
 
-class MotionEM
-{
+class MotionEM {
+
     public:
 
-        MotionEM(
-                Projector& projector0,
-                Projector& projector1,
-                const ObservationModel& obsModel,
-                MetaDataTable& viewParams,
-                const std::vector<std::vector<Image<Complex>>>& movie,
-                const std::vector<gravis::d2Vector>& globalPositions,
-                const std::vector<double>& sigma2,
-                const std::vector<Image<RFLOAT>>& damageWeights,
-                double sig_pos,
-                const std::vector<double>& sig_vel_initial,
-                const std::vector<double>& sig_div_initial,
-                double sig_cutoff,
-                int threads);
+    Projector& projector0;
+    Projector& projector1;
+    const ObservationModel& obsModel;
+    MetaDataTable& viewParams;
+    const std::vector<std::vector<Image<Complex>>>& movie;
+    const std::vector<gravis::d2Vector>& globalPositions;
+    const std::vector<double>& sigma2;
+    const std::vector<Image<RFLOAT>>& damageWeights;
+    double sig_pos, sig_cutoff;
+    std::vector<double> sig_vel, sig_div;
 
-            Projector& projector0;
-            Projector& projector1;
-            const ObservationModel& obsModel;
-            MetaDataTable& viewParams;
-            const std::vector<std::vector<Image<Complex>>>& movie;
-            const std::vector<gravis::d2Vector>& globalPositions;
-            const std::vector<double>& sigma2;
-            const std::vector<Image<RFLOAT>>& damageWeights;
-            double sig_pos, sig_cutoff;
-            std::vector<double> sig_vel, sig_div;
+    int threads;
+    std::vector<ParFourierTransformer> fts_full, fts_pos, fts_vel;
 
-            int threads;
-            std::vector<ParFourierTransformer> fts_full, fts_pos, fts_vel;
+    int pc, fc, s_full, sh_full, s_pos, sh_pos;
 
-            int pc, fc,
-                s_full, sh_full,
-                s_pos, sh_pos;
+    std::vector<int> s_vel, sh_vel, sig_vel_class;
 
-            std::vector<int> s_vel, sh_vel, sig_vel_class;
+    bool initialized;
 
-            bool initialized;
+    std::vector<std::vector<Image<RFLOAT>>> posProb, velProb, initialCC;
+    std::vector<Image<Complex>> pred;
+    std::vector<Image<RFLOAT>> e_sum;
 
-            std::vector<std::vector<Image<RFLOAT>>> posProb, velProb, initialCC;
-            std::vector<Image<Complex>> pred;
-            std::vector<Image<RFLOAT>> e_sum;
+    MotionEM(
+        Projector& projector0, Projector& projector1,
+        const ObservationModel& obsModel,
+        MetaDataTable& viewParams,
+        const std::vector<std::vector<Image<Complex>>>& movie,
+        const std::vector<gravis::d2Vector>& globalPositions,
+        const std::vector<double>& sigma2,
+        const std::vector<Image<RFLOAT>>& damageWeights,
+        double sig_pos,
+        const std::vector<double>& sig_vel_initial,
+        const std::vector<double>& sig_div_initial,
+        double sig_cutoff,
+        int threads);
 
-        void estimate(int iterations);
-        void computeInitial();
-        void iterate();
+    void computeInitial();
+    void iterate();
 
-        void updateVelocities();
-        void consolidateVelocities(int maxPc = -1);
-        void smoothVelocities();
+    void updateVelocities();
+    void consolidateVelocities(int maxPc = -1);
+    void smoothVelocities();
 
-        Image<RFLOAT> blurVelocity(const Image<Complex>& velProbFs, double sigma, int f, int threadnum);
-        Image<RFLOAT> adaptSize(const Image<RFLOAT>& img, int s);
+    Image<RFLOAT> blurVelocity(const Image<Complex>& velProbFs, double sigma, int f, int threadnum);
+    Image<RFLOAT> adaptSize(const Image<RFLOAT>& img, int s);
 
-        void updatePositions(bool backward, int maxPc = -1);
+    void updatePositions(bool backward, int maxPc = -1);
 
-        std::vector<gravis::d2Vector> getTrack(int particle);
-        std::vector<gravis::d2Vector> getGlobalTrack();
-
-
+    std::vector<gravis::d2Vector> getTrack(int particle);
+    std::vector<gravis::d2Vector> getGlobalTrack();
 
 };
 

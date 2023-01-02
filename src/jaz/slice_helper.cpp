@@ -67,16 +67,22 @@ void SliceHelper::downsampleSlices(const Image<RFLOAT> &img, Image<RFLOAT> &dest
 }
 
 void SliceHelper::downsampleSlicesReal(const Image<RFLOAT> &img, Image<RFLOAT> &dest) {
-    double q = dest.data.xdim / (double) img.data.xdim;
 
-    Image<RFLOAT> sliceT(img.data.xdim, img.data.ydim, 1);
-    Image<RFLOAT> slice1(dest.data.xdim, dest.data.ydim, 1);
+    const long int wi = img.data.xdim,  hi = img.data.ydim;
+    const long int wd = dest.data.xdim, hd = dest.data.ydim;
+    const double q = wd / (double) wi;
+
+    Image<RFLOAT> img_slice (wi, hi), dest_slice (wd, hd);
 
     for (long int n = 0; n < img.data.ndim; n++) {
-        auto slice0 = getStackSlice(img, n);
-        FilterHelper::separableGaussianXYZ(slice0, sliceT, 1.5/q);
-        subsample(sliceT, slice1);
-        insertStackSlice(slice1, dest, n);
+        const auto slice = getStackSlice(img, n);
+        /** XXX: Performance regression due to assignment.
+         * But FilterHelper::separableGaussianXYZ makes internal allocations,
+         * so it is already a less-than-optimal choice here.
+         */
+        img_slice = FilterHelper::separableGaussianXYZ(slice, 1.5 / q);
+        subsample(img_slice, dest_slice);
+        insertStackSlice(dest_slice, dest, n);
     }
 }
 

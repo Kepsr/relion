@@ -33,17 +33,17 @@ class VtkHelper
 
         static Image<RFLOAT> allToZ(const Image<RFLOAT>& img);
 
-        static void writeVTK(Image<double>& img, std::string fn,
+        static void writeVTK(const Image<double>& img, std::string fn,
                              double originX = 0.0, double originY = 0.0, double originZ = 0.0,
                              double spacingX = 1.0, double spacingY = 1.0, double spacingZ = 1.0,
                              bool binary = false);
 
-        static void writeVTK(Image<float>& img, std::string fn,
+        static void writeVTK(const Image<float>& img, std::string fn,
                              double originX = 0.0, double originY = 0.0, double originZ = 0.0,
                              double spacingX = 1.0, double spacingY = 1.0, double spacingZ = 1.0,
                              bool binary = false);
 
-        static void writeVTK(Image<Complex>& img, std::string fn,
+        static void writeVTK(const Image<Complex>& img, std::string fn,
                          double originX = 0.0, double originY = 0.0, double originZ = 0.0,
                          double spacingX = 1.0, double spacingY = 1.0, double spacingZ = 1.0,
                          bool binary = false);

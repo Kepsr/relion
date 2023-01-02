@@ -737,7 +737,7 @@ void Preprocessing::extractParticlesFromOneMicrograph(MetaDataTable &MD,
         if (do_phase_flip || do_premultiply_ctf) {
             FT = transformer.FourierTransform(Ipart());  // std::move?
 
-            // 190802 TAKANORI: The original code using getCTF was do_damping=false, but for consistency with Polishing, I changed it.
+            // 190802 TAKANORI: The original code using CTF::operator () was do_damping=false, but for consistency with Polishing, I changed it.
             // The boxsize in ObsModel has been updated above.
             // In contrast to Polish, we premultiply particle BEFORE down-sampling, so PixelSize in ObsModel is OK.
             // But we are doing this after extraction, so there is not much merit...

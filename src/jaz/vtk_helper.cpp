@@ -42,7 +42,7 @@ Image<RFLOAT> VtkHelper::allToZ(const Image<RFLOAT> &img) {
 }
 
 void VtkHelper::writeVTK(
-    Image<double>& img, std::string fn,
+    const Image<double>& img, std::string fn,
     double originX, double originY, double originZ,
     double spacingX, double spacingY, double spacingZ,
     bool binary
@@ -81,7 +81,7 @@ void VtkHelper::writeVTK(
 }
 
 void VtkHelper::writeVTK(
-    Image<float>& img, std::string fn,
+    const Image<float>& img, std::string fn,
     double originX, double originY, double originZ,
     double spacingX, double spacingY, double spacingZ,
     bool binary
@@ -120,7 +120,7 @@ void VtkHelper::writeVTK(
 }
 
 void VtkHelper::writeVTK(
-    Image<Complex> &img, std::string fn, 
+    const Image<Complex> &img, std::string fn, 
     double originX, double originY, double originZ, 
     double spacingX, double spacingY, double spacingZ, 
     bool binary
