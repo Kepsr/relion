@@ -1498,7 +1498,7 @@ void FilterHelper::diffuseAlongIsocontours2D(
                 0.5 * (direct::elem(guide.data, x, y + 1) - direct::elem(guide.data, x, y - 1)));
         }
 
-        D0(x, y, 0) = Tensor2x2<RFLOAT>::autoDyadicProduct(g);
+        D0(x, y, 0) = Tensor2x2<RFLOAT>::dyadicProduct(g, g);
     }
 
     separableGaussian(D0, D, sigma);
@@ -1520,7 +1520,7 @@ void FilterHelper::diffuseAlongIsocontours2D(
 
         // dbg0(x, y, 0) = f.length();
 
-        J(x, y, 0) = ani * Tensor2x2<RFLOAT>::autoDyadicProduct(f);
+        J(x, y, 0) = ani * Tensor2x2<RFLOAT>::dyadicProduct(f, f);
     }
 
     // VtkHelper::writeVTK(dbg0, "f_len.vtk");
