@@ -44,100 +44,99 @@ std::vector<T> make_kernel(T sigma, int n) {
     return kernel;
 }
 
-void sepgaus_x(const MultidimArray<Complex>& src, int n, const std::vector<double>& kernel, MultidimArray<Complex>& dest) {
+template <typename valarray_like>
+inline void normalise(valarray_like& kernel) {
+    const double sum = std::accumulate(kernel.begin(), kernel.end(), 0.0);
+    for (double& x: kernel) x /= sum;  // Now kernel sums to 1
+}
+
+template <typename C>
+void sepgaus_x_fftw(const MultidimArray<C>& src, int n, const std::vector<double>& kernel, MultidimArray<C>& dest) {
     dest.resize(src);
     for (size_t k = 0; k < src.zdim; k++)
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        Complex v = 0;
-        double  m = 0;
+        C v = 0;
         for (long int l = 0; l != kernel.size(); l++) {
-
-            long ii = i - n + l;
-            bool conj = false;
+            long ii = i - n + l, jj = j, kk = k;
             if (ii < 0) {
                 ii = -ii;
-                conj = true;
+                jj = src.ydim - j % src.ydim;
+                kk = src.zdim - k % src.zdim;
             } else if (ii >= src.xdim) {
                 ii = 2 * src.xdim - 1 - ii;
-                conj = true;
+                jj = src.ydim - j % src.ydim;
+                kk = src.zdim - k % src.zdim;
             }
-            long jj = conj ? src.ydim - j % src.ydim : j;
-            long kk = conj ? src.zdim - k % src.zdim : k;
-            v += kernel[l + n] * direct::elem(src, ii, jj, kk);
-            m += kernel[l + n];
+            v += kernel[l] * direct::elem(src, ii, jj, kk);
         }
 
-        direct::elem(dest, i, j, k) = v / m;
+        direct::elem(dest, i, j, k) = v;
     }
 }
 
-void sepgaus_x_with_conj(const MultidimArray<Complex>& src, int n, const std::vector<double>& kernel, MultidimArray<Complex>& dest) {
+template <typename C>
+void sepgaus_x_with_conj_fftw(const MultidimArray<C>& src, int n, const std::vector<double>& kernel, MultidimArray<C>& dest) {
     dest.resize(src);
     for (size_t k = 0; k < src.zdim; k++)
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        Complex v = 0;
-        double  m = 0;
+        C v = 0;
         for (long int l = 0; l != kernel.size(); l++) {
 
-            long ii = i - n + l;
-            bool conj = false;
+            long ii = i - n + l, jj = j, kk = k;
             if (ii < 0) {
                 ii = -ii;
-                conj = true;
+                jj = src.ydim - j % src.ydim;
+                kk = src.zdim - k % src.zdim;
             } else if (ii >= src.xdim) {
                 ii = 2 * src.xdim - 2 - ii;
-                conj = true;
+                jj = src.ydim - j % src.ydim;
+                kk = src.zdim - k % src.zdim;
             }
-            long jj = conj ? src.ydim - j % src.ydim : j;
-            long kk = conj ? src.zdim - k % src.zdim : k;
             // This is where we differ from sepgaus_x:
-            Complex vv = direct::elem(src, ii, jj, kk);
-            if (conj) vv = vv.conj();
+            C vv = direct::elem(src, ii, jj, kk);
+            if (i - n + l < 0 || i - n + l >= src.xdim) vv = vv.conj();
             v += kernel[l] * vv;
-            m += kernel[l];
         }
 
-        direct::elem(dest, i, j, k) = v / m;
+        direct::elem(dest, i, j, k) = v;
     }
 }
 
-void sepgaus_y(const MultidimArray<Complex>& src, int n, const std::vector<double>& kernel, MultidimArray<Complex>& dest) {
+template <typename C>
+void sepgaus_y_fftw(const MultidimArray<C>& src, int n, const std::vector<double>& kernel, MultidimArray<C>& dest) {
     dest.resize(src);
     for (size_t k = 0; k < src.zdim; k++)
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        Complex v = 0;
-        double  m = 0;
+        C v = 0;
         for (long int l = 0; l != kernel.size(); l++) {
             const long int jj = (j - n + l + src.ydim) % src.ydim;
             v += kernel[l] * direct::elem(src, i, jj, k);
-            m += kernel[l];
         }
 
-        direct::elem(dest, i, j, k) = v / m;
+        direct::elem(dest, i, j, k) = v;
     }
 }
 
-void sepgaus_z(const MultidimArray<Complex>& src, int n, const std::vector<double>& kernel, MultidimArray<Complex>& dest) {
+template <typename C>
+void sepgaus_z_fftw(const MultidimArray<C>& src, int n, const std::vector<double>& kernel, MultidimArray<C>& dest) {
     dest.resize(src);
     for (size_t k = 0; k < src.zdim; k++)
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        Complex v = 0;
-        double  m = 0;
+        C v = 0;
         for (long int l = 0; l != kernel.size(); l++) {
             const long int kk = (k - n + l + src.zdim) % src.zdim;
             v += kernel[l] * direct::elem(src, i, j, kk);
-            m += kernel[l];
         }
 
-        direct::elem(dest, i, j, k) = v / m;
+        direct::elem(dest, i, j, k) = v;
     }
 }
 
@@ -145,27 +144,27 @@ void FilterHelper::separableGaussianFreq(
     const MultidimArray<Complex> &src,
     MultidimArray<Complex> &dest, double sigma, int k
 ) {
-    dest.reshape(src);
     if (k < 0) { k = 2 * sigma + 0.5; }
-    const auto kernel = make_kernel(sigma, k);
+    auto kernel = make_kernel(sigma, k);
+    normalise(kernel);
 
-    MultidimArray<Complex> temp (src.xdim, src.ydim, src.ydim);
-    sepgaus_x(src,  k, kernel, dest);
-    sepgaus_y(dest, k, kernel, temp);
-    sepgaus_z(temp, k, kernel, dest);
+    MultidimArray<Complex> temp;
+    sepgaus_x_fftw(src,  k, kernel, dest);
+    sepgaus_y_fftw(dest, k, kernel, temp);
+    sepgaus_z_fftw(temp, k, kernel, dest);
 }
 
 void FilterHelper::separableGaussianFreqXY(
     const MultidimArray<Complex> &src,
     MultidimArray<Complex> &dest, double sigma, int k
 ) {
-    dest.reshape(src);
     if (k < 0) { k = 2 * sigma + 0.5; }
-    const auto kernel = make_kernel(sigma, k);
+    auto kernel = make_kernel(sigma, k);
+    normalise(kernel);
 
-    MultidimArray<Complex> temp (src.xdim, src.ydim, src.zdim);
-    sepgaus_x_with_conj(src, k, kernel, temp);
-    sepgaus_y(temp, k, kernel, dest);
+    MultidimArray<Complex> temp;
+    sepgaus_x_with_conj_fftw(src, k, kernel, temp);
+    sepgaus_y_fftw(temp, k, kernel, dest);
 }
 
 void FilterHelper::drawTestPattern(Image<RFLOAT> &img, int squareSize) {
@@ -759,43 +758,38 @@ double FilterHelper::L1distance(
     const Image<RFLOAT> &i0, const Image<RFLOAT> &i1,
     int x0, int y0, int w, int h
 ) {
+
+    if (w < 0) w = i0.data.xdim;
+    if (h < 0) h = i0.data.ydim;
+
     double d = 0.0;
-
-    if (w < 0) { w = i0.data.xdim; }
-    if (h < 0) { h = i0.data.ydim; }
-
     for (long int n = 0; n < i0.data.ndim; n++)
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
     for (long int x = x0; x < x0 + w; x++) {
-        RFLOAT v0 = direct::elem(i0.data, x, y, z, n);
-        RFLOAT v1 = direct::elem(i1.data, x, y, z, n);
-
-        double di = v1 - v0;
-        d += std::abs(di);
+        const RFLOAT a = direct::elem(i0.data, x, y, z, n);
+        const RFLOAT b = direct::elem(i1.data, x, y, z, n);
+        d += std::abs(b - a);
     }
-
     return d;
 }
 
 double FilterHelper::L2distance(
     const Image<RFLOAT> &i0, const Image<RFLOAT> &i1, int x0, int y0, int w, int h
 ) {
+
+    if (w < 0) w = i0.data.xdim;
+    if (h < 0) h = i0.data.ydim;
+
     double d = 0.0;
-
-    if (w < 0) { w = i0.data.xdim; }
-    if (h < 0) { h = i0.data.ydim; }
-
     for (long int n = 0; n < i0.data.ndim; n++)
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
     for (long int x = x0; x < x0 + w; x++) {
-        const RFLOAT v0 = direct::elem(i0.data, x, y, z, n);
-        const RFLOAT v1 = direct::elem(i1.data, x, y, z, n);
-        const double di = v1 - v0;
-        d += di * di;
+        const RFLOAT a = direct::elem(i0.data, x, y, z, n);
+        const RFLOAT b = direct::elem(i1.data, x, y, z, n);
+        d += (b - a) * (b - a);
     }
-
     return d;
 }
 
@@ -808,7 +802,8 @@ double FilterHelper::NCC(
     if (w < 0) { w = i0.data.xdim; }
     if (h < 0) { h = i0.data.ydim; }
 
-    double mu0 = 0.0, mu1 = 0.0, cnt = 0.0;
+    double mu0 = 0.0, mu1 = 0.0;
+    const int cnt = i0.data.size();
     for (long int n = 0; n < i0.data.ndim; n++)
     for (long int z = 0; z < i0.data.zdim; z++)
     for (long int y = y0; y < y0 + h; y++)
@@ -817,7 +812,6 @@ double FilterHelper::NCC(
         const RFLOAT v1 = direct::elem(i1.data, x, y, z, n);
         mu0 += v0;
         mu1 += v1;
-        cnt += 1.0;
     }
     mu0 /= cnt;
     mu1 /= cnt;
@@ -832,8 +826,8 @@ double FilterHelper::NCC(
         sig0 += v0 * v0;
         sig1 += v1 * v1;
     }
-    sig0 = sqrt(sig0 / (cnt - 1.0));
-    sig1 = sqrt(sig1 / (cnt - 1.0));
+    sig0 = sqrt(sig0 / (cnt - 1));
+    sig1 = sqrt(sig1 / (cnt - 1));
 
     double ncc = 0.0;
     for (long int n = 0; n < i0.data.ndim; n++)
@@ -864,7 +858,7 @@ void FilterHelper::divideExcessive(
     for (long int z = 0; z < dividend.data.zdim; z++)
     for (long int y = 0; y < dividend.data.ydim; y++)
     for (long int x = 0; x < dividend.data.xdim; x++) {
-        const RFLOAT t = divisor(x, y, z) / theta;  // Surely divisor(x, y, z, n)?
+        const RFLOAT t = divisor(x, y, z) / theta;
         direct::elem(dest.data, x, y, z, n) = t > 1 ?
             direct::elem(dividend.data, x, y, z, n) / t :
             direct::elem(dividend.data, x, y, z, n);
@@ -1054,14 +1048,10 @@ void FilterHelper::erode3x3(Image<RFLOAT> &src, Image<RFLOAT> &dest) {
         for (long int zz = z - 1; zz <= z + 1; zz++)
         for (long int yy = y - 1; yy <= y + 1; yy++)
         for (long int xx = x - 1; xx <= x + 1; xx++) {
-            if (
-                xx >= 0 && xx < src.data.xdim &&
+            if (xx >= 0 && xx < src.data.xdim &&
                 zz >= 0 && zz < src.data.zdim &&
-                yy >= 0 && yy < src.data.ydim &&
-                direct::elem(src.data, xx, yy, zz) < v
-            ) {
-                v = direct::elem(src.data, xx, yy, zz);
-            }
+                yy >= 0 && yy < src.data.ydim)
+                v = std::min(direct::elem(src.data, xx, yy, zz), v);
         }
 
         direct::elem(dest.data, x, y, z) = v;
@@ -1084,9 +1074,8 @@ void FilterHelper::localMinima(Image<RFLOAT> &src, RFLOAT thresh, Image<RFLOAT> 
         for (long int ii = i - 1; ii <= i + 1; ii++) {
             if (ii >= 0 && ii < src.data.xdim &&
                 jj >= 0 && jj < src.data.ydim &&
-                kk >= 0 && kk < src.data.zdim &&
-                direct::elem(src.data, ii, jj, kk) < v)
-                v = direct::elem(src.data, ii, jj, kk);
+                kk >= 0 && kk < src.data.zdim)
+                v = std::min(direct::elem(src.data, ii, jj, kk), v);
         }
 
         direct::elem(dest.data, i, j, k) = direct::elem(src.data, i, j, k) == v;
@@ -1109,9 +1098,8 @@ std::vector<gravis::d3Vector> FilterHelper::localMinima(
         for (long int ii = i - 1; ii <= i + 1; ii++) {
             if (ii >= 0 && ii < src.data.xdim &&
                 jj >= 0 && jj < src.data.ydim &&
-                kk >= 0 && kk < src.data.zdim &&
-                direct::elem(src.data, ii, jj, kk) < v)
-                v = direct::elem(src.data, ii, jj, kk);
+                kk >= 0 && kk < src.data.zdim)
+                v = std::min(direct::elem(src.data, ii, jj, kk), v);
         }
 
         if (v == direct::elem(src.data, i, j, k))
@@ -1282,8 +1270,8 @@ void FilterHelper::polarRemap(
 ) {
     const long int w = src.data.xdim, h = src.data.ydim;
 
-    dest     = Image<RFLOAT>(phiRes, rRes, 1);
-    maskDest = Image<RFLOAT>(phiRes, rRes, 1);
+    dest    .data.resize(phiRes, rRes);
+    maskDest.data.resize(phiRes, rRes);
 
     for (long int ri = 0; ri < rRes; ri++)
     for (long int p = 0; p < phiRes; p++) {
@@ -1301,10 +1289,10 @@ void FilterHelper::polarRemap(
             ppnny > 0 && ppnny < h - 1 &&
             direct::elem(mask.data, ppnnx, ppnny) > 0.5
         ) {
-            direct::elem(dest.data, p, ri) = Interpolation::linearXY(src, pp.x, pp.y, 0);
+            direct::elem(dest.data,     p, ri) = Interpolation::linearXY(src, pp.x, pp.y, 0);
             direct::elem(maskDest.data, p, ri) = 1.0;
         } else {
-            direct::elem(dest.data, p, ri) = 0.0;
+            direct::elem(dest.data,     p, ri) = 0.0;
             direct::elem(maskDest.data, p, ri) = 0.0;
         }
     }
@@ -1314,10 +1302,9 @@ void FilterHelper::polarRemap(
     d2Vector pos, const Image<RFLOAT> &distTransf, const Image<RFLOAT> &src, Image<RFLOAT> &dest,
     const Image<RFLOAT> &mask, Image<RFLOAT> &maskDest, int phiRes, int rRes, double rMax
 ) {
-    const long int w = src.data.xdim, h = src.data.ydim;
 
-    dest     = Image<RFLOAT>(phiRes, rRes, 1);
-    maskDest = Image<RFLOAT>(phiRes, rRes, 1);
+    dest    .data.resize(phiRes, rRes);
+    maskDest.data.resize(phiRes, rRes);
 
     for (long int i = 0; i != phiRes * rRes; i++) {
         dest    .data[i] = 0.0;
@@ -1329,6 +1316,7 @@ void FilterHelper::polarRemap(
     const int y0 = pos.y - rMax + 0.5;
     const int y1 = pos.y + rMax + 0.5;
 
+    const long int w = src.data.xdim, h = src.data.ydim;
     for (int j = y0; j <= y1; j++)
     for (int i = x0; i <= x1; i++) {
         const double dx = i - pos.x;
@@ -2147,13 +2135,13 @@ void sepgaus_z(const MultidimArray<RFLOAT>& src, int n, const std::vector<RFLOAT
     }
 }
 
-Image<RFLOAT> FilterHelper::separableGaussianXYZ(const Image<RFLOAT> &src, RFLOAT sigma, int n) {
-
+Image<RFLOAT> FilterHelper::separableGaussianXYZ(
+    const Image<RFLOAT> &src, RFLOAT sigma, int n
+) {
     if (n < 0) { n = 2 * sigma + 0.5; }
     const auto kernel = make_kernel(sigma, n);
-    const long int& w = src.data.xdim, h = src.data.ydim, d = src.data.zdim;
 
-    MultidimArray<RFLOAT> work1 (w, h, d), work2 (w, h, d);
+    MultidimArray<RFLOAT> work1, work2;
     sepgaus_x(src.data, n, kernel, work1);
     sepgaus_y(work1,    n, kernel, work2);
     sepgaus_z(work2,    n, kernel, work1);
@@ -2167,9 +2155,8 @@ Image<RFLOAT> FilterHelper::separableGaussianXY(
 
     if (n < 0) { n = 2 * sigma + 0.5; }
     const auto kernel = make_kernel(sigma, n);
-    const long int& w = src.data.xdim, h = src.data.ydim, d = src.data.zdim;
 
-    MultidimArray<RFLOAT> work1 (w, h, d), work2 (w, h, d);
+    MultidimArray<RFLOAT> work1, work2;
     sepgaus_x(src.data, n, kernel, work1);
     sepgaus_y(work1,    n, kernel, work2);
     return {std::move(work2)};
@@ -2178,7 +2165,6 @@ Image<RFLOAT> FilterHelper::separableGaussianXY(
 Image<RFLOAT> FilterHelper::separableGaussianX_wrap(
     const Image<RFLOAT> &src, const Image<RFLOAT> &mask, RFLOAT sigma, int n
 ) {
-
     if (n < 0) { n = 2 * sigma + 0.5; }
     const auto kernel = make_kernel(sigma, n);
     const long int& w = src.data.xdim, h = src.data.ydim, d = src.data.zdim;
@@ -2247,6 +2233,105 @@ Image<RFLOAT> FilterHelper::averageX(Image<RFLOAT> copy, const Image<RFLOAT> &ma
         }
     }
     return copy;
+}
+
+template <typename T>
+inline void convolve_x_wrap(const MultidimArray<T>& src, std::array<double, 3> kernel, MultidimArray<T>& dest) {
+    const int mid = 1;
+    const size_t w = src.xdim, h = src.ydim, d = src.zdim;
+    dest.resize(w, h, d);
+    normalise(kernel);
+    for (size_t k = 0; k < d; k++)
+    for (size_t j = 0; j < h; j++)
+    for (size_t i = 0; i < w; i++) {
+
+        T v = 0;
+        for (int l = 0; l < kernel.size(); l++) {
+            int ii = i + l - mid;
+            ii = (ii + w) % w;
+            v += kernel[l] * direct::elem(src, ii, j, k);
+        }
+
+        direct::elem(dest, i, j, k) = v;
+    }
+}
+
+template <typename T>
+inline void convolve_x_nowrap(const MultidimArray<T>& src, const std::array<double, 3>& kernel, MultidimArray<T>& dest) {
+    const int mid = 1;
+    const size_t w = src.xdim, h = src.ydim, d = src.zdim;
+    dest.resize(w, h, d);
+    for (size_t k = 0; k < d; k++)
+    for (size_t j = 0; j < h; j++)
+    for (size_t i = 0; i < w; i++) {
+
+        T v = 0;
+        double m = 0;
+        for (int l = 0; l < kernel.size(); l++) {
+            int ii = i + l - mid;
+            if (ii < 0 || ii >= w) continue;
+            v += kernel[l] * direct::elem(src, ii, j, k);
+            m += kernel[l];
+        }
+
+        direct::elem(dest, i, j, k) = v / m;
+    }
+}
+
+template <typename T>
+inline void convolve_y_wrap(const MultidimArray<T>& src, std::array<double, 3> kernel, MultidimArray<T>& dest) {
+    const int mid = 1;
+    const size_t w = src.xdim, h = src.ydim, d = src.zdim;
+    dest.resize(w, h, d);
+    normalise(kernel);
+    for (size_t k = 0; k < d; k++)
+    for (size_t j = 0; j < h; j++)
+    for (size_t i = 0; i < w; i++) {
+
+        T v = 0;
+        for (int l = 0; l <= kernel.size(); l++) {
+            int jj = j + l - mid;
+            jj = (jj + h) % h;
+            v += kernel[l] * direct::elem(src, i, jj, k);
+        }
+
+        direct::elem(dest, i, j, k) = v;
+    }
+}
+
+template <typename T>
+inline void convolve_y_nowrap(const MultidimArray<T>& src, const std::array<double, 3>& kernel, MultidimArray<T>& dest) {
+    const int mid = 1;
+    const size_t w = src.xdim, h = src.ydim, d = src.zdim;
+    dest.resize(w, h, d);
+    for (size_t k = 0; k < d; k++)
+    for (size_t j = 0; j < h; j++)
+    for (size_t i = 0; i < w; i++) {
+
+        T v = 0;
+        double m = 0;
+        for (int l = 0; l <= kernel.size(); l++) {
+            const int jj = j + l - mid;
+            if (jj < 0 || jj >= h) continue;
+            v += kernel[l] * direct::elem(src, i, jj, k);
+            m += kernel[l];
+        }
+
+        direct::elem(dest, i, j, k) = v / m;
+    }
+}
+
+template<typename T>
+void FilterHelper::binomial3x3_2D(const Image<T>& src, Image<T>& dest, bool wrap) {
+    const std::array<double, 3> kernel = {0.25, 0.5, 0.25};
+    MultidimArray<T> temp;
+    if (wrap) {
+        convolve_x_wrap(src.data, kernel, temp);
+        convolve_y_wrap(temp,     kernel, dest.data);
+    } else {
+        convolve_x_nowrap(src.data, kernel, temp);
+        convolve_y_nowrap(temp,     kernel, dest.data);
+    }
 }
 
 // Manual template instantiation

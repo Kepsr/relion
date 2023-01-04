@@ -190,59 +190,6 @@ namespace FilterHelper {
 }
 
 template<typename T>
-void FilterHelper::binomial3x3_2D(const Image<T>& src, Image<T>& dest, bool wrap)
-{
-    const size_t w = src.data.xdim;
-    const size_t h = src.data.ydim;
-    const size_t d = src.data.zdim;
-
-    dest.data.reshape(w, h, d);
-
-    Image<T> temp(w,h);
-    std::vector<double> kernel = {0.25, 0.5, 0.25};
-
-    for (size_t z = 0; z < d; z++)
-    for (size_t y = 0; y < h; y++)
-    for (size_t x = 0; x < w; x++)
-    {
-        T v = 0;
-        double m = 0;
-
-        for (int i = -1; i <= 1; i++)
-        {
-            int xx = x + i;
-            if (wrap) xx = (xx + w) % w;
-            else if (xx < 0 || xx >= w) continue;
-
-            v += kernel[i+1] * direct::elem(src(), y, xx, z, 0);
-            m += kernel[i+1];
-        }
-
-        direct::elem(temp(), y, x, z, 0) = v / m;
-    }
-
-    for (size_t z = 0; z < d; z++)
-    for (size_t y = 0; y < h; y++)
-    for (size_t x = 0; x < w; x++)
-    {
-        T v = 0;
-        double m = 0;
-
-        for (int i = -1; i <= 1; i++)
-        {
-            int yy = y + i;
-            if (wrap) yy = (yy + h) % h;
-            else if (yy < 0 || yy >= h) continue;
-
-            v += kernel[i+1] * direct::elem(temp(), yy, x, z, 0);
-            m += kernel[i+1];
-        }
-
-        direct::elem(dest(), y, x, z, 0) = v / m;
-    }
-}
-
-template<typename T>
 void FilterHelper::separableGaussian(const Volume<T>& src, Volume<T>& dest, double sigma, int k)
 {
     if (k < 0)
