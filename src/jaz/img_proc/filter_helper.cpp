@@ -51,6 +51,27 @@ inline void normalise(valarray_like& kernel) {
 }
 
 template <typename T, typename valarray_like>
+void convolve_x_nowrap(const Volume<T>& src, const valarray_like& kernel, Volume<T>& dest) {
+    const size_t mid = kernel.size() / 2;
+    dest.resize(src);
+    for (size_t k = 0; k < src.dimz; k++)
+    for (size_t j = 0; j < src.dimy; j++)
+    for (size_t i = 0; i < src.dimx; i++) {
+
+        T v = 0;
+        double m = 0;
+        for (long int l = 0; l != kernel.size(); l++) {
+            const long int ii = i + l - mid;
+            if (ii < 0 || ii >= src.dimx) continue;
+            v += kernel[l] * src(ii, j, k);
+            m += kernel[l];
+        }
+
+        dest(i, j, k) = v / m;
+    }
+}
+
+template <typename T, typename valarray_like>
 void convolve_x_nowrap(const MultidimArray<T>& src, const valarray_like& kernel, MultidimArray<T>& dest) {
     const size_t mid = kernel.size() / 2;
     dest.resize(src);
@@ -97,7 +118,8 @@ void convolve_y_nowrap(const MultidimArray<T>& src, const valarray_like& kernel,
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        RFLOAT v = 0, m = 0;
+        T v = 0;
+        double m = 0;
         for (long int l = 0; l != kernel.size(); l++) {
             const long int jj = j - mid + l;
             if (jj < 0 || jj >= src.ydim) continue;
@@ -110,6 +132,27 @@ void convolve_y_nowrap(const MultidimArray<T>& src, const valarray_like& kernel,
 }
 
 template <typename T, typename valarray_like>
+void convolve_y_nowrap(const Volume<T>& src, const valarray_like& kernel, Volume<T>& dest) {
+    const size_t mid = kernel.size() / 2;
+    dest.resize(src);
+    for (size_t k = 0; k < src.dimz; k++)
+    for (size_t j = 0; j < src.dimy; j++)
+    for (size_t i = 0; i < src.dimx; i++) {
+
+        T v = 0;
+        double m = 0;
+        for (long int l = 0; l != kernel.size(); l++) {
+            const long int jj = j - mid + l;
+            if (jj < 0 || jj >= src.dimy) continue;
+            v += kernel[l] * src(i, jj, k);
+            m += kernel[l];
+        }
+
+        dest(i, j, k) = v / m;
+    }
+}
+
+template <typename T, typename valarray_like>
 void convolve_y_wrap(const MultidimArray<T>& src, const valarray_like& kernel, MultidimArray<T>& dest) {
     const size_t mid = kernel.size() / 2;
     dest.resize(src);
@@ -117,7 +160,7 @@ void convolve_y_wrap(const MultidimArray<T>& src, const valarray_like& kernel, M
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        RFLOAT v = 0;
+        T v = 0;
         for (long int l = 0; l != kernel.size(); l++) {
             const long int jj = (j - mid + l + src.ydim) % src.ydim;
             v += kernel[l] * direct::elem(src, i, jj, k);
@@ -135,7 +178,8 @@ void convolve_z_nowrap(const MultidimArray<T>& src, const valarray_like& kernel,
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        RFLOAT v = 0, m = 0;
+        T v = 0;
+        double m = 0;
         for (long int l = 0; l != kernel.size(); l++) {
             const long int kk = k - mid + l;
             if (kk < 0 || kk >= src.zdim) continue;
@@ -148,6 +192,27 @@ void convolve_z_nowrap(const MultidimArray<T>& src, const valarray_like& kernel,
 }
 
 template <typename T, typename valarray_like>
+void convolve_z_nowrap(const Volume<T>& src, const valarray_like& kernel, Volume<T>& dest) {
+    const size_t mid = kernel.size() / 2;
+    dest.resize(src);
+    for (size_t k = 0; k < src.dimz; k++)
+    for (size_t j = 0; j < src.dimy; j++)
+    for (size_t i = 0; i < src.dimx; i++) {
+
+        T v = 0;
+        double m = 0;
+        for (long int l = 0; l != kernel.size(); l++) {
+            const long int kk = k - mid + l;
+            if (kk < 0 || kk >= src.dimz) continue;
+            v += kernel[l] * src(i, j, kk);
+            m += kernel[l];
+        }
+
+        dest(i, j, k) = v / m;
+    }
+}
+
+template <typename T, typename valarray_like>
 void convolve_z_wrap(const MultidimArray<T>& src, const valarray_like& kernel, MultidimArray<T>& dest) {
     const size_t mid = kernel.size() / 2;
     dest.resize(src);
@@ -155,7 +220,7 @@ void convolve_z_wrap(const MultidimArray<T>& src, const valarray_like& kernel, M
     for (size_t j = 0; j < src.ydim; j++)
     for (size_t i = 0; i < src.xdim; i++) {
 
-        RFLOAT v = 0;
+        T v = 0;
         for (long int l = 0; l != kernel.size(); l++) {
             const long int kk = (k - mid + l + src.zdim) % src.zdim;
             v += kernel[l] * direct::elem(src, i, j, kk);
@@ -1620,10 +1685,11 @@ void FilterHelper::diffuseAlongIsocontours2D(
     Volume<d2Vector> flux (w, h, 1);
     flux.fill(d2Vector(0, 0));
 
-    Volume<Tensor2x2<RFLOAT>> D0 (w, h, 1), D (w, h, 1), J (w, h, 1);
-    D0.fill(Tensor2x2<RFLOAT>(0.0));
-    D .fill(Tensor2x2<RFLOAT>(0.0));
-    J .fill(Tensor2x2<RFLOAT>(0.0));
+    using tensor_t = Tensor2x2<RFLOAT>;
+    Volume<tensor_t> D0 (w, h, 1), D (w, h, 1), J (w, h, 1);
+    D0.fill({0.0});
+    D .fill({0.0});
+    J .fill({0.0});
 
     for (long int y = 1; y < h - 1; y++)
     for (long int x = 1; x < w - 1; x++) {
@@ -1644,22 +1710,24 @@ void FilterHelper::diffuseAlongIsocontours2D(
                              + 0.25 * direct::elem(guide.data, x + 1, y - 1);
             g.set(0.5 * (gxp - gxn), 0.5 * (gyp - gyn));
         } else {
-            g.set(
-                0.5 * (direct::elem(guide.data, x + 1, y) - direct::elem(guide.data, x - 1, y)),
-                0.5 * (direct::elem(guide.data, x, y + 1) - direct::elem(guide.data, x, y - 1)));
+            const double gxp = direct::elem(guide.data, x + 1, y);
+            const double gxn = direct::elem(guide.data, x - 1, y);
+            const double gyp = direct::elem(guide.data, x, y + 1);
+            const double gyn = direct::elem(guide.data, x, y - 1);
+            g.set(0.5 * (gxp - gxn), 0.5 * (gyp - gyn));
         }
 
-        D0(x, y, 0) = Tensor2x2<RFLOAT>::dyadicProduct(g, g);
+        D0(x, y, 0) = tensor_t::dyadicProduct(g, g);
     }
 
     separableGaussian(D0, D, sigma);
 
-    // Volume<RFLOAT> dbg0(w, h, 1), dbg1(w, h, 1);
+    // Volume<RFLOAT> dbg0 (w, h, 1), dbg1 (w, h, 1);
 
     for (long int y = 0; y < h; y++)
     for (long int x = 0; x < w; x++) {
         t2Matrix<RFLOAT> DxyR = D(x, y, 0).toMatrix();
-        d2Matrix Dxy(DxyR(0, 0), DxyR(0, 1), DxyR(1, 0), DxyR(1, 1));
+        d2Matrix Dxy (DxyR(0, 0), DxyR(0, 1), DxyR(1, 0), DxyR(1, 1));
 
         double qx, qy, l0, l1;
         dsyev2(Dxy(0, 0), Dxy(0, 1), Dxy(1, 1), &l0, &l1, &qx, &qy);
@@ -1671,7 +1739,7 @@ void FilterHelper::diffuseAlongIsocontours2D(
 
         // dbg0(x, y, 0) = f.length();
 
-        J(x, y, 0) = ani * Tensor2x2<RFLOAT>::dyadicProduct(f, f);
+        J(x, y, 0) = ani * tensor_t::dyadicProduct(f, f);
     }
 
     // VtkHelper::writeVTK(dbg0, "f_len.vtk");
@@ -2271,6 +2339,16 @@ void FilterHelper::binomial3x3_2D(const Image<T>& src, Image<T>& dest, bool wrap
         convolve_x_nowrap(src.data, kernel, temp);
         convolve_y_nowrap(temp,     kernel, dest.data);
     }
+}
+
+template<typename T>
+void FilterHelper::separableGaussian(const Volume<T>& src, Volume<T>& dest, double sigma, int k) {
+    if (k < 0) k = 2 * sigma + 0.5;
+    auto kernel = make_kernel(sigma, k);
+    Volume<T> temp;
+    convolve_x_nowrap(src,  kernel, dest);
+    convolve_y_nowrap(dest, kernel, temp);
+    convolve_z_nowrap(temp, kernel, dest);
 }
 
 // Manual template instantiation
