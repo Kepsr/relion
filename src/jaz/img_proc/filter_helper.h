@@ -173,10 +173,10 @@ namespace FilterHelper {
     double totalVariation(const Image<RFLOAT>& src);
     double totalLogVariation(const Image<RFLOAT>& src, double delta = 1.0);
 
-    Image<RFLOAT> separableGaussianXYZ(const Image<RFLOAT>& src, RFLOAT sigma, int k = -1);
-    Image<RFLOAT> separableGaussianXY(const Image<RFLOAT>& src, RFLOAT sigma, int k = -1, bool wrap = false);
-    Image<RFLOAT> separableGaussianX_wrap(const Image<RFLOAT>& src, const Image<RFLOAT>& mask, RFLOAT sigma, int k = -1);
-    Image<RFLOAT> separableGaussianX_wrap(const Image<RFLOAT>& src, RFLOAT sigma, int k = -1);
+    Image<RFLOAT> separableGaussianX  (const Image<RFLOAT>& src, RFLOAT sigma, int k = -1, bool wrap = false);
+    Image<RFLOAT> separableGaussianXY (const Image<RFLOAT>& src, RFLOAT sigma, int k = -1, bool wrap = false);
+    Image<RFLOAT> separableGaussianXYZ(const Image<RFLOAT>& src, RFLOAT sigma, int k = -1, bool wrap = false);
+
     Image<RFLOAT> averageX(Image<RFLOAT> copy, const Image<RFLOAT> &mask);
 
     void centralGradient(const Volume<RFLOAT>& src, Volume<gravis::t3Vector<RFLOAT> >& dest);
