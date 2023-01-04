@@ -734,7 +734,7 @@ std::pair<MultidimArray<Complex>, MultidimArray<RFLOAT>> BackProjector::getLowRe
 
     // fill lowres arrays with relevant values
     FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data, i, j, k) {
-        if (euclidsq(i, j, k) <= lowres_r2_max) {
+        if (hypot2(i, j, k) <= lowres_r2_max) {
             lowres_data  .elem(i, j, k) = data  .elem(i, j, k);
             lowres_weight.elem(i, j, k) = weight.elem(i, j, k);
         }
@@ -774,7 +774,7 @@ void BackProjector::setLowResDataAndWeight(
 
     // Overwrite data and weight with the lowres arrays
     FOR_ALL_ELEMENTS_IN_ARRAY3D(lowres_data, i, j, k) {
-        if (euclidsq(i, j, k) <= lowres_r2_max) {
+        if (hypot2(i, j, k) <= lowres_r2_max) {
             data  .elem(i, j, k) = lowres_data  .elem(i, j, k);
             weight.elem(i, j, k) = lowres_weight.elem(i, j, k);
         }
@@ -851,7 +851,7 @@ MultidimArray<RFLOAT> BackProjector::calculateDownSampledFourierShellCorrelation
     auto fsc  = MultidimArray<RFLOAT>::zeros(n);
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(avg1, i, j, k) {
-        const RFLOAT R = euclid(i, j, k);
+        const RFLOAT R = hypot((double) i, j, k);
 
         if (R > r_max) continue;
 
@@ -901,7 +901,7 @@ void BackProjector::updateSSNRarrays(
     MultidimArray<RFLOAT> sigma2  = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     MultidimArray<RFLOAT> counter = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
     FOR_ALL_ELEMENTS_IN_ARRAY3D(weight, i, j, k) {
-        const RFLOAT r2 = euclidsq(i, j, k);
+        const RFLOAT r2 = hypot2(i, j, k);
         if (r2 < max_r2) {
             int ires = round(sqrt(r2) / padding_factor);
             RFLOAT invw = oversampling_correction * weight.elem(i, j, k);
@@ -956,7 +956,7 @@ void BackProjector::updateSSNRarrays(
     // Now accumulate data_vs_prior if (!update_tau2_with_fsc)
     // Also accumulate fourier_coverage
     FOR_ALL_ELEMENTS_IN_ARRAY3D(weight, i, j, k) {
-        int r2 = euclidsq(i, j, k);
+        int r2 = hypot2(i, j, k);
         if (r2 < max_r2) {
             int ires = round(sqrt((RFLOAT) r2) / padding_factor);
             RFLOAT invw = weight.elem(i, j, k);
@@ -1228,7 +1228,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
     if (do_map) {
         // Then, add the inverse of tau2-spectrum values to the weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fconv) {
-            int r2 = euclidsq(ip, jp, kp);
+            int r2 = hypot2(ip, jp, kp);
             if (r2 < max_r2) {
                 int ires = round(sqrt((RFLOAT) r2) / padding_factor);
                 RFLOAT invw = direct::elem(Fweight, i, j, k);
@@ -1265,7 +1265,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
         MultidimArray<RFLOAT> radavg_weight(r_max), counter(r_max);
         const int round_max_r2 = round(r_max * padding_factor * r_max * padding_factor);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
-            const int r2 = euclidsq(ip, jp, kp);
+            const int r2 = hypot2(ip, jp, kp);
             // Note that (r < ires) != (r2 < max_r2), because max_r2 = round(r_max * padding_factor)^2.
             // We have to use round_max_r2 = round((r_max * padding_factor)^2).
             // e.g. k = 0, i = 7, j = 28, max_r2 = 841, r_max = 16, padding_factor = 18.
@@ -1298,7 +1298,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
         bool have_warned = false;
         // perform std::max on all weight elements, and do division of data/weight
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fweight) {
-            const int ires = floor(euclid(ip, jp, kp) / padding_factor);
+            const int ires = floor(hypot((double) ip, jp, kp) / padding_factor);
             const RFLOAT weight =  std::max(
                 direct::elem(Fweight, i, j, k),
                 direct::elem(radavg_weight, ires < r_max ? ires : r_max - 1)
@@ -1335,7 +1335,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
         // Initialise Fnewweight with 1's and 0's. (also see comments below)
         /// XXX: But this is changing weight!?
         FOR_ALL_ELEMENTS_IN_ARRAY3D(weight, i, j, k) {
-            weight.elem(i, j, k) = euclidsq(i, j, k) < max_r2;
+            weight.elem(i, j, k) = hypot2(i, j, k) < max_r2;
         }
         return decentered(weight, max_r2, pad_size / 2 + 1, pad_size, pad_size);
         }();
@@ -1362,7 +1362,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
             RFLOAT w, corr_min = LARGE_NUMBER, corr_max = -LARGE_NUMBER, corr_avg = 0.0, corr_nn = 0.0;
 
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fconv) {
-                if (euclidsq(ip, jp, kp) < max_r2) {
+                if (hypot2(ip, jp, kp) < max_r2) {
 
                     // Make sure no division by zero can occur....
                     w = std::max(1e-6, abs(direct::elem(Fconv, i, j, k)));
@@ -1456,7 +1456,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
     {
     ifdefTIMING(TicToc tt (ReconTimer, ReconS[11]);)
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Ftmp) {
-        direct::elem(Ftmp, i, j, k) = euclidsq(ip, jp, kp) < r_max * r_max ?
+        direct::elem(Ftmp, i, j, k) = hypot2(ip, jp, kp) < r_max * r_max ?
             FFTW::elem(Fconv, ip * padding_factor, jp * padding_factor, kp * padding_factor) :
             0.0;
         }
@@ -1493,7 +1493,7 @@ MultidimArray<RFLOAT> BackProjector::reconstruct(
     RFLOAT normftblob = tab_ftblob(0.0);
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_out, i, j, k) {
 
-        RFLOAT r = euclid(i, j, k);
+        RFLOAT r = hypot(i, j, k);
         RFLOAT rval = r / (ori_size * padding_factor);
         vol_out.elem(i, j, k) /= tab_ftblob(rval) / normftblob;
         // if (k == 0 && i == 0)
@@ -1646,7 +1646,7 @@ void BackProjector::applyHelicalSymmetry(
             RFLOAT x = i;  // Xinit(sum_weight) is zero!
             RFLOAT y = j;
             RFLOAT z = k;
-            RFLOAT r2 = euclidsq(x, y, z);
+            RFLOAT r2 = hypot2(x, y, z);
             if (r2 <= rmax2) {
                 // coords_output(x, y) = A * coords_input (xp, yp)
                 // {xp, yp zp} = R({x, y, z})
@@ -1787,7 +1787,7 @@ void BackProjector::applyPointGroupSymmetry(int threads) {
                 RFLOAT x = j;  // Xinit(sum_weight) is zero!
                 RFLOAT y = i;
                 RFLOAT z = k;
-                RFLOAT r2 = euclidsq(x, y, z);
+                RFLOAT r2 = hypot2(x, y, z);
 
                 if (r2 <= rmax2) {
                     // coords_output(x,y) = A * coords_input (xp,yp)
@@ -1922,7 +1922,7 @@ void BackProjector::convoluteBlobRealSpace(FourierTransformer &transformer, bool
         int kp = k < padhdim ? k : k - pad_size;
         int jp = j < padhdim ? j : j - pad_size;
         int ip = i < padhdim ? i : i - pad_size;
-        RFLOAT rval = euclid(ip, jp, kp) / (ori_size * padding_factor);
+        RFLOAT rval = hypot((double) ip, jp, kp) / (ori_size * padding_factor);
         //if (kp==0 && ip==0 && jp > 0)
         //	std::cerr << " jp= " << jp << " rval= " << rval << " tab_ftblob(rval) / normftblob= " << tab_ftblob(rval) / normftblob << " ori_size/2= " << ori_size/2 << std::endl;
         // In the final reconstruction: mask the real-space map beyond its original size to prevent aliasing ghosts

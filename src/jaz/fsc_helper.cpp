@@ -58,7 +58,7 @@ void FscHelper::computeFscTable(
     for (int p = 0; p < pc; p++)
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[p][f]()) {
-            const int idx = round(euclid(ip, jp, kp));
+            const int idx = round(hypot((double) ip, jp, kp));
 
             if (idx >= w) continue;
 
@@ -91,7 +91,7 @@ void FscHelper::computeFscRow(
     std::vector<double> weight1(w, 0.0), weight2(w, 0.0), data(w, 0.0);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(data0) {
-        const int idx = round(euclid(ip, jp, kp));
+        const int idx = round(hypot((double) ip, jp, kp));
 
         if (idx >= w) continue;
 
@@ -145,7 +145,7 @@ void FscHelper::updateFscTable(
     const int w = prediction.data.xdim;
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frame()) {
-        const int idx = round(scale * euclid(ip, jp, kp));
+        const int idx = round(scale * hypot((double) ip, jp, kp));
 
         if (idx >= w) continue;
 
@@ -171,7 +171,7 @@ void FscHelper::updateFscTableVelWgh(
 
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[f]()) {
-            const int idx = round(euclid(ip, jp, kp));
+            const int idx = round(hypot((double) ip, jp, kp));
 
             if (idx >= w) continue;
 
@@ -205,7 +205,7 @@ void FscHelper::updateVelFscTable(
 
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[f]()) {
-            const int idx = round(euclid(ip, jp, kp));
+            const int idx = round(hypot((double) ip, jp, kp));
 
             if (idx >= w || idx < kmin || idx > kmax) continue;
 
@@ -299,7 +299,7 @@ MultidimArray<RFLOAT> FscHelper::computeNoiseSq(
     for (int p = 0; p < pc; p++)
     for (int f = 0; f < fc; f++) {
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(frames[p][f]()) {
-            const int idx = round(euclid(ip, jp, kp));
+            const int idx = round(hypot((double) ip, jp, kp));
 
             if (idx >= w) continue;
 
@@ -524,7 +524,7 @@ std::vector<double> FscHelper::powerSpectrum3D(const Image<Complex> &img) {
         const double yy = y < sh ? y : y - s;
         const double zz = z < sh ? z : z - s;
 
-        const int ri = round(euclid(xx, yy, zz));
+        const int ri = round(hypot(xx, yy, zz));
 
         if (ri < sh) {
             sum[ri] += direct::elem(img.data, x, y, z).norm();

@@ -394,7 +394,7 @@ void Reconstructor::backprojectOneParticle(long int p) {
 
         // Make coloured noise image
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-            const int ires = std::min((int) round(euclid(ip, jp, kp)), myBoxSize / 2);
+            const int ires = std::min((int) round(hypot((double) ip, jp, kp)), myBoxSize / 2);
             // at freqs higher than Nyquist: use last sigma2 value
             const RFLOAT sigma = sqrt(direct::elem(model.sigma2_noise[imic], ires));
             direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));

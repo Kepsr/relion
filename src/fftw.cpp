@@ -344,7 +344,7 @@ MultidimArray<RFLOAT> randomizePhasesBeyond(MultidimArray<RFLOAT> v, int index) 
 void randomizePhasesBeyond(MultidimArray<Complex> &FT, int index) {
     const int index2 = index * index;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        if (euclidsq(ip, jp, kp) >= index2) {
+        if (hypot2(ip, jp, kp) >= index2) {
             Complex &x = direct::elem(FT, i, j, k);
             const RFLOAT mag = abs(x);
             const RFLOAT phase = rnd_unif(0.0, 2.0 * PI);
@@ -367,7 +367,7 @@ MultidimArray<RFLOAT> getFSC(
     auto den2 = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
     auto fsc  = MultidimArray<RFLOAT>::zeros(Xsize(FT1));
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
-        int idx = round(euclid(ip, jp, kp));
+        int idx = round(hypot((double) ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
         Complex z1 = direct::elem(FT1, i, j, k);
         Complex z2 = direct::elem(FT2, i, j, k);
@@ -409,7 +409,7 @@ std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationA
     auto dpr   = MultidimArray<RFLOAT>::zeros(radial_count);  // Differential phase residual
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
         // Amplitudes
-        int idx = round(euclid(ip, jp, kp));
+        int idx = round(hypot((double) ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
         RFLOAT abs1 = abs(direct::elem(FT1, i, j, k));
         RFLOAT abs2 = abs(direct::elem(FT2, i, j, k));
@@ -438,7 +438,7 @@ std::pair<MultidimArray<RFLOAT>, MultidimArray<RFLOAT>> getAmplitudeCorrelationA
 
     // Now calculate Pearson's correlation coefficient
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
-        const int idx = round(euclid(ip, jp, kp));
+        const int idx = round(hypot((double) ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
         const RFLOAT z1 = abs(direct::elem(FT1, i, j, k)) - mu1.elem(idx);
         const RFLOAT z2 = abs(direct::elem(FT2, i, j, k)) - mu2.elem(idx);
@@ -463,7 +463,7 @@ std::vector<RFLOAT> cosDeltaPhase(
     std::vector<RFLOAT> cos_phi      (Xsize(FT1), 0);
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT1) {
-        int idx = round(euclid(ip, jp, kp));
+        int idx = round(hypot((double) ip, jp, kp));
         if (idx >= Xsize(FT1)) continue;
 
         RFLOAT delta_phase = direct::elem(FT1, i, j, k).arg()
@@ -737,7 +737,7 @@ MultidimArray<RFLOAT> getSpectrum(
     auto &FT = transformer.FourierTransform(Min);
     std::vector<RFLOAT> count (xsize, 0);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        long int idx = round(euclid(ip, jp, kp));
+        long int idx = round(hypot((double) ip, jp, kp));
         spectrum[idx] += spectrum_type(direct::elem(FT, i, j, k));
         count[idx]++;
     }
@@ -752,7 +752,7 @@ void multiplyBySpectrum(MultidimArray<RFLOAT> &Min, const MultidimArray<RFLOAT> 
     FourierTransformer transformer;
     auto &FT = transformer.FourierTransform(Min);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const long int idx = round(euclid(ip, jp, kp));
+        const long int idx = round(hypot((double) ip, jp, kp));
         direct::elem(FT, i, j, k) *= spectrum[idx];
     }
     transformer.inverseFourierTransform();
@@ -762,7 +762,7 @@ void divideBySpectrum(MultidimArray<RFLOAT> &Min, const MultidimArray<RFLOAT> &s
     FourierTransformer transformer;
     auto &FT = transformer.FourierTransform(Min);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const long int idx = round(euclid(ip, jp, kp));
+        const long int idx = round(hypot((double) ip, jp, kp));
         if (spectrum[idx] != 0.0)
         direct::elem(FT, i, j, k) /= spectrum[idx];
     }
@@ -820,7 +820,7 @@ RFLOAT getKullbackLeiblerDivergence(
 
     // This way this will work in both 2D and 3D
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Fimg) {
-        int ires = round(euclid(ip, jp, kp));
+        int ires = round(hypot((double) ip, jp, kp));
         if (ires >= lowshell && ires <= highshell) {
             // Use FT of masked image for noise estimation!
             Complex diff = direct::elem(Fref, i, j, k) - direct::elem(Fimg, i, j, k);
@@ -889,7 +889,7 @@ void applyBFactorToMap(
 ) {
     const RFLOAT Nyquist = 0.5 / angpix;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        RFLOAT res = sqrt((RFLOAT) euclidsq(ip, jp, kp)) / (ori_size * angpix); // get resolution in 1/Angstrom
+        RFLOAT res = sqrt((RFLOAT) hypot2(ip, jp, kp)) / (ori_size * angpix); // get resolution in 1/Angstrom
         if (res <= Nyquist) {
             // Apply B-factor sharpening until Nyquist, then low-pass filter later on (with a soft edge)
             direct::elem(FT, i, j, k) *= exp(res * res * -bfactor / 4.0);
@@ -920,7 +920,7 @@ void LoGFilterMap(MultidimArray<Complex> &FT, int ori_size, RFLOAT sigma, RFLOAT
     // and its Fourier Transform is: r^2 * exp(-0.5*r2/isigma2);
     // Then to normalise for different scales: divide by isigma2;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        RFLOAT r2 = euclidsq((RFLOAT) ip, (RFLOAT) jp, (RFLOAT) kp);
+        RFLOAT r2 = hypot2((RFLOAT) ip, (RFLOAT) jp, (RFLOAT) kp);
         direct::elem(FT, i, j, k) *= exp(-0.5 * r2 / isigma2) * r2 / isigma2;
     }
 
@@ -978,7 +978,7 @@ void LoGFilterMap(MultidimArray<RFLOAT> &img, RFLOAT sigma, RFLOAT angpix) {
 void filter__hp(MultidimArray<Complex> &FT, int ori_size, RFLOAT edge_low, RFLOAT edge_high, RFLOAT edge_width) {
     // Put a raised cosine from edge_low to edge_high
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const RFLOAT res = euclid(RFLOAT(ip), RFLOAT(jp), RFLOAT(kp)) / ori_size;  // get resolution in 1/pixel
+        const RFLOAT res = hypot(RFLOAT(ip), RFLOAT(jp), RFLOAT(kp)) / ori_size;  // get resolution in 1/pixel
         if (res < edge_low) {
             direct::elem(FT, i, j, k) = 0.0;
         } else if (res <= edge_high) {
@@ -990,7 +990,7 @@ void filter__hp(MultidimArray<Complex> &FT, int ori_size, RFLOAT edge_low, RFLOA
 void filter__lp(MultidimArray<Complex> &FT, int ori_size, RFLOAT edge_low, RFLOAT edge_high, RFLOAT edge_width) {
     // Put a raised cosine from edge_low to edge_high
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const RFLOAT res = euclid(RFLOAT(ip), RFLOAT(jp), RFLOAT(kp)) / ori_size;  // get resolution in 1/pixel
+        const RFLOAT res = hypot(RFLOAT(ip), RFLOAT(jp), RFLOAT(kp)) / ori_size;  // get resolution in 1/pixel
         if (res > edge_high) {
             direct::elem(FT, i, j, k) = 0.0;
         } else if (res >= edge_low) {
@@ -1244,7 +1244,7 @@ MultidimArray<RFLOAT> amplitudeOrPhaseMap(
         if (
             ip > Xinit(amp) && ip < Xlast(amp) &&
             jp > Yinit(amp) && jp < Ylast(amp) &&
-            euclidsq(ip, jp) < maxr2
+            hypot2(ip, jp) < maxr2
         ) {
             RFLOAT val = f(FFTW::elem(FT, ip, jp));
             amp.elem(ip, jp) = amp.elem(-ip, -jp) = val;
@@ -1283,7 +1283,7 @@ void helicalLayerLineProfile(
         ampl_list[ii] = ampr_list[ii] = nr_pix_list[ii] = 0.0;
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM2D(FT) {
-        if (euclidsq(ip, jp) < maxr2 && ip > 0) {
+        if (hypot2(ip, jp) < maxr2 && ip > 0) {
             nr_pix_list[jp] += 1.0;
             ampl_list[jp] += FFTW::elem(FT,  ip, jp).abs();
             ampr_list[jp] += FFTW::elem(FT, -ip, jp).abs();

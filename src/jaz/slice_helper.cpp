@@ -379,7 +379,7 @@ void SliceHelper::insertSpectralSlices(
             continue;
         }
 
-        const double r = euclid(pv.x, pv.z);
+        const double r = hypot(pv.x, pv.z);
 
         Complex zs (0.0, 0.0);
         double wgh = 0.0;
@@ -388,7 +388,7 @@ void SliceHelper::insertSpectralSlices(
 
             d3Vector pi3 = proj[i] * pv;
 
-            if (euclidsq(pi3.x, pi3.y) >= 1.0) continue;
+            if (hypot2(pi3.x, pi3.y) >= 1.0) continue;
 
             const double za = thz[i] * std::abs(pi3.z);
 
@@ -472,7 +472,7 @@ void SliceHelper::insertWeightedSpectralSlices(
 
             d3Vector pi3 = proj[i] * pv;
 
-            if (euclidsq(pi3.x, pi3.y) >= 1.0) continue;
+            if (hypot2(pi3.x, pi3.y) >= 1.0) continue;
 
             const double za = thz[i] * std::abs(pi3.z);
 

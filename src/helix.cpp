@@ -1186,7 +1186,7 @@ void calcRadialAverage(
 
     (vol = v).setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
-        int dist = round(euclid(i, j));
+        int dist = round(hypot(i, j));
         if (dist < 0 || dist > list_size - 1) continue;
         radial_pix_counter_list[dist] += 1.0;
         radial_avg_val_list[dist]     += vol.elem(i, j, k);
@@ -1557,7 +1557,7 @@ void applySoftSphericalMask(
     r_max_edge = r_max + cosine_width;
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(v, i, j, k) {
-        r = euclid(i, j, k);
+        r = hypot((double) i, j, k);
         if (r > r_max) {
             if (r < r_max_edge) {
                 v.elem(i, j, k) *= raised_cos((r - r_max) * PI / cosine_width);
@@ -2821,7 +2821,7 @@ void makeHelicalReference2D(
 
     const RFLOAT contrast = is_tube_white ? +1.0 : -1.0;
     FOR_ALL_ELEMENTS_IN_ARRAY2D(out, i, j) {
-        dist2 = euclidsq(i, j);
+        dist2 = hypot2(i, j);
         p2 = (RFLOAT) (j * j);
         if (dist2 < r2 && p2 < t2) {
             out.elem(i, j) = contrast;
@@ -4585,7 +4585,7 @@ void HermiteInterpolateOne3DHelicalFilament(
 
         // Chord distance between point 1 and 2
         // TODO: what will happen if the chord length is smaller than step_pix?
-        chord_pix = euclid(x1 - x2, y1 - y2, z1 - z2);
+        chord_pix = hypot(x1 - x2, y1 - y2, z1 - z2);
         nr_partitions = ceil(chord_pix / step_pix);
         if (nr_partitions <= 0) { nr_partitions = 1; }
 
@@ -4600,7 +4600,7 @@ void HermiteInterpolateOne3DHelicalFilament(
             xb = HermiteInterpolate1D(x0, x1, x2, x3, mu2);
             yb = HermiteInterpolate1D(y0, y1, y2, y3, mu2);
             zb = HermiteInterpolate1D(z0, z1, z2, z3, mu2);
-            len_pix = euclid(xa - xb, ya - yb, za - zb);
+            len_pix = hypot(xa - xb, ya - yb, za - zb);
             present_len_pix += len_pix;
             accu_len_pix    += len_pix;
 

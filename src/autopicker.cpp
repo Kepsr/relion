@@ -54,7 +54,7 @@ CTF find_micrograph_ctf(MetaDataTable &mdt, const FileName &fn_mic, ObservationM
 inline int dist2(const Peak peak1, const Peak peak2) {
     const int dx = peak1.x - peak2.x;
     const int dy = peak1.y - peak2.y;
-    return euclidsq(dx, dy);
+    return hypot2(dx, dy);
 }
 
 void ccfPeak::clear() {
@@ -351,7 +351,7 @@ void AutoPicker::initialise() {
         // Make a Gaussian reference. sigma is 1/6th of the particle size, such that 3 sigma is at the image edge
         RFLOAT normgauss = gaussian1D(0.0, particle_size / 6.0, 0.0);
         FOR_ALL_ELEMENTS_IN_ARRAY2D(ref, i, j) {
-            double r = euclid(i, j);
+            double r = hypot(i, j);
             ref.elem(i, j) = gauss_max_value * gaussian1D(r, particle_size / 6.0, 0.0) / normgauss;
         }
         Mrefs.push_back(ref);
@@ -662,7 +662,7 @@ void AutoPicker::initialise() {
 
             long int inner_radius = round(helical_tube_diameter / (2.0 * angpix));
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
-                if (euclidsq(i, j) < inner_radius * inner_radius) {
+                if (hypot2(i, j) < inner_radius * inner_radius) {
                     Mcirc_mask.elem(i, j) = 0.0;
                     nr_pixels_avg_mask--;
                 }
@@ -671,7 +671,7 @@ void AutoPicker::initialise() {
             if (max_local_avg_diameter > 0) {
                 long int outer_radius = round(max_local_avg_diameter / (2.0 * angpix));
                 FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
-                    if (euclidsq(i, j) > outer_radius * outer_radius) {
+                    if (hypot2(i, j) > outer_radius * outer_radius) {
                         Mcirc_mask.elem(i, j) = 0.0;
                         nr_pixels_avg_mask--;
                     }
@@ -693,7 +693,7 @@ void AutoPicker::initialise() {
         nr_pixels_circular_invmask = 0;
         Mcirc_mask.initZeros();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
-            if (euclidsq(i, j) >= particle_radius2) {
+            if (hypot2(i, j) >= particle_radius2) {
                 Mcirc_mask.elem(i, j) = 1.0;
                 nr_pixels_circular_invmask++;
             }
@@ -711,7 +711,7 @@ void AutoPicker::initialise() {
         nr_pixels_circular_mask = 0;
         Mcirc_mask.initZeros();
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Mcirc_mask, i, j) {
-            if (euclidsq(i, j) < particle_radius2) {
+            if (hypot2(i, j) < particle_radius2) {
                 Mcirc_mask.elem(i, j) = 1.0;
                 nr_pixels_circular_mask++;
             }
@@ -1266,7 +1266,7 @@ void AutoPicker::pickAmyloids(
             // Distance to next segment
             float dx = (float) (helix[iseg + 1].x - helix[iseg].x) / scale;
             float dy = (float) (helix[iseg + 1].y - helix[iseg].y) / scale;
-            float distnex = euclid(dx, dy);
+            float distnex = hypot(dx, dy);
             float psi = -atan2(dy, dx);
             for (float position = leftover_dist; position < distnex; position += interbox_dist) {
                 RFLOAT frac = position / distnex;

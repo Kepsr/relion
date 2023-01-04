@@ -236,7 +236,7 @@ void subtractBackgroundRamp(
         }
     } else {
         FOR_ALL_ELEMENTS_IN_ARRAY2D(I(), i, j) {
-            if (euclidsq(i, j) > bg_radius2) {
+            if (hypot2(i, j) > bg_radius2) {
                 point.x = i;
                 point.y = j;
                 point.z = I().elem(i, j);

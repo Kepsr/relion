@@ -635,28 +635,28 @@ void radialAverage(
     RFLOAT x = Xinit(m) - XX(center_of_rot),
            y = Yinit(m) - YY(center_of_rot),
            z = Zinit(m) - ZZ(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     x = Xlast(m) - XX(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     y = Ylast(m) - YY(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     x = Xinit(m) - XX(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     z = Zlast(m) - ZZ(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     x = Xlast(m) - XX(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     y = Yinit(m) - YY(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     x = Xinit(m) - XX(center_of_rot);
-    distances.push_back(floor(euclid(x, y, z)));
+    distances.push_back(floor(hypot(x, y, z)));
 
     const int dim = ceil(*std::max_element(distances.begin(), distances.end())) + 1 + rounding;
 

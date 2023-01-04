@@ -845,7 +845,7 @@ MetaDataTable removeDuplicatedParticles(
             const RFLOAT dx = xs[part_id1] - xs[part_id2];
             const RFLOAT dy = ys[part_id1] - ys[part_id2];
             // The squared distance between the two particles
-            RFLOAT dist_sq = euclidsq(dx, dy);
+            RFLOAT dist_sq = hypot2(dx, dy);
             if (dataIs3D) {
             const RFLOAT dz = zs[part_id1] - zs[part_id2];
             dist_sq += dz * dz;

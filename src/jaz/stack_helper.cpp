@@ -621,7 +621,7 @@ void StackHelper::varianceNormalize(
                 const double yy = y < w ? y : y - h;
                 const double xx = x;
 
-                if (euclidsq(xx, yy) > rr) continue;
+                if (hypot2(xx, yy) > rr) continue;
             }
 
             double scale = x > 0 ? 2.0 : 1.0;
@@ -660,7 +660,7 @@ std::vector<double> StackHelper::powerSpectrum(
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = euclid(xx, yy);
+            const int r = hypot(xx, yy);
 
             if (r >= w) continue;
 
@@ -696,7 +696,7 @@ std::vector<double> StackHelper::varSpectrum(
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = euclid(xx, yy);
+            const int r = hypot(xx, yy);
 
             if (r >= w) continue;
 
@@ -720,7 +720,7 @@ std::vector<double> StackHelper::varSpectrum(
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = euclid(xx, yy);
+            const int r = hypot(xx, yy);
 
             if (r >= w) continue;
 
@@ -757,7 +757,7 @@ std::vector<double> StackHelper::powerSpectrum(
             const double yy = y < w ? y : y - h;
             const double xx = x;
 
-            const int r = euclid(xx, yy);
+            const int r = hypot(xx, yy);
 
             if (r >= w) continue;
 

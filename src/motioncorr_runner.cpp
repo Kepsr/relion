@@ -776,7 +776,7 @@ void MotioncorrRunner::generateLogFilePDFAndWriteStarFiles() {
                     if (mic.getShiftAt(frame, 0., 0., x, y, false, false) != 0)
                         continue;
                     if (frame >= 2.0) {
-                        const RFLOAT d = euclid(x - xold, y - yold);
+                        const RFLOAT d = hypot(x - xold, y - yold);
                         sum_total += d;
                         (frame <= cutoff_frame ? sum_early : sum_late) += d;
                     }

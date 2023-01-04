@@ -238,7 +238,7 @@ class Projector {
     MultidimArray<T> decentered(const MultidimArray<T> &Min, int my_rmax2, unsigned long int xdim, unsigned long int ydim, unsigned long int zdim) {
         auto Mout = MultidimArray<T>::zeros(xdim, ydim, zdim);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
-            if (euclidsq(ip, jp, kp) <= my_rmax2)
+            if (hypot2(ip, jp, kp) <= my_rmax2)
                 direct::elem(Mout, i, j, k) = Min.elem(ip, jp, kp);
         }
         return Mout;

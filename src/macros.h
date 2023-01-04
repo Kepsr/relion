@@ -140,14 +140,6 @@ inline int sgn_nozero(T val) {
     return val >= T(0) ? +1 : -1;
 }
 
-// Euclidean distance in 2D
-template <typename T>
-inline T euclid(T a, T b) { return sqrt(RFLOAT(a * a + b * b)); }
-
-// Euclidean distance in 3D
-template <typename T>
-inline T euclid(T a, T b, T c) { return sqrt(RFLOAT(a * a + b * b + c * c)); }
-
 // Part of namespace std since C++17
 inline float hypot(float a, float b, float c) {
     return sqrt(a * a + b * b + c * c);
@@ -161,13 +153,11 @@ inline long double hypot(long double a, long double b, long double c) {
     return sqrt(a * a + b * b + c * c);
 }
 
-// Squared Euclidean distance in 2D
 template <typename T>
-inline T euclidsq(T a, T b) { return a * a + b * b; }
+inline T hypot2(T a, T b) { return a * a + b * b; }
 
-// Squared Euclidean distance in 3D
 template <typename T>
-inline T euclidsq(T a, T b, T c) { return a * a + b * b + c * c; }
+inline T hypot2(T a, T b, T c) { return a * a + b * b + c * c; }
 
 // std::clamp from C++17
 template <typename T>

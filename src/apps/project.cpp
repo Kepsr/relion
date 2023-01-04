@@ -348,7 +348,9 @@ class project_parameters {
                         if (search == model.group_names.end())
                             REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
                         const int i = search - model.group_names.begin();
-                        const auto &sigmas = model.sigma2_noise[i];
+                        auto sigmas = model.sigma2_noise[i];
+                        for (auto& sigma: sigmas)
+                            sigma = sqrt(sigma);
 
                         // RFLOAT normcorr = MDang.containsLabel(EMDL::IMAGE_NORM_CORRECTION) ?
                         //     MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, MDang.size() - 1) : 1.0;
@@ -357,16 +359,14 @@ class project_parameters {
                         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
                             const int Nyquist = model.ori_size / 2;
                             // At frequences higher than Nyquist, use last sigma2 value
-                            const int ires = std::min((int) round(euclid(ip, jp, kp)), Nyquist);
-
-                            const RFLOAT sigma = sqrt(direct::elem(sigmas, ires));
+                            const int ires = std::min((int) round(hypot((double) ip, jp, kp)), Nyquist);
+                            const RFLOAT sigma = direct::elem(sigmas, ires);
                             direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
                         }
                     } else {
                         // Add white noise
-                        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-                            direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, stddev_white_noise), rnd_gaus(0.0, stddev_white_noise));
-                        }
+                        for (Complex& x: F2D)
+                            x += Complex(rnd_gaus(0.0, stddev_white_noise), rnd_gaus(0.0, stddev_white_noise));
                     }
                 }
 

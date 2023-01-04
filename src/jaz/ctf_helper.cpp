@@ -419,7 +419,7 @@ Complex _get_ctfp_(
 ) {
     RFLOAT x = ip / xs;
     RFLOAT y = jp / ys;
-    const RFLOAT z2 = euclidsq(x, y);
+    const RFLOAT z2 = hypot2(x, y);
     const RFLOAT theta = z2 > 0 ? acos(y / z2) : 0; // dot-product with Y-axis: (0, 1)
 
     if (obsModel) obsModel->magnify(x, y, obsModel->getMagMatrix(opticsGroup));

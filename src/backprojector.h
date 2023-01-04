@@ -429,7 +429,7 @@ class BackProjector: public Projector {
         // Initialize to zero
         Mout.initZeros();
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Mout) {
-            if (euclidsq(ip, jp, kp) <= my_rmax2) {
+            if (hypot2(ip, jp, kp) <= my_rmax2) {
                 direct::elem(Mout, i, j, k) = (double) Min.elem(ip, jp, kp);
             }
         }

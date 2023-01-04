@@ -243,16 +243,12 @@ class tiltpair_plot_parameters {
             RFLOAT distp  = check_symmetries(rot1, tilt1, psi1, rot2p, tilt2p, psi2p);
 
             // Calculate distance to user-defined point
-            Vector<RFLOAT> aux2 (4);
             // SINCOS?
             RFLOAT xp = dist_from_tilt * cos(radians(dist_from_alpha));
             RFLOAT yp = dist_from_tilt * sin(radians(dist_from_alpha));
             RFLOAT x = tilt2p * cos(radians(rot2p));
             RFLOAT y = tilt2p * sin(radians(rot2p));
-            XX(aux2) = tilt2p;
-            YY(aux2) = rot2p;
-            ZZ(aux2) = psi2p;
-            aux2[3] = euclid(xp - x, yp - y);
+            Vector<RFLOAT> aux2 {tilt2p, rot2p, psi2p, hypot(xp - x, yp - y)};
             add_to_postscript(tilt2p, rot2p, psi2p);
         }
 

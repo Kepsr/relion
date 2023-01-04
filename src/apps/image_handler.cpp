@@ -696,7 +696,7 @@ class image_handler_parameters {
                     MultidimArray<RFLOAT> spectrum = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     MultidimArray<RFLOAT> count    = MultidimArray<RFLOAT>::zeros(Ysize(Iop()));
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                        long int idx = round(euclidsq(ip, jp, kp));
+                        long int idx = round(hypot2(ip, jp, kp));
                         spectrum.elem(idx) += direct::elem(Iop(), i, j, k);
                         count.elem(idx) += 1.0;
                     }
@@ -706,7 +706,7 @@ class image_handler_parameters {
                     }
 
                     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Iop()) {
-                        long int idx = round(euclidsq(ip, jp, kp));
+                        long int idx = round(hypot2(ip, jp, kp));
                         if (idx > minr_ampl_corr) {
                             direct::elem(Iop(), i, j, k) /= spectrum.elem(idx);
                         } else {

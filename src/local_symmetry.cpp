@@ -1211,7 +1211,7 @@ void applyLocalSymmetry(
         for (long int k = 0; k < Zsize(sym_map); k++)
         for (long int j = 0; j < Ysize(sym_map); j++)
         for (long int i = 0; i < Xsize(sym_map); i++) {
-            dist2 = euclidsq(i + xinit, j + yinit, k + zinit);
+            dist2 = hypot2(i + xinit, j + yinit, k + zinit);
             if (dist2 > radiusw2) {
                 direct::elem(sym_map, i, j, k) = 0.0;
             } else if (dist2 > radius2) {
@@ -1265,7 +1265,7 @@ void getMinCropSize(
             REPORT_ERROR("ERROR: all voxels in the input map should have positive values!");
 
         if (val > Xmipp::epsilon) {
-            dist2 = euclidsq(RFLOAT(i) - xori, RFLOAT(j) - yori, RFLOAT(k) - zori);
+            dist2 = hypot2(RFLOAT(i) - xori, RFLOAT(j) - yori, RFLOAT(k) - zori);
             if (dist2 > dist2_max)
                 dist2_max = dist2;
         }

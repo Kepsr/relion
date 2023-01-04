@@ -82,7 +82,7 @@ MultidimArray<T>& copyXYZ_fourier(MultidimArray<T> &FT, long int n, long int ran
     FT.resize(n / 2 + 1, n, rank == 3 ? n : 1);
     FT = -1;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const int ires = round(euclid(ip, jp, kp));
+        const int ires = round(hypot((double) ip, jp, kp));
         // Exclude points beyond ires, and exclude and half (y<0) of the x=0 column that is stored twice in FFTW
         // exclude lowest-resolution points
         // TODO: better check for volume_refine, but the same still seems to hold...
@@ -2202,7 +2202,7 @@ void MlOptimiser::calculateSumOfPowerSpectraAndAverageImage(MultidimArray<RFLOAT
             MultidimArray<Complex> &Faux = transformer.FourierTransform(img());
 
             FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
-                long int idx = round(euclid(ip, jp, kp));
+                long int idx = round(hypot((double) ip, jp, kp));
                 if (idx < spectral_size) {
                     ind_spectrum.elem(idx) += norm(direct::elem(Faux, i, j, k));
                     count.elem(idx) += 1.0;
@@ -2373,7 +2373,7 @@ void MlOptimiser::initialLowPassFilterReferences() {
         auto &reference = mymodel.Iref[iclass];
         MultidimArray<Complex> Faux = transformer.FourierTransform(reference);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
-            RFLOAT r = euclid(ip, jp, kp);
+            RFLOAT r = hypot((double) ip, jp, kp);
             if (r < radius) {
                 continue;
             } else if (r > radius_p) {
@@ -4175,7 +4175,7 @@ void MlOptimiser::solventFlatten() {
             RFLOAT radius = particle_diameter / (2.0 * mymodel.pixel_size);
             RFLOAT radius_p = radius + width_mask_edge;
             FOR_ALL_ELEMENTS_IN_ARRAY3D(Isolvent(), i, j, k) {
-                RFLOAT r = euclid(i, j, k);
+                RFLOAT r = hypot((double) i, j, k);
                 Isolvent().elem(i, j, k) =
                 r < radius   ? 1.0 :
                 r > radius_p ? 0.0 :
@@ -4366,7 +4366,7 @@ void MlOptimiser::updateImageSizeAndResolutionPointers() {
     );
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(aux) {
-        int ires = round(euclid(ip, jp, kp));
+        int ires = round(hypot((double) ip, jp, kp));
         // TODO: better check for volume_refine, but the same still seems to hold... Half of the yz plane (either ip<0 or kp<0 is redundant at jp==0)
         // Exclude points beyond Xsize(Npix_per_shell), and exclude half of the x=0 column that is stored twice in FFTW
         if (ires < mymodel.ori_size / 2 + 1 && (jp != 0 || ip >= 0))

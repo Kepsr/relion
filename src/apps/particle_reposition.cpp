@@ -318,15 +318,11 @@ class particle_reposition_parameters {
                     }
 
                     // Reposition Mpart_mic back into the micrograph
-                    Imic_out().xinit = -round(xcoord);
-                    Imic_out().yinit = -round(ycoord);
-                    Imic_out().zinit = -round(zcoord);
-                    Imic_sum.xinit   = -round(xcoord);
-                    Imic_sum.yinit   = -round(ycoord);
-                    Imic_sum.zinit   = -round(zcoord);
+                    Imic_out.data.setOrigin(-round(xcoord), -round(ycoord), -round(zcoord));
+                    Imic_sum     .setOrigin(-round(xcoord), -round(ycoord), -round(zcoord));
                     radius = optimiser.particle_diameter / (2.0 * mic_pixel_size);
                     FOR_ALL_ELEMENTS_IN_ARRAY3D(Mpart_mic, i, j, k) {
-                        long int idx = round(euclid(i, j, k));
+                        long int idx = round(hypot((double) i, j, k));
                         if (idx < radius) {
                             // check the particles do not go off the side
                             const int ip = i - Xinit(Imic_sum);

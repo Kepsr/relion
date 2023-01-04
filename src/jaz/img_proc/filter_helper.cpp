@@ -650,7 +650,7 @@ void FilterHelper::lowPassFilterSpectrum(
         if (y > 1.0) y = 2.0 - y;
         if (z > 1.0) z = 2.0 - z;
 
-        double r = euclid(x, y, z);
+        double r = hypot(x, y, z);
 
         if (r > maxFreq1) {
             direct::elem(spectrum, i, j, k) = 0.0;

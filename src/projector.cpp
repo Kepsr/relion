@@ -731,7 +731,7 @@ void Projector::computeFourierTransformMap(
         #endif
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(Faux) {
             // This will also work for 2D
-            int r2 = euclidsq(ip, jp, kp);
+            int r2 = hypot2(ip, jp, kp);
             // The Fourier Transforms are all "normalised" for 2D transforms of size = ori_size x ori_size
             // Set data array
             if (r2 <= max_r2) {
@@ -833,7 +833,7 @@ void Projector::griddingCorrect(MultidimArray<RFLOAT> &vol_in) {
         REPORT_ERROR((std::string) "BUG Projector::" + __func__ + ": unrecognised interpolator scheme.");
 
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in, i, j, k) {
-        const RFLOAT r = euclid(i, j, k);
+        const RFLOAT r = hypot((double) i, j, k);
         if (r > 0.0) {
             const RFLOAT rval = r / (ori_size * padding_factor);
             const RFLOAT sinc_theta = sinc(PI * rval);
@@ -889,7 +889,7 @@ MultidimArray<Complex> Projector::project(int xdim, int ydim, const Matrix<RFLOA
             const auto &xp = coords[0];
             const auto &yp = coords[1];
             const auto &zp = coords[2];
-            const RFLOAT r_ref_2 = euclidsq(xp, yp, zp);
+            const RFLOAT r_ref_2 = hypot2(xp, yp, zp);
 
             if (r_ref_2 > r_max_ref_2) continue;
 
@@ -955,7 +955,7 @@ MultidimArray<Complex> Projector::project2Dto1D(int xdim, const Matrix<RFLOAT> &
         const auto coords = matmul1_2(Ainv, RFLOAT(i));
         const auto &xp = coords[0];
         const auto &yp = coords[1];
-        const RFLOAT r_ref_2 = euclidsq(xp, yp);
+        const RFLOAT r_ref_2 = hypot2(xp, yp);
 
         if (r_ref_2 > r_max_ref_2) continue;
 
@@ -1006,7 +1006,7 @@ MultidimArray<Complex> Projector::rotate2D(int xdim, int ydim, const Matrix<RFLO
             const auto coords = matmul2_2(Ainv, RFLOAT(x), RFLOAT(y));
             const auto &xp = coords[0];
             const auto &yp = coords[1];
-            const int r_ref_2 = euclidsq(xp, yp);
+            const int r_ref_2 = hypot2(xp, yp);
 
             if (r_ref_2 > r_max_ref_2) continue;
 
@@ -1067,7 +1067,7 @@ MultidimArray<Complex> Projector::rotate3D(int xdim, int ydim, int zdim, const M
             const auto &xp = coords[0];
             const auto &yp = coords[1];
             const auto &zp = coords[2];
-            const int r_ref_2 = euclidsq(xp, yp, zp);
+            const int r_ref_2 = hypot2(xp, yp, zp);
 
             if (r_ref_2 > r_max_ref_2) continue;
 

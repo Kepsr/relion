@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
                     for (int y = 0; y < s; y++)
                     for (int x = 0; x < sh; x++) {
                         double yy = y < sh  ? y : y - s;
-                        double r = sqrt(euclidsq(x, yy));
+                        double r = hypot(x, yy);
                         if (r > kmax) continue;
 
                         b(index) += imgSnr(y, x) * (pred(y, x) - obsF[p](y, x)).norm();

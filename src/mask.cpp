@@ -55,11 +55,10 @@ void softMaskOutsideMap(
     if (!Mnoise) {
         // Calculate average background value
         FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
-
-            RFLOAT r = sqrt(euclidsq(i, j, k));
-            if (r < radius) continue;
-
-            if (r > radius_p) {
+            RFLOAT r = hypot((double) i, j, k);
+            if (r < radius) {
+                continue;
+            } else if (r > radius_p) {
                 sum    += 1.0;
                 sum_bg += vol.elem(i, j, k);
             } else {
@@ -73,7 +72,7 @@ void softMaskOutsideMap(
 
     // Apply noisy or average background value
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
-        RFLOAT r = sqrt((RFLOAT) euclid(i, j, k));
+        RFLOAT r = hypot((double) i, j, k);
         if (r < radius) continue;
 
         RFLOAT add = Mnoise ? Mnoise->elem(i, j, k) : sum_bg;
@@ -185,7 +184,7 @@ void softMaskOutsideMapForHelix(
         d = dim == 3 ? sqrt(YY(coords) * YY(coords) + XX(coords) * XX(coords)) : abs(YY(coords));
 
         // Distance from the origin
-        r = sqrt((RFLOAT) (dim == 3 ? euclidsq(i, j, k) : euclidsq(i, j)));
+        r = sqrt((RFLOAT) (dim == 3 ? hypot2(i, j, k) : hypot2(i, j)));
 
         // Info areas
         if (r < R1 && d < D1) continue;
@@ -297,7 +296,7 @@ void autoMask(
                         ) {
                             // only check distance if neighbouring Im() is one
                             if (msk_cp.elem(ip, jp, kp) > 0.999) {
-                                RFLOAT r2 = euclidsq(ip - i, jp - j, kp - k);
+                                RFLOAT r2 = hypot2(ip - i, jp - j, kp - k);
                                 // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                                 if (r2 < extend_ini_mask2) {
                                     msk_out.elem(i, j, k) = 1.0;
@@ -334,7 +333,7 @@ void autoMask(
                         ) {
                             // only check distance if neighbouring Im() is one
                             if (msk_cp.elem(ip, jp, kp) < 0.001) {
-                                RFLOAT r2 = (RFLOAT) euclidsq(ip - i, jp - j, kp - k);
+                                RFLOAT r2 = (RFLOAT) hypot2(ip - i, jp - j, kp - k);
                                 // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                                 if (r2 < extend_ini_mask2) {
                                     msk_out.elem(i, j, k) = 0.0;
@@ -388,7 +387,7 @@ void autoMask(
                     ) {
                         // only update distance to a neighbouring msk_cp is one
                         if (msk_cp.elem(ip, jp, kp) > 0.999) {
-                            RFLOAT r2 = euclidsq(ip - i, jp - j, kp - k);
+                            RFLOAT r2 = hypot2(ip - i, jp - j, kp - k);
                             // Set original voxel to 1 if a neghouring with Im()=1 is within distance extend_ini_mask
                             if (r2 < min_r2) { min_r2 = r2; }
                         }

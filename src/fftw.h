@@ -429,7 +429,7 @@ MultidimArray<T> windowFourierTransform(const MultidimArray<T> &in, long int new
         long int max_r2 = (Xsize(in) - 1) * (Xsize(in) - 1);
         FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(in) {
             // Make sure windowed FT has nothing in the corners, otherwise we end up with an asymmetric FT!
-            if (euclidsq(ip, jp, kp) <= max_r2)
+            if (hypot2(ip, jp, kp) <= max_r2)
                 FFTW::elem(out, ip, jp, kp) = FFTW::elem(in, ip, jp, kp);
         }
     } else {
@@ -504,7 +504,7 @@ void resizeFourierTransform(const MultidimArray<T> &in, MultidimArray<T> &out, l
     // If upsizing: mask the corners to prevent aliasing artefacts
     if (newdim > olddim) {
         FOR_ALL_ELEMENTS_IN_ARRAY3D(Min, i, j, k) {
-            if (euclidsq(i, j, k) > olddim * olddim / 4) {
+            if (hypot2(i, j, k) > olddim * olddim / 4) {
                 Min.elem(i, j, k) = 0.0;
             }
         }

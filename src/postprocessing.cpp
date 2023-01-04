@@ -264,7 +264,7 @@ void Postprocessing::divideByMtf(MultidimArray<Complex> &FT) {
     const auto xsize_ang = angpix * Xsize(I1());
     const auto Nyquist = 0.5 / angpix;
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const auto res = euclid((RFLOAT) ip, (RFLOAT) jp, (RFLOAT) kp) / xsize_ang; // Resolution in 1/Ang
+        const auto res = hypot((double) ip, jp, kp) / xsize_ang; // Resolution in 1/Ang
         if (res >= Nyquist) continue;
         const int i_0 = floor(res / res_per_elem);
         RFLOAT mtf;
@@ -309,8 +309,8 @@ bool Postprocessing::findSurfacePixel(
     for (int jppp = jpp - search; jppp <= jpp + search; jppp++)
     for (int kppp = kpp - search; kppp <= kpp + search; kppp++) {
         // Distance to surface on the sphere
-        const int dist = abs(round(euclid((RFLOAT) ippp, (RFLOAT) jppp, (RFLOAT) kppp)) - radius_count);
-        const int reldist2 = euclidsq(ippp - ipp, jppp - jpp, kppp - kpp);
+        const int dist = abs(round(hypot((double) ippp, jppp, kppp)) - radius_count);
+        const int reldist2 = hypot2(ippp - ipp, jppp - jpp, kppp - kpp);
         if (dist < 0.5 && reldist2 < best_dist) {
             best_ipp = ippp;
             best_jpp = jppp;
@@ -329,16 +329,17 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
     // First calculate radial average, to normalize the power spectrum
     const int radius = Xsize(FT);
     MultidimArray<int> radial_count (radius);
-    auto ravg = MultidimArray<RFLOAT>::zeros(radius);
+    MultidimArray<RFLOAT> ravg (radius);
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const int idx = round(euclid(ip, jp, kp));
+        const int idx = round(hypot((double) ip, jp, kp));
         if (idx >= radius) continue;
         ravg.elem(idx) += norm(direct::elem(FT, i, j, k));
         radial_count.elem(idx)++;
     }
-    for (int i = Xinit(ravg); i <= Xlast(ravg); i++) {
-        if (radial_count.elem(i) > 0) { ravg.elem(i) /= radial_count.elem(i); }
-    }
+
+    for (int i = 0; i != ravg.size(); i++)
+        if (radial_count[i] > 0)
+            ravg[i] /= radial_count[i];
 
     // Apply correction only beyond low-res fitting of B-factors
     const int radius_count = floor(Xsize(FT) * angpix / fit_minres);
@@ -347,7 +348,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
     MultidimArray<RFLOAT> sum3d (n, n, n);
     sum3d.setXmippOrigin();
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const int idx = round(euclid(ip, jp, kp));
+        const int idx = round(hypot((double) ip, jp, kp));
         // Only correct from fit_minres to Nyquist
         if (idx < radius_count || idx >= radius) continue;
 
@@ -371,7 +372,7 @@ void Postprocessing::correctRadialAmplitudeDistribution(MultidimArray<RFLOAT> &I
 
     // Now divide all elements by the normalized correction term
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const int idx = round(euclid(ip, jp, kp));
+        const int idx = round(hypot((double) ip, jp, kp));
         // only correct from fit_minres to Nyquist
         if (idx < radius_count || idx >= radius) continue;
 
@@ -523,7 +524,7 @@ void Postprocessing::applyFscWeighting(
     const int ires_max = search == fsc_spectrum.begin() ? 0 : search - 1 - fsc_spectrum.begin();
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const int ires = round(euclid(ip, jp, kp));
+        const int ires = round(hypot((double) ip, jp, kp));
         if (ires <= ires_max) {
             const RFLOAT fsc = direct::elem(fsc_spectrum, ires);
             direct::elem(FT, i, j, k) *= sqrt(2 * fsc / (1 + fsc));
@@ -540,7 +541,7 @@ std::vector<fit_point2D> Postprocessing::makeGuinierPlot(
     MultidimArray<RFLOAT> lnF(Xsize(FT));
 
     FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(FT) {
-        const int ires = round(euclid(ip, jp, kp));
+        const int ires = round(hypot((double) ip, jp, kp));
         if (ires < Xsize(radial_count)) {
             lnF.elem(ires) += abs(direct::elem(FT, i, j, k));
             radial_count.elem(ires)++;
@@ -883,7 +884,7 @@ void Postprocessing::run_locres(int rank, int size) {
             exit(RELION_EXIT_ABORTED);
 
         // Only calculate local-resolution inside a spherical mask with radius less than half-box-size minus maskrad_pix
-        float rad = euclid(ii, jj, kk);
+        float rad = hypot((double) ii, jj, kk);
         if (rad < maskrad) {
             if (nn % size == rank) {
                 // Make a spherical mask around (i,j,k),
