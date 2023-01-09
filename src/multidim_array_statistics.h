@@ -69,23 +69,18 @@ std::array<long int, 4> maxIndex(const MultidimArray<T> &arr) {
 // Minimum and maximum of the values in the array
 template <typename T>
 std::pair<T, T> minmax(const MultidimArray<T> &arr) {
-
-    if (arr.size() <= 0) return {T(), T()};  // Value-initialise min and max
-
-    const auto pair = std::minmax_element(arr.begin(), arr.end());
-    return {*pair.first, *pair.second};
+    if (arr.size() == 0) return {T(), T()};  // Value-initialise min and max
+    const auto minmax = std::minmax_element(arr.begin(), arr.end());
+    return {*minmax.first, *minmax.second};
 }
 
-/** Average of the values in the array.
- *
- * Regardless of the type of the array, return an RFLOAT.
+/** Arithmetic mean of the array.
+ * Does not make sense for integral T.
+ * Prone to overflow.
  */
 template <typename T>
-RFLOAT average(const MultidimArray<T> &arr) {
-
-    if (arr.size() <= 0) return 0;
-    // Arithmetic mean
-    return static_cast<RFLOAT>(std::accumulate(arr.begin(), arr.end(), RFLOAT(0))) / arr.size();
+T average(const MultidimArray<T> &arr) {
+    return std::accumulate(arr.begin(), arr.end(), T(0)) / arr.size();
 }
 
 /** Standard deviation of the values in the array.

@@ -135,12 +135,12 @@ void mapWeights(
     long unsigned *trans_idx,
     unsigned long current_oversampling
 ) {
-
-    for (long unsigned i = 0; i < orientation_num*translation_num; i++)
-        mapped_weights[i] = -std::numeric_limits<XFLOAT>::max();
-
-    for (long unsigned i = idxArr_start; i < idxArr_end; i++)
-        mapped_weights[ (rot_idx[i]-orientation_start) * translation_num + trans_idx[i] ]= weights[i];
+    std::fill_n(mapped_weights, orientation_num * translation_num,
+                std::numeric_limits<XFLOAT>::lowest());
+    for (long unsigned i = idxArr_start; i < idxArr_end; i++) {
+        const size_t j = (rot_idx[i] - orientation_start) * translation_num + trans_idx[i];
+        mapped_weights[j] = weights[i];
+    }
 }
 
 void buildCorrImage(

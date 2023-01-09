@@ -1440,8 +1440,7 @@ MultidimArray<Complex> FilterHelper::FriedelExpand(const MultidimArray<Complex> 
 }
 
 Image<RFLOAT> FilterHelper::normaliseToUnitInterval(const Image<RFLOAT> &img) {
-    RFLOAT minimum = +std::numeric_limits<RFLOAT>::max();
-    RFLOAT maximum = -std::numeric_limits<RFLOAT>::max();
+    RFLOAT minimum, maximum;
     if (img.data.size()) {
         const auto minmax = std::minmax_element(img.data.begin(), img.data.end());
         minimum = *minmax.first;

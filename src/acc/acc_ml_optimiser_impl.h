@@ -1903,7 +1903,7 @@ void convertAllSquaredDifferencesToWeights(
                 }
                 DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
 
-                XFLOAT weights_max = -std::numeric_limits<XFLOAT>::max();
+                XFLOAT weights_max = std::numeric_limits<XFLOAT>::lowest();
 
                 pdf_offset.streamSync();
 
@@ -2694,11 +2694,13 @@ void storeWeightedSums(
             CTICTOC(accMLO->timer, "pre_wavg_map", ({
 
             for (long unsigned i = 0; i < orientation_num * translation_num; i++) {
-                sorted_weights.getHostPtr()[classPos + i] = -std::numeric_limits<XFLOAT>::max();
+                sorted_weights.getHostPtr()[classPos + i] = std::numeric_limits<XFLOAT>::lowest();
             }
 
             for (long unsigned i = 0; i < thisClassFinePassWeights.weights.getSize(); i++) {
-                const long unsigned j = classPos + (thisClassFinePassWeights.rot_idx.getHostPtr()[i]) * translation_num + thisClassFinePassWeights.trans_idx.getHostPtr()[i];
+                const long unsigned j = classPos
+                    + thisClassFinePassWeights.rot_idx.getHostPtr()[i] * translation_num
+                    + thisClassFinePassWeights.trans_idx.getHostPtr()[i];
                 sorted_weights.getHostPtr()[j] = thisClassFinePassWeights.weights.getHostPtr()[i];
             }
 
@@ -3133,7 +3135,7 @@ void accDoExpectationOneParticle(MlClass *accMLO, unsigned long part_id_sorted, 
                 Mweight.setSize(sp.nr_images * weightsPerPart);
                 Mweight.setHostPtr(op.Mweight.data);
                 Mweight.deviceAlloc();
-                deviceInitValue<XFLOAT>(Mweight, -std::numeric_limits<XFLOAT>::max());
+                deviceInitValue<XFLOAT>(Mweight, std::numeric_limits<XFLOAT>::lowest());
                 Mweight.streamSync();
 
                 CTICTOC(accMLO->timer, "getAllSquaredDifferencesCoarse", ({
