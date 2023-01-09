@@ -205,16 +205,8 @@ class project_parameters {
             F2D = projector.get2DFourierTransform(
                 Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
             if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
-                Vector<RFLOAT> shift(2);
-                XX(shift) = -xoff;
-                YY(shift) = -yoff;
-                if (do_3d_rot) {
-                    shift.resize(3);
-                    ZZ(shift) = -zoff;
-                    shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift));
-                } else {
-                    shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift));
-                }
+                if (!do_3d_rot) zoff = 0.0;
+                shiftImageInFourierTransform(F2D, Xsize(vol()), -xoff, -yoff, -zoff);
             }
 
             // 1 Feb 2017 - Shaoda, add white noise to 2D / 3D single images
@@ -225,17 +217,13 @@ class project_parameters {
                 // TODO: sqrt(2) ??? Why ???
                 stddev_white_noise /= data_dim == 3 ? Xsize(vol()) * Xsize(vol()) : Xsize(vol()) * sqrt(2);
                 // Add white noise
-                FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-                    direct::elem(F2D, i, j, k) += Complex(
-                        rnd_gaus(0.0, stddev_white_noise),
-                        rnd_gaus(0.0, stddev_white_noise)
-                    );
-                }
+                for (Complex& z: F2D)
+                    z += Complex(rnd_gaus(0.0, stddev_white_noise), rnd_gaus(0.0, stddev_white_noise));
             }
 
-            img() = transformer.inverseFourierTransform(F2D);
+            img.data = transformer.inverseFourierTransform(F2D);
             // Shift the image back to the center...
-            CenterFFT(img(), false);
+            CenterFFT(img.data, false);
             img.setSamplingRateInHeader(angpix);
             img.write(fn_out);
             std::cout << " Done writing " << fn_out << std::endl;
@@ -249,7 +237,7 @@ class project_parameters {
             if (do_add_noise) {
                 if (!fn_model.empty()) {
                     model.read(fn_model);
-                } else if (stddev_white_noise > 0.) {
+                } else if (stddev_white_noise > 0.0) {
                     stddev_white_noise /= Xsize(vol()) * sqrt(2); // fftw normalization and factor sqrt(2) for two-dimensionality of complex plane
                 } else {
                     REPORT_ERROR("ERROR: When adding noise provide either --model_noise or --white_noise");
@@ -271,16 +259,10 @@ class project_parameters {
                     Xsize(vol()) / 2 + 1, Ysize(vol()), do_3d_rot ? Zsize(vol()) : 1, A3D);
 
                 if (abs(xoff) > 0.001 || abs(yoff) > 0.001 || do_3d_rot && abs(zoff) > 0.001) {
-                    Vector<RFLOAT> shift(2);
-                    XX(shift) = -xoff;
-                    YY(shift) = -yoff;
-
                     if (do_3d_rot) {
-                        shift.resize(3);
-                        ZZ(shift) = -zoff;
-                        shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift), ZZ(shift));
+                        shiftImageInFourierTransform(F2D, Xsize(vol()), -xoff, -yoff, -zoff);
                     } else {
-                        shiftImageInFourierTransform(F2D, Xsize(vol()), XX(shift), YY(shift));
+                        shiftImageInFourierTransform(F2D, Xsize(vol()), -xoff, -yoff);
                     }
                 }
 
@@ -324,56 +306,12 @@ class project_parameters {
 
                 // Apply complex Gaussian noise
                 // (magnitude follows a chi distribution, argument follows uniform distribution)
-                if (do_add_noise) {
-                    if (!fn_model.empty()) {
-                        //// 23 May 2014: for preparation of 1.3 release: removed reading a exp_model, replaced by just reading MDang
-                        // This does however mean that I no longer know mic_id of this image: replace by 0....
-                        FileName fn_group;
-                        const long int j = MDang.size() - 1;
-                        if (MDang.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
-                            fn_group = MDang.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME, j);
-                        } else {
-                            if (MDang.containsLabel(EMDL::MICROGRAPH_NAME)) {
-                                FileName fn_orig, fn_pre, fn_jobnr;
-                                fn_orig = MDang.getValue<std::string>(EMDL::MICROGRAPH_NAME, j);
-                                if (!decomposePipelineFileName(fn_orig, fn_pre, fn_jobnr, fn_group)) {
-                                    fn_group = fn_orig; // Not a pipeline filename; use as is
-                                }
-                            } else {
-                                REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --ang file...");
-                            }
-                        }
+                if (do_add_noise)
+                    complex_gaussian_noise(MDang, F2D);
 
-                        const auto search = std::find(model.group_names.begin(), model.group_names.end(), fn_group);
-                        if (search == model.group_names.end())
-                            REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
-                        const int i = search - model.group_names.begin();
-                        auto sigmas = model.sigma2_noise[i];
-                        for (auto& sigma: sigmas)
-                            sigma = sqrt(sigma);
-
-                        // RFLOAT normcorr = MDang.containsLabel(EMDL::IMAGE_NORM_CORRECTION) ?
-                        //     MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, MDang.size() - 1) : 1.0;
-
-                        // Add coloured noise
-                        FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
-                            const int Nyquist = model.ori_size / 2;
-                            // At frequences higher than Nyquist, use last sigma2 value
-                            const int ires = std::min((int) round(hypot((double) ip, jp, kp)), Nyquist);
-                            const RFLOAT sigma = direct::elem(sigmas, ires);
-                            direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
-                        }
-                    } else {
-                        // Add white noise
-                        for (Complex& x: F2D)
-                            x += Complex(rnd_gaus(0.0, stddev_white_noise), rnd_gaus(0.0, stddev_white_noise));
-                    }
-                }
-
-                img().initZeros();
-                img() = transformer.inverseFourierTransform(F2D);
-                // Shift the image back to the center...
-                CenterFFT(img(), false);
+                img.data = transformer.inverseFourierTransform(F2D);
+                // Shift the image back to the center.
+                CenterFFT(img.data, false);
 
                 // Subtract the projection from the corresponding experimental image
                 if (do_subtract_exp || do_simulate) {
@@ -514,6 +452,53 @@ class project_parameters {
 
         }
     }
+
+    void complex_gaussian_noise(const MetaDataTable& MDang, MultidimArray<Complex>& F2D) {
+        if (fn_model.empty()) {
+            // Add white noise
+            for (Complex& z: F2D)
+                z += Complex(rnd_gaus(0.0, stddev_white_noise), rnd_gaus(0.0, stddev_white_noise));
+        } else {
+            //// 23 May 2014: for preparation of 1.3 release: removed reading a exp_model, replaced by just reading MDang
+            // This does however mean that I no longer know mic_id of this image: replace by 0....
+            FileName fn_group;
+            const long int j = MDang.size() - 1;
+            if (MDang.containsLabel(EMDL::MLMODEL_GROUP_NAME)) {
+                fn_group = MDang.getValue<std::string>(EMDL::MLMODEL_GROUP_NAME, j);
+            } else {
+                if (MDang.containsLabel(EMDL::MICROGRAPH_NAME)) {
+                    FileName fn_orig, fn_pre, fn_jobnr;
+                    fn_orig = MDang.getValue<std::string>(EMDL::MICROGRAPH_NAME, j);
+                    if (!decomposePipelineFileName(fn_orig, fn_pre, fn_jobnr, fn_group)) {
+                        fn_group = fn_orig; // Not a pipeline filename; use as is
+                    }
+                } else {
+                    REPORT_ERROR("ERROR: cannot find rlnGroupName or rlnMicrographName in the input --ang file...");
+                }
+            }
+
+            const auto search = std::find(model.group_names.begin(), model.group_names.end(), fn_group);
+            if (search == model.group_names.end())
+                REPORT_ERROR("ERROR: cannot find " + fn_group + " in the input model file...");
+            const int i = search - model.group_names.begin();
+            auto sigmas = model.sigma2_noise[i];
+            for (auto& sigma: sigmas)
+                sigma = sqrt(sigma);
+
+            // RFLOAT normcorr = MDang.containsLabel(EMDL::IMAGE_NORM_CORRECTION) ?
+            //     MDang.getValue<RFLOAT>(EMDL::IMAGE_NORM_CORRECTION, MDang.size() - 1) : 1.0;
+
+            // Add coloured noise
+            FOR_ALL_ELEMENTS_IN_FFTW_TRANSFORM(F2D) {
+                const int Nyquist = model.ori_size / 2;
+                // At frequences higher than Nyquist, use last sigma2 value
+                const int ires = std::min((int) round(hypot((double) ip, jp, kp)), Nyquist);
+                const RFLOAT sigma = direct::elem(sigmas, ires);
+                direct::elem(F2D, i, j, k) += Complex(rnd_gaus(0.0, sigma), rnd_gaus(0.0, sigma));
+            }
+        }
+    }
+
 };
 
 

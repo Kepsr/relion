@@ -756,7 +756,7 @@ void HelixAligner::expectationOneParticleNoFFT(long int ipart) {
     #pragma omp critical
     {
         for (int i_smear = -max_smear; i_smear <= max_smear; i_smear++) {
-            double smearw = max_smear < Xmipp::epsilon ? 1 : gaussian1D((double) i_smear, (double) max_smear / 3);
+            double smearw = max_smear < Xmipp::epsilon<RFLOAT>() ? 1 : gaussian1D((double) i_smear, (double) max_smear / 3);
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Xrects[ipart][best_k_rot], i, j) {
 
                 int ip = i + best_i_offset + i_smear;

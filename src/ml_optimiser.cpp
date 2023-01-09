@@ -3805,7 +3805,7 @@ void MlOptimiser::maximization() {
         ifdefTIMING(TicToc tt (timer, RCT_1);)
         if (mymodel.pdf_class[iclass] > 0.0 || mymodel.nr_bodies > 1) {
 
-            if (wsum_model.BPref[iclass].weight.sum() > Xmipp::epsilon) {
+            if (wsum_model.BPref[iclass].weight.sum() > Xmipp::epsilon<RFLOAT>()) {
                 MultidimArray<RFLOAT> Iref_old;
                 if (do_sgd) { Iref_old = mymodel.Iref[iclass]; }
 
@@ -3926,15 +3926,16 @@ void MlOptimiser::maximizationOtherParameters() {
 
     // For multi-body refinement: it is possible we haven't done any bodies anymore, so sum_weight is zero
     // in that case we need to leave all parameters as they were
-    if (sum_weight < Xmipp::epsilon) return;
+    if (sum_weight < Xmipp::epsilon<RFLOAT>()) return;
 
     // Annealing of multiple-references in SGD
     if (do_sgd && !do_sgd_skip_anneal && mymodel.nr_classes > 1 && iter < sgd_ini_iter + sgd_inbetween_iter) {
-        MultidimArray<RFLOAT> Iavg = MultidimArray<RFLOAT>::zeros(mymodel.Iref[0]);
+        MultidimArray<RFLOAT> Iavg (mymodel.Iref[0]);
+        // Expression templates
         for (int iclass = 0; iclass < mymodel.nr_classes; iclass++) {
             Iavg += mymodel.Iref[iclass];
         }
-        Iavg /= (RFLOAT) mymodel.nr_classes;
+        Iavg /= mymodel.nr_classes;
 
         int diffiter = iter - sgd_ini_iter;
         RFLOAT frac = RFLOAT(iter - sgd_ini_iter) / RFLOAT(sgd_inbetween_iter);

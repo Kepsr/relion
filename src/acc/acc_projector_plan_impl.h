@@ -106,7 +106,7 @@ void AccProjectorPlan::setup(
     AccPtr<XFLOAT> adjustR = eulers.make<XFLOAT>((size_t) 9);
 
     alphas.hostAlloc();
-    betas.hostAlloc();
+    betas .hostAlloc();
     gammas.hostAlloc();
 
     eulers.free();
@@ -198,14 +198,14 @@ void AccProjectorPlan::setup(
                 // Loop over all oversampled orientations (only a single one in the first pass)
                 for (long int iover_rot = 0; iover_rot < nr_oversampled_rot; iover_rot++, ipart++) {
                     if (sampling.is_3D) {
-                        alphas[orientation_num] = oversampled_rot [iover_rot];
-                        betas [orientation_num] = oversampled_tilt[iover_rot];
-                        gammas[orientation_num] = oversampled_psi [iover_rot];
+                        alphas.getHostPtr()[orientation_num] = oversampled_rot [iover_rot];
+                        betas .getHostPtr()[orientation_num] = oversampled_tilt[iover_rot];
+                        gammas.getHostPtr()[orientation_num] = oversampled_psi [iover_rot];
                     } else {
-                        alphas[orientation_num] = oversampled_psi [iover_rot] + myperturb;
+                        alphas.getHostPtr()[orientation_num] = oversampled_psi [iover_rot] + myperturb;
                     }
 
-                    iorientclasses[orientation_num] = iorientclass;
+                    iorientclasses.getHostPtr()[orientation_num] = iorientclass;
                     orientation_num++;
                 }
             }
@@ -214,69 +214,69 @@ void AccProjectorPlan::setup(
     }
     }));
 
-    iorientclasses.resizeHostCopy(orientation_num);
+    iorientclasses.resizeHost(orientation_num);
     iorientclasses.putOnDevice();
 
-    eulers.resizeHostCopy(orientation_num * 9);
+    eulers.resizeHost(orientation_num * 9);
     eulers.deviceAlloc();
 
-    alphas.resizeHostCopy(orientation_num);
+    alphas.resizeHost(orientation_num);
     alphas.putOnDevice();
 
     if (sampling.is_3D) {
-        betas.resizeHostCopy(orientation_num);
+        betas.resizeHost(orientation_num);
         betas.putOnDevice();
-        gammas.resizeHostCopy(orientation_num);
+        gammas.resizeHost(orientation_num);
         gammas.putOnDevice();
     }
 
     if (doL) {
         adjustL.hostAlloc();
-        for (int i = 0; i < 9; i++) { adjustL[i] = (XFLOAT) L[i]; }
+        std::copy_n(L.data(), 9, adjustL.getHostPtr());
         adjustL.putOnDevice();
     }
 
     if (doR) {
         adjustR.hostAlloc();
-        for (int i = 0; i < 9; i++) { adjustR[i] = (XFLOAT) R[i]; }
+        std::copy_n(R.data(), 9, adjustR.getHostPtr());
         adjustR.putOnDevice();
     }
 
     int grid_size = ceil((float) orientation_num / (float) BLOCK_SIZE);
 
-    /// WARNING: Code multiplication !
+    /// WARNING: Code multiplication!
 
     if (inverseMatrix) {
         if (sampling.is_3D) {
             if (doL && doR) {
                 AccUtilities::acc_make_eulers_3D<true, true, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
-                    orientation_num, ~adjustL, ~adjustR
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
+                    orientation_num, adjustL.getAccPtr(), adjustR.getAccPtr()
                 );
             } else if (doL) {
                 AccUtilities::acc_make_eulers_3D<true, true, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
-                    orientation_num, ~adjustL, NULL
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
+                    orientation_num, adjustL.getAccPtr(), NULL
                 );
             } else if (doR) {
                 AccUtilities::acc_make_eulers_3D<true, false, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
-                    orientation_num, NULL, ~adjustR
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
+                    orientation_num, NULL, adjustR.getAccPtr()
                 );
             } else {
                 AccUtilities::acc_make_eulers_3D<true, false, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
                     orientation_num, NULL, NULL
                 );
             }
         } else {
             AccUtilities::acc_make_eulers_2D<true>(
                 grid_size, BLOCK_SIZE, eulers.getStream(),
-                ~alphas, ~eulers,
+                alphas.getAccPtr(), eulers.getAccPtr(),
                 orientation_num
             );
         }
@@ -285,32 +285,32 @@ void AccProjectorPlan::setup(
             if (doL && doR) {
                 AccUtilities::acc_make_eulers_3D<false, true, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
-                    orientation_num, ~adjustL, ~adjustR
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
+                    orientation_num, adjustL.getAccPtr(), adjustR.getAccPtr()
                 );
             } else if (doL) {
                 AccUtilities::acc_make_eulers_3D<false, true, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
-                    orientation_num, ~adjustL, NULL
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
+                    orientation_num, adjustL.getAccPtr(), NULL
                 );
             } else if (doR) {
                 AccUtilities::acc_make_eulers_3D<false, false, true>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
-                    orientation_num, NULL, ~adjustR
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
+                    orientation_num, NULL, adjustR.getAccPtr()
                 );
             } else {
                 AccUtilities::acc_make_eulers_3D<false, false, false>(
                     grid_size, BLOCK_SIZE, eulers.getStream(),
-                    ~alphas, ~betas, ~gammas, ~eulers,
+                    alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(),
                     orientation_num, NULL, NULL
                 );
             }
         } else {
             AccUtilities::acc_make_eulers_2D<false>(
                 grid_size, BLOCK_SIZE, eulers.getStream(),
-                ~alphas, ~eulers,
+                alphas.getAccPtr(), eulers.getAccPtr(),
                 orientation_num
             );
         }
@@ -321,13 +321,13 @@ void AccProjectorPlan::setup(
     // if (sampling.is_3D) {
     //     AccUtilities::acc_make_eulers_3D<inverseMatrix, doL, doR>(
     //         grid_size, BLOCK_SIZE, eulers.getStream(),
-    //         ~alphas, ~betas, ~gammas, ~eulers, orientation_num,
-    //         doL ? ~adjustL : NULL, doR ? ~adjustR : NULL
+    //         alphas.getAccPtr(), betas.getAccPtr(), gammas.getAccPtr(), eulers.getAccPtr(), orientation_num,
+    //         doL ? adjustL.getAccPtr() : NULL, doR ? adjustR.getAccPtr() : NULL
     //     );
     // } else {
     //     AccUtilities::acc_make_eulers_2D<inverseMatrix>(
     //         grid_size, BLOCK_SIZE, eulers.getStream(),
-    //         ~alphas, ~eulers, orientation_num
+    //         alphas.getAccPtr(), eulers.getAccPtr(), orientation_num
     //     );
     // }
 
@@ -342,10 +342,10 @@ void AccProjectorPlan::printTo(std::ostream &os) {
     os << "iorientclasses.getSize() = " << iorientclasses.getSize() << std::endl;
     os << std::endl << "iorientclasses\tiover_rots\teulers" << std::endl;
 
-    for (int i = 0; i < iorientclasses.getSize(); i ++) {
-        os << iorientclasses[i] << "\t\t" << "\t";
+    for (int i = 0; i < iorientclasses.getSize(); i++) {
+        os << iorientclasses.getHostPtr()[i] << "\t\t" << "\t";
         for (int j = 0; j < 9; j++)
-            os << eulers[i * 9 + j] << "\t";
+            os << eulers.getHostPtr()[i * 9 + j] << "\t";
         os << std::endl;
     }
 }

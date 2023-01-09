@@ -422,7 +422,7 @@ void Projector::initialiseData(int current_size) {
 
 void Projector::initZeros(int current_size) {
     initialiseData(current_size);
-    data.initZeros();
+    std::fill(data.begin(), data.end(), 0.0);
 }
 
 long int Projector::getSize() {
@@ -450,8 +450,7 @@ void Projector::computeFourierTransformMap(
 ) {
     #ifdef CUDA
     static int semid = -1;
-    CudaCustomAllocator *allocator;
-    AccPtrFactory ptrFactory;
+    AccPtrFactory<> ptrFactory;
     AccPtr<RFLOAT>  dMpad;
     AccPtr<Complex> dFaux;
     AccPtr<RFLOAT>  dvol;
@@ -495,18 +494,14 @@ void Projector::computeFourierTransformMap(
     switch (ref_dim) {
 
         case 2:
-        Mpad = do_heavy ?
-            MultidimArray<RFLOAT>::zeros(padoridim, padoridim) :
-            MultidimArray<RFLOAT>       (padoridim, padoridim) ;
+        Mpad.resize(padoridim, padoridim);
         normfft = data_dim == 2 ?
             padding_factor * padding_factor :
             padding_factor * padding_factor * ori_size;
         break;
 
         case 3:
-        Mpad = do_heavy ?
-            MultidimArray<RFLOAT>::zeros(padoridim, padoridim, padoridim) :
-            MultidimArray<RFLOAT>       (padoridim, padoridim, padoridim) ;
+        Mpad.resize(padoridim, padoridim, padoridim);
         normfft = data_dim == 3 ?
             padding_factor * padding_factor * padding_factor :
             padding_factor * padding_factor * padding_factor * ori_size;
@@ -529,7 +524,6 @@ void Projector::computeFourierTransformMap(
                 + ws_sz + 4096;                             // workspace for cuFFT + extra space for alignment
     }
 
-    CudaCustomAllocator *allocator = nullptr;
     if (do_gpu && do_heavy) {
         cudaDeviceProp devProp;
         if (semid < 0) {
@@ -544,14 +538,13 @@ void Projector::computeFourierTransformMap(
         size_t mem_free, mem_tot;
         HANDLE_ERROR(cudaMemGetInfo(&mem_free, &mem_tot));
         if (mem_free > mem_req) {
-            allocator = new CudaCustomAllocator(mem_req, (size_t) 16);
+            ptrFactory.allocator = new CudaCustomAllocator(mem_req, (size_t) 16);
         } else {
             do_gpu = false; // change local copy of do_gpu variable
             if (semop(semid, &op_unlock[0], 1) < 0)
                 REPORT_ERROR("semop unlock error");
         }
     }
-    ptrFactory = allocator;
     dMpad = ptrFactory.make<RFLOAT>(Mpad.size());
     dFaux = ptrFactory.make<Complex>(Faux_sz);
     dvol  = ptrFactory.make<RFLOAT>(vol_in.size());
@@ -576,7 +569,7 @@ void Projector::computeFourierTransformMap(
             if (do_gpu) {
                 vol_in.setXmippOrigin();
                 run_griddingCorrect(
-                    ~dvol, interpolator, (RFLOAT) (ori_size * padding_factor), r_min_nn,
+                    dvol.getAccPtr(), interpolator, (RFLOAT) (ori_size * padding_factor), r_min_nn,
                     Xsize(vol_in), Ysize(vol_in), Zsize(vol_in)
                 );
             } else
@@ -598,7 +591,7 @@ void Projector::computeFourierTransformMap(
         if (do_gpu) {
             dMpad.accAlloc();
             run_padTranslatedMap(
-                ~dvol, ~dMpad,
+                dvol.getAccPtr(), dMpad.getAccPtr(),
                 Xinit(vol_in), Xlast(vol_in), Yinit(vol_in), Ylast(vol_in), Zinit(vol_in), Zlast(vol_in),   // Input  dimensions
                 Xinit(Mpad),   Xlast(Mpad),   Yinit(Mpad),   Ylast(Mpad),   Zinit(Mpad),   Zlast(Mpad)      // Output dimensions
             );
@@ -626,19 +619,19 @@ void Projector::computeFourierTransformMap(
             if (err != CUFFT_SUCCESS)
                 REPORT_ERROR("failed to create cufft plan");
             cufftSetAutoAllocation(plan, 0); // do not allocate work area
-            //Allocate space with smart allocator
+            // Allocate space with smart allocator
             AccPtr<char> fft_ws = ptrFactory.make<char>(ws_sz);
             fft_ws.accAlloc();
-            cufftSetWorkArea(plan, ~fft_ws);
+            cufftSetWorkArea(plan, fft_ws.getAccPtr());
             err = cufftMakePlanMany(plan, ref_dim, n, nullptr, 0, 0, nullptr, 0, 0, cufft_type, 1, &ws_sz);
             if (err != CUFFT_SUCCESS)
                 REPORT_ERROR("failed to create cufft plan");
 
             // do inverse FFT (dMpad->dFaux)
             if (sizeof(RFLOAT) == sizeof(double))
-                err = cufftExecD2Z(plan, (cufftDoubleReal*) ~dMpad, (cufftDoubleComplex*) ~dFaux);
+                err = cufftExecD2Z(plan, (cufftDoubleReal*) dMpad.getAccPtr(), (cufftDoubleComplex*) dFaux.getAccPtr());
             else
-                err = cufftExecR2C(plan, (cufftReal*) ~dMpad, (cufftComplex*) ~dFaux);
+                err = cufftExecR2C(plan, (cufftReal*) dMpad.getAccPtr(), (cufftComplex*) dFaux.getAccPtr());
             if (err != CUFFT_SUCCESS)
                 REPORT_ERROR("failed to exec fft");
             // deallocate plan, free mem
@@ -648,7 +641,7 @@ void Projector::computeFourierTransformMap(
             if (ref_dim == 2) Faux.reshape(padoridim / 2 + 1, padoridim);
             if (ref_dim == 3) Faux.reshape(padoridim / 2 + 1, padoridim, padoridim);
 
-            scale((RFLOAT*) ~dFaux, 2 * dFaux.getSize(), 1.0 / (RFLOAT) cudanormfft);
+            scale((RFLOAT*) dFaux.getAccPtr(), 2 * dFaux.getSize(), 1.0 / (RFLOAT) cudanormfft);
         } else
         #endif
         Faux = transformer.FourierTransform(Mpad);
@@ -660,7 +653,7 @@ void Projector::computeFourierTransformMap(
     if (do_heavy)
         #ifdef CUDA
         if (do_gpu)
-        run_CenterFFTbySign(~dFaux, Xsize(Faux), Ysize(Faux), Zsize(Faux));
+        run_CenterFFTbySign(dFaux.getAccPtr(), Xsize(Faux), Ysize(Faux), Zsize(Faux));
         else
         #endif
         CenterFFTbySign(Faux);
@@ -682,10 +675,10 @@ void Projector::computeFourierTransformMap(
     // Also calculate radial power spectrum
     #ifdef CUDA
     int fourier_mask_sz = do_fourier_mask ? fourier_mask->size() : 16;
-    ddata = ptrFactory.make<Complex>(data.size());
-    dfourier_mask = ptrFactory.make<RFLOAT>(fourier_mask_sz);
+    ddata           = ptrFactory.make<Complex>(data.size());
+    dfourier_mask   = ptrFactory.make<RFLOAT>(fourier_mask_sz);
     dpower_spectrum = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
-    dcounter = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
+    dcounter        = ptrFactory.make<RFLOAT>(ori_size / 2 + 1);
 
     if (do_heavy && do_gpu) {
         ddata.accAlloc();
@@ -707,8 +700,10 @@ void Projector::computeFourierTransformMap(
     #endif
     }
     // Maybe power_spectrum.fill(0)?
-    power_spectrum = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
-    auto counter   = MultidimArray<RFLOAT>::zeros(ori_size / 2 + 1);
+    power_spectrum.resize(ori_size / 2 + 1);
+    MultidimArray<RFLOAT> counter (ori_size / 2 + 1);
+    std::fill(power_spectrum.begin(), power_spectrum.end(), 0.0);
+    std::fill(counter.begin(), counter.end(), 0.0);
 
     {
     ifdefTIMING(TicToc tt (proj_timer, TIMING_FAUX);)
@@ -720,9 +715,9 @@ void Projector::computeFourierTransformMap(
         #ifdef CUDA
         if (do_gpu) {
             run_calcPowerSpectrum(
-                ~dFaux, padoridim, ~ddata, Ysize(data), ~dpower_spectrum, ~dcounter,
+                dFaux.getAccPtr(), padoridim, ddata.getAccPtr(), Ysize(data), dpower_spectrum.getAccPtr(), dcounter.getAccPtr(),
                 max_r2, min_r2, cudanormfft, padding_factor, weight,
-                ~dfourier_mask, fmXsz, fmYsz, fmZsz, do_fourier_mask, ref_dim == 3
+                dfourier_mask.getAccPtr(), fmXsz, fmYsz, fmZsz, do_fourier_mask, ref_dim == 3
             );
             ddata.setHostPtr(data.data);
             ddata.cpToHost();
@@ -780,7 +775,7 @@ void Projector::computeFourierTransformMap(
     if (do_heavy) {
         #ifdef CUDA
         if (do_gpu) {
-            run_updatePowerSpectrum(~dcounter, dcounter.getSize(), ~dpower_spectrum);
+            run_updatePowerSpectrum(dcounter.getAccPtr(), dcounter.getSize(), dpower_spectrum.getAccPtr());
             dpower_spectrum.setHostPtr(power_spectrum.data);
             dpower_spectrum.cpToHost();
         } else
@@ -804,8 +799,8 @@ void Projector::computeFourierTransformMap(
     dMpad.free();
     dFaux.free();
 
-    if (allocator) {
-        delete allocator;
+    if (ptrFactory.allocator) {
+        delete ptrFactory.allocator;
         if (semop(semid, &op_unlock[0], 1) < 0) REPORT_ERROR("semop unlock error");
     }
     #endif

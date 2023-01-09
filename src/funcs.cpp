@@ -618,7 +618,7 @@ void swapbytes(char *v, unsigned long n) {
 }
 
 void HSL2RGB(RFLOAT H, RFLOAT S, RFLOAT L, RFLOAT &R, RFLOAT &G, RFLOAT &B) {
-    if (S < Xmipp::epsilon) {
+    if (S < Xmipp::epsilon<RFLOAT>()) {
         R = G = B = L;
     } else {
 

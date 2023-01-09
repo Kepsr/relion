@@ -609,8 +609,8 @@ void shiftImageInFourierTransformWithTabSincos(
         case 2: {
             xshift /= -oridim;
             yshift /= -oridim;
-            if (abs(xshift) < Xmipp::epsilon &&
-                abs(yshift) < Xmipp::epsilon) {
+            if (abs(xshift) < Xmipp::epsilon<RFLOAT>() &&
+                abs(yshift) < Xmipp::epsilon<RFLOAT>()) {
                 out = windowFourierTransform(in, newdim);
                 return;
             }
@@ -627,9 +627,9 @@ void shiftImageInFourierTransformWithTabSincos(
             xshift /= -oridim;
             yshift /= -oridim;
             zshift /= -oridim;
-            if (abs(xshift) < Xmipp::epsilon &&
-                abs(yshift) < Xmipp::epsilon &&
-                abs(zshift) < Xmipp::epsilon) {
+            if (abs(xshift) < Xmipp::epsilon<RFLOAT>() &&
+                abs(yshift) < Xmipp::epsilon<RFLOAT>() &&
+                abs(zshift) < Xmipp::epsilon<RFLOAT>()) {
                 out = windowFourierTransform(in, newdim);
                 return;
             }
@@ -655,7 +655,7 @@ void shiftImageInFourierTransform(
 
         case 1:
         xshift /= -oridim;
-        if (abs(xshift) < Xmipp::epsilon) {
+        if (abs(xshift) < Xmipp::epsilon<RFLOAT>()) {
             out = in;
             return;
         }
@@ -670,7 +670,7 @@ void shiftImageInFourierTransform(
         case 2:
         xshift /= -oridim;
         yshift /= -oridim;
-        if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) {
+        if (abs(xshift) < Xmipp::epsilon<RFLOAT>() && abs(yshift) < Xmipp::epsilon<RFLOAT>()) {
             out = in;
             return;
         }
@@ -682,12 +682,12 @@ void shiftImageInFourierTransform(
             direct::elem(out, i, j) = X * Y;
         }
         for (long int j = Ysize(in) - 1; j >= Xsize(in); j--) {
-        RFLOAT y = j - Ysize(in);
+            RFLOAT y = j - Ysize(in);
         for (long int i = 0; i < Xsize(in); i++) {
-        RFLOAT x = i;
-        Complex X = direct::elem(in, i, j);
-        Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
-        direct::elem(out, i, j) = X * Y;
+            RFLOAT x = i;
+            Complex X = direct::elem(in, i, j);
+            Complex Y = Complex::unit(2 * PI * (x * xshift + y * yshift));
+            direct::elem(out, i, j) = X * Y;
         }
         }
         return;
@@ -696,14 +696,14 @@ void shiftImageInFourierTransform(
         xshift /= -oridim;
         yshift /= -oridim;
         zshift /= -oridim;
-        if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon && abs(zshift) < Xmipp::epsilon) {
+        if (abs(xshift) < Xmipp::epsilon<RFLOAT>() && abs(yshift) < Xmipp::epsilon<RFLOAT>() && abs(zshift) < Xmipp::epsilon<RFLOAT>()) {
             out = in;
             return;
         }
         for (long int k = 0; k < Zsize(in); k++) {
-        RFLOAT z = k < Xsize(in) ? k : k - Zsize(in);
+            RFLOAT z = k < Xsize(in) ? k : k - Zsize(in);
         for (long int j = 0; j < Ysize(in); j++) {
-        RFLOAT y = j < Xsize(in) ? j : j - Ysize(in);
+            RFLOAT y = j < Xsize(in) ? j : j - Ysize(in);
         for (long int i = 0; i < Xsize(in); i++) {
             RFLOAT x = i;
             Complex X = direct::elem(in, i, j, k);

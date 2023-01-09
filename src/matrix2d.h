@@ -258,7 +258,7 @@ class Matrix {
     * Returns true if this object has the same shape as the argument
     * and the same values (to within machine epsilon).
     */
-    bool equal(const Matrix<T> &other, RFLOAT accuracy = Xmipp::epsilon) const {
+    bool equal(const Matrix<T> &other, RFLOAT accuracy = Xmipp::epsilon<RFLOAT>()) const {
         if (shape() != other.shape()) 
             return false;
 
@@ -410,7 +410,7 @@ class Matrix {
         // If any row is all zeros, then the determinant is zero.
         for (int i = 0; i < nrows(); i++) {
             for (int j = 0; j < ncols(); j++) {
-                if (abs(at(i, j)) > Xmipp::epsilon) goto next;
+                if (abs(at(i, j)) > Xmipp::epsilon<RFLOAT>()) goto next;
             }
             return 0;
             next: continue;
@@ -451,7 +451,7 @@ class Matrix {
     bool isIdentity() const {
         for (int i = 0; i < nrows(); i++)
         for (int j = 0; j < ncols(); j++) {
-            if (abs(i == j ? at(i, j) - 1.0 : at(i, j)) > Xmipp::epsilon)
+            if (abs(i == j ? at(i, j) - 1.0 : at(i, j)) > Xmipp::epsilon<T>())
                 return false;
         }
         return true;
@@ -697,7 +697,7 @@ Matrix<T> operator - (Matrix<T> lhs, const Matrix<T> &rhs) {
 }
 
 template <typename It>
-void setSmallValuesToZero(It here, const It& end, RFLOAT epsilon = Xmipp::epsilon) {
+void setSmallValuesToZero(It here, const It& end, RFLOAT epsilon = Xmipp::epsilon<RFLOAT>()) {
     for (; here != end; ++here)
         if (abs(*here) < epsilon)
             *here = 0;

@@ -30,6 +30,12 @@
 #define MEM_ALIGN 64
 #endif
 
+#ifdef DEBUG_CUDA
+const bool __debug_cuda__ = true;
+#else
+const bool __debug_cuda__ = false;
+#endif
+
 #define ACC_PTR_DEBUG_FATAL( err ) (HandleAccPtrDebugFatal( err, __FILE__, __LINE__ ))
 static void HandleAccPtrDebugFatal( const char *err, const char *file, int line )
 {
@@ -43,8 +49,7 @@ static void HandleAccPtrDebugFatal( const char *err, const char *file, int line 
 }
 
 #define ACC_PTR_DEBUG_INFO( err ) (HandleAccPtrDebugInformational( err, __FILE__, __LINE__ ))
-static void HandleAccPtrDebugInformational( const char *err, const char *file, int line )
-{
+static void HandleAccPtrDebugInformational( const char *err, const char *file, int line ) {
         fprintf(stderr, "POSSIBLE ISSUE: %s in %s:%d\n", err, file, line );
         fflush(stdout);
 }
@@ -72,9 +77,8 @@ using AllocatorType  = double;
 using AllocationType = double;
 #endif
 
-template <typename T>
-class AccPtr
-{
+template <typename T, acc::Type accType = acc::type>
+class AccPtr {
 
     protected:
 
@@ -82,16 +86,14 @@ class AccPtr
     AllocationType *alloc;
     StreamType stream;
 
-    acc::Type accType;
-
     size_t size;  // Size used when copying data from and to device
     T *hPtr, *dPtr;  // Host and device pointers
-    bool doFreeHost, doFreeDevice;  // Does the host/device need to be freed?
+    bool mustFreeHost, mustFreeDevice;  // Does the host/device need to be freed?
 
     public:
 
     inline void setDoFreeHost(bool p) {
-        doFreeHost = p;
+        mustFreeHost = p;
     }
 
     /*======================================================
@@ -100,12 +102,9 @@ class AccPtr
 
     AccPtr(
         AllocatorType *allocator = nullptr, StreamType stream = cudaStreamPerThread,
-        acc::Type accType = acc::type, size_t size = 0,
-        T *h_start = nullptr, T *d_start = nullptr
-    ):
-        size(size), hPtr(h_start), dPtr(d_start), doFreeHost(false),
-        doFreeDevice(false), allocator(allocator), alloc(nullptr), stream(stream),
-        accType(accType)
+        size_t size = 0, T *hptr = nullptr, T *dptr = nullptr
+    ): allocator(allocator), alloc(nullptr), stream(stream),
+        size(size), hPtr(hptr), dPtr(dptr), mustFreeHost(false), mustFreeDevice(false)
     {
         if (size && hPtr && posix_memalign((void**) &hPtr, MEM_ALIGN, sizeof(T) * size))
             CRITICAL(RAMERR);
@@ -114,52 +113,39 @@ class AccPtr
     AccPtr(
         size_t size, AllocatorType *allocator = nullptr,
         StreamType stream = cudaStreamPerThread,
-        acc::Type accType = acc::type,
-        T *h_start = nullptr, T *d_start = nullptr
+        T *hptr = nullptr, T *dptr = nullptr
     ):
-        size(size), hPtr(h_start), dPtr(d_start), doFreeHost(false),
-        doFreeDevice(false), allocator(allocator), alloc(nullptr), stream(stream),
-        accType(accType)
+        allocator(allocator), alloc(nullptr), stream(stream),
+        size(size), hPtr(hptr), dPtr(dptr), mustFreeHost(false), mustFreeDevice(false)
     {
         if (size && hPtr && posix_memalign((void**) &hPtr, MEM_ALIGN, sizeof(T) * size))
             CRITICAL(RAMERR);
     }
 
-    AccPtr(size_t size, StreamType stream):
-        size(size), dPtr(nullptr), doFreeHost(true),
-        doFreeDevice(false), allocator(nullptr), alloc(nullptr), stream(stream),
-        accType(acc::type)
-    {
-        if (posix_memalign((void**) &hPtr, MEM_ALIGN, sizeof(T) * size))
-            CRITICAL(RAMERR);
+    AccPtr(size_t size, StreamType stream): AccPtr(nullptr, stream, size) {
+        hostAlloc();
     }
 
     // Copy ctor
     AccPtr(const AccPtr &ptr):
-        size(ptr.size), hPtr(ptr.hPtr), dPtr(ptr.dPtr), doFreeHost(false),
-        doFreeDevice(false), allocator(ptr.allocator), alloc(nullptr), stream(ptr.stream),
-        accType(ptr.accType)
+        size(ptr.size), hPtr(ptr.hPtr), dPtr(ptr.dPtr), mustFreeHost(false), mustFreeDevice(false),
+        allocator(ptr.allocator), alloc(nullptr), stream(ptr.stream)
     {}
 
     AccPtr(const AccPtr<T> &ptr, size_t start_idx, size_t size):
-        size(size), hPtr(&ptr.hPtr[start_idx]), dPtr(&ptr.dPtr[start_idx]), doFreeHost(false),
-        doFreeDevice(false), allocator(ptr.allocator), alloc(nullptr), stream(ptr.stream),
-        accType(ptr.accType)
+        size(size), hPtr(ptr.hPtr + start_idx), dPtr(ptr.dPtr + start_idx), mustFreeHost(false), mustFreeDevice(false),
+        allocator(ptr.allocator), alloc(nullptr), stream(ptr.stream)
     {}
 
     /*======================================================
                          METHOD BODY
     ======================================================*/
 
-    void markReadyEvent()
-    {
+    void markReadyEvent() {
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!alloc)
+        if (accType == acc::cuda) {
+            if (__debug_cuda__ && !alloc)
                 ACC_PTR_DEBUG_FATAL("markReadyEvent called on null allocation.\n");
-            #endif
             alloc->markReadyEvent(stream);
         }
         #endif
@@ -168,21 +154,18 @@ class AccPtr
     /**
      * Allocate memory on device
      */
-    void deviceAlloc()
-    {
+    void deviceAlloc() {
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (size == 0)
-                ACC_PTR_DEBUG_FATAL("deviceAlloc called with size == 0");
-            if (doFreeDevice)
-                ACC_PTR_DEBUG_FATAL("Device double allocation.\n");
-            #endif
-            doFreeDevice = true;
-
+        if (accType == acc::cuda) {
+            if (__debug_cuda__) {
+                if (size == 0)
+                    ACC_PTR_DEBUG_FATAL("deviceAlloc called with size == 0");
+                if (mustFreeDevice)
+                    ACC_PTR_DEBUG_FATAL("Device double allocation.\n");
+            }
             alloc = allocator->alloc(size * sizeof(T));
             dPtr = (T*) alloc->getPtr();
+            mustFreeDevice = true;
         }
         #endif
     }
@@ -190,267 +173,139 @@ class AccPtr
     /**
      * Allocate memory on host
      */
-    void hostAlloc()
-    {
-        #ifdef DEBUG_CUDA
-        if (size == 0)
-            ACC_PTR_DEBUG_FATAL("deviceAlloc called with size == 0");
-        if (doFreeHost)
-            ACC_PTR_DEBUG_FATAL("Host double allocation.\n");
-        #endif
-        doFreeHost = true;
+    void hostAlloc() {
+        if (__debug_cuda__) {
+            if (size == 0)
+                ACC_PTR_DEBUG_FATAL("hostAlloc called with size == 0");
+            if (mustFreeHost)
+                ACC_PTR_DEBUG_FATAL("Host double allocation.\n");   
+        }
         // TODO - alternatively, this could be aligned std::vector
         if (posix_memalign((void**) &hPtr, MEM_ALIGN, sizeof(T) * size))
             CRITICAL(RAMERR);
+        memset(hPtr, 0, sizeof(T) * size);
+        mustFreeHost = true;
     }
 
-    void allAlloc()
-    {
+    void allAlloc() {
         deviceAlloc();
         hostAlloc();
     }
 
-    void accAlloc()
-    {
-        if (accType == acc::cuda)
-            deviceAlloc();
-        else
-            hostAlloc();
+    void accAlloc() {
+        accType == acc::cuda ? deviceAlloc() : hostAlloc();
     }
 
     // Allocate storage of a new size for the array
-    void resizeHost(size_t newSize)
-    {
-        #ifdef DEBUG_CUDA
-        if (size == 0)
-            ACC_PTR_DEBUG_INFO("Resizing from size zero (permitted).\n");
-        #endif
-        // TODO - alternatively, this could be aligned std::vector
-        T* newArr;
-        if (posix_memalign((void**) &newArr, MEM_ALIGN, sizeof(T) * newSize))
-            CRITICAL(RAMERR);
-        memset(newArr, 0x0, sizeof(T) * newSize);
+    // Resize while retaining as much of the original contents as possible
+    void resizeHost(size_t newSize) {
 
-        #ifdef DEBUG_CUDA
-        if (dPtr)
-            ACC_PTR_DEBUG_FATAL("resizeHost: Resizing host with present device allocation.\n");
-        if (newSize == 0)
-            ACC_PTR_DEBUG_INFO("resizeHost: Array resized to size zero (permitted with fear).  Something may break downstream\n");
-        #endif
-        freeHost();
-        setSize(newSize);
-        setHostPtr(newArr);
-        doFreeHost = true;
-    }
-
-    // Resize retaining as much of the original contents as possible
-    void resizeHostCopy(size_t newSize)
-    {
-        #ifdef DEBUG_CUDA
-        // if (size == 0)
-        // 	ACC_PTR_DEBUG_INFO("Resizing from size zero (permitted).\n");
-        #endif
-        // TODO - alternatively, this could be aligned std::vector
-        T* newArr;
-        if (posix_memalign((void**) &newArr, MEM_ALIGN, sizeof(T) * newSize))
+        /// TODO: alternatively, this could be aligned std::vector
+        T* new_hptr;
+        if (posix_memalign((void**) &new_hptr, MEM_ALIGN, sizeof(T) * newSize))
             CRITICAL(RAMERR);
 
-        // Copy in what we can from the original matrix
-        if (size > 0 && hPtr)
-        {
-            memcpy(newArr, hPtr, sizeof(T) * std::min(size, newSize));
-
-            // Initialize remaining memory if any
+        if (size > 0 && hPtr) {
+            // Copy what we can
+            memcpy(new_hptr, hPtr, sizeof(T) * std::min(size, newSize));
+            // Initialize any remaining memory
             if (newSize > size)
-            {
-                memset(newArr, 0x0, sizeof(T) * (newSize - size));
-            }
+                memset(new_hptr, 0, sizeof(T) * (newSize - size));
+        } else {
+            // Nothing to copy
+            memset(new_hptr, 0, sizeof(T) * newSize);
         }
 
-        // There was nothing from before to copy - clear new memory
-        if (!hPtr)
-        {
-            memset(newArr, 0x0, sizeof(T) * newSize);
+        if (__debug_cuda__) {
+            if (dPtr)
+                ACC_PTR_DEBUG_FATAL("resizeHost: Resizing host with present device allocation.\n");
+            if (newSize == 0)
+                ACC_PTR_DEBUG_INFO("resizeHost: Array resized to size zero (permitted with fear).  Something may break downstream\n");
         }
-
-        #ifdef DEBUG_CUDA
-        if (dPtr)
-            ACC_PTR_DEBUG_FATAL("resizeHostCopy: Resizing host with present device allocation.\n");
-        if (newSize == 0)
-            ACC_PTR_DEBUG_INFO("resizeHostCopy: Array resized to size zero (permitted with fear).  Something may break downstream\n");
-        #endif
         freeHost();
         setSize(newSize);
-        setHostPtr(newArr);
-        doFreeHost = true;
+        setHostPtr(new_hptr);
+        mustFreeHost = true;
     }
 
     /**
-     * Initiate device memory with provided value
+     * Initialise device memory with provided value
      */
-    void deviceInit(int value)
-    {
+    void deviceInit(int value = 0) {
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("Memset requested before allocation in deviceInit().\n");
-            #endif
+        if (accType == acc::cuda) {
+            if (__debug_cuda__) {
+                if (!dPtr)
+                    ACC_PTR_DEBUG_FATAL("cudaMemInit requested before allocation in deviceInit().\n");
+            }
             cudaMemInit<T>(dPtr, value, size, stream);
         }
         #endif
     }
 
     /**
-     * Initiate host memory with provided value
+     * Initialise host memory with provided value
      */
-    void hostInit(int value)
-    {
-        #ifdef DEBUG_CUDA
-        if (!hPtr)
-            ACC_PTR_DEBUG_FATAL("Memset requested before allocation in hostInit().\n");
-        #endif
+    void hostInit(int value = 0) {
+        if (__debug_cuda__)
+            if (!hPtr)
+                ACC_PTR_DEBUG_FATAL("Memset requested before allocation in hostInit().\n");
         memset(hPtr, value, size * sizeof(T));
     }
 
     /**
-     * Initiate memory with provided value
+     * Initialise memory with provided value
      */
-    void accInit(int value)
-    {
-        if (accType == acc::cuda)
-            deviceInit(value);
-        else
-            hostInit(value);
+    void accInit(int value = 0) {
+        accType == acc::cuda ? deviceInit(value) : hostInit(value);
     }
 
     /**
-     * Initiate all used memory with provided value
+     * Initialise all used memory with provided value
      */
-    void allInit(int value)
-    {
+    void allInit(int value = 0) {
         hostInit(value);
-        if (accType == acc::cuda)
-            deviceInit(value);
+        deviceInit(value);
     }
 
     /**
-     * Copy a number (size) of bytes to device stored in the host pointer
+     * Copy bytes from host to device
      */
-    void cpToDevice()
-    {
+    void cpToDevice() {
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("cpToDevice() called before allocation.\n");
-            if (!hPtr)
-                ACC_PTR_DEBUG_FATAL("null host pointer in cpToDevice().\n");
-            #endif
+        if (accType == acc::cuda) {
+            if (__debug_cuda__) {
+                if (!dPtr)
+                    ACC_PTR_DEBUG_FATAL("cpToDevice() called before allocation.\n");
+                if (!hPtr)
+                    ACC_PTR_DEBUG_FATAL("null host pointer in cpToDevice().\n");
+            }
             CudaShortcuts::cpyHostToDevice<T>(hPtr, dPtr, size, stream);
         }
         #endif
     }
 
     /**
-     * Copy a number (size) of bytes to device stored in the provided host pointer
-     */
-    void cpToDevice(T * hostPtr)
-    {
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!hostPtr)
-                ACC_PTR_DEBUG_FATAL("nullptr given in cpToDevice(hostPtr).\n");
-            #endif
-            hPtr = hostPtr;
-            cpToDevice();
-        }
-    }
-
-    /**
      * alloc and copy
      */
-    void putOnDevice()
-    {
+    void putOnDevice() {
         deviceAlloc();
         cpToDevice();
     }
 
     /**
-     * Copy a number (size) of bytes from device to the host pointer
+     * Copy bytes from device to host
      */
-    void cpToHost()
-    {
+    void cpToHost() {
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("cp_to_host() called before device allocation.\n");
-            if (!hPtr)
-                ACC_PTR_DEBUG_FATAL("null host pointer in cp_to_host().\n");
-            #endif
+        if (accType == acc::cuda) {
+            if (__debug_cuda__) {
+                if (!dPtr)
+                    ACC_PTR_DEBUG_FATAL("cp_to_host() called before device allocation.\n");
+                if (!hPtr)
+                    ACC_PTR_DEBUG_FATAL("null host pointer in cp_to_host().\n");
+            }
             cudaCpyDeviceToHost<T>(dPtr, hPtr, size, stream);
-        }
-        #endif
-    }
-
-    /**
-     * Copy a number (thisSize) of bytes from device to the host pointer
-     */
-    void cpToHost(size_t thisSize)
-    {
-        #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("cp_to_host(thisSize) called before device allocation.\n");
-            if (!hPtr)
-                ACC_PTR_DEBUG_FATAL("null host pointer in cp_to_host(thisSize).\n");
-            #endif
-            cudaCpyDeviceToHost<T>(dPtr, hPtr, thisSize, stream);
-        }
-        #endif
-    }
-
-    /**
-     * Copy a number (thisSize) of bytes from device to a specific host pointer
-     */
-    void cpToHost(T* hstPtr, size_t thisSize)
-    {
-        #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("cp_to_host(hstPtr, thisSize) called before device allocation.\n");
-            if (!hstPtr)
-                ACC_PTR_DEBUG_FATAL("null host pointer in cp_to_host(hstPtr, thisSize).\n");
-            #endif
-            cudaCpyDeviceToHost<T>(dPtr, hstPtr, thisSize, stream);
-        }
-        #endif
-    }
-
-    /**
-     * Copy a number (size) of bytes from device to the host pointer
-     */
-    void cpToHostOnStream(StreamType s)
-    {
-        #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("cp_to_host_on_stream(s) called before device allocation.\n");
-            if (!hPtr)
-                ACC_PTR_DEBUG_FATAL("null host pointer in cp_to_host_on_stream(s).\n");
-            #endif
-            cudaCpyDeviceToHost<T>(dPtr, hPtr, size, s);
         }
         #endif
     }
@@ -458,16 +313,14 @@ class AccPtr
     /**
      * Copy a number (size) of bytes from device pointer to the provided new device pointer
      */
-    void cpOnDevice(T * const dstDevPtr)
-    {
+    void cpOnDevice(T* const dest) {
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dstDevPtr)
-                ACC_PTR_DEBUG_FATAL("nullptr given in cpOnDevice(dstDevPtr).\n");
-            #endif
-            CudaShortcuts::cpyDeviceToDevice(dPtr, dstDevPtr, size, stream);
+        if (accType == acc::cuda) {
+            if (__debug_cuda__) {
+                if (!dest)
+                    ACC_PTR_DEBUG_FATAL("nullptr given in cpOnDevice(dest).\n");
+            }
+            CudaShortcuts::cpyDeviceToDevice(dPtr, dest, size, stream);
         }
         #endif
     }
@@ -475,200 +328,67 @@ class AccPtr
     /**
      * Copy bytes into another host pointer
      */
-    void cpOnHost(T * const dstDevPtr)
-    {
-        #ifdef DEBUG_CUDA
-        if (!dstDevPtr)
-            ACC_PTR_DEBUG_FATAL("nullptr given in cp_on_host(dstDevPtr).\n");
-        if (!hPtr)
-            ACC_PTR_DEBUG_FATAL("Null input pointer given in cp_on_host(hPtr).\n");
-        #endif
-        memcpy(dstDevPtr, hPtr, size * sizeof(T));
-    }
-
-    void cpOnAcc(T * const dstDevPtr)
-    {
-        if (accType == acc::cuda)
-            cpOnDevice(dstDevPtr);
-        else
-            cpOnHost(dstDevPtr);
-    }
-
-    inline void cpOnAcc(const AccPtr<T> &devPtr)
-    {
-        cpOnAcc(devPtr.dPtr);
-    }
-
-    /**
-     * Host data quick access
-     */
-    const T& operator[](size_t idx) const
-    {
-        #ifdef DEBUG_CUDA
-        if (!hPtr)
-            ACC_PTR_DEBUG_FATAL("const operator[] called with null host pointer.\n");
-        #endif
-        return hPtr[idx];
-    };
-
-    /**
-     * Host data quick access
-     */
-    T& operator[](size_t idx)
-    {
-        #ifdef DEBUG_CUDA
-        if (!hPtr)
-            ACC_PTR_DEBUG_FATAL("operator[] called with null host pointer.\n");
-        #endif
-        return hPtr[idx];
-    };
-
-    /**
-     * Device data quick access
-     */
-    T& operator()(size_t idx)
-    {
-        #ifdef DEBUG_CUDA
-        if (!dPtr)
-            ACC_PTR_DEBUG_FATAL("operator(idx) called with null acc pointer.\n");
-        #endif
-        return dPtr[idx];
-    };
-
-
-    /**
-     * Device data quick access
-     */
-    const T& operator()(size_t idx) const
-    {
-        #ifdef DEBUG_CUDA
-        if (!dPtr)
-            ACC_PTR_DEBUG_FATAL("operator(idx) called with null acc pointer.\n");
-        #endif
-        return dPtr[idx];
-    };
-
-    /**
-     * Raw data pointer quick access
-     */
-    T* operator()()
-    {
-        // TODO - this could cause considerable confusion given the above operators.  But it
-        // also simplifies code that uses it.   What to do...
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("operator() called with null device pointer.\n");
-            #endif
-            return dPtr;
-        }
-        else
-        {
-            #ifdef DEBUG_CUDA
+    void cpOnHost(T* const dest) {
+        if (__debug_cuda__) {
+            if (!dest)
+                ACC_PTR_DEBUG_FATAL("nullptr given in cp_on_host(dest).\n");
             if (!hPtr)
-                ACC_PTR_DEBUG_FATAL("operator() called with null host pointer.\n");
-            #endif
-            return hPtr;
+                ACC_PTR_DEBUG_FATAL("Null input pointer given in cp_on_host(hPtr).\n");
         }
-    };
-
-    T* operator~()
-    {
-        // TODO - this could cause considerable confusion given the above operators.  But it
-        // also simplifies code that uses it.   What to do...
-        if (accType == acc::cuda)
-        {
-            #ifdef DEBUG_CUDA
-            if (!dPtr)
-                ACC_PTR_DEBUG_FATAL("DEBUG_WARNING: \"kernel cast\" on null device pointer.\n");
-            #endif
-            return dPtr;
-        }
-        else
-        {
-            #ifdef DEBUG_CUDA
-            if (!hPtr)
-                ACC_PTR_DEBUG_FATAL("DEBUG_WARNING: \"kernel cast\" on null host pointer.\n");
-            #endif
-        return hPtr;
-        }
+        memcpy(dest, hPtr, size * sizeof(T));
     }
 
-    void streamSync()
-    {
+    void cpOnAcc(T* const dest) {
+        accType == acc::cuda ? cpOnDevice(dest) : cpOnHost(dest);
+    }
+
+    void streamSync() {
         #ifdef CUDA
         if (accType == acc::cuda)
             DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
         #endif
     }
 
-    T getAccValueAt(size_t idx)
-    {
+    T getAccValueAt(size_t idx) {
+        return accType == acc::cuda ? getDeviceAt(idx) : hPtr[idx];
+    }
+
+    T getDeviceAt(size_t idx) {
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
+        if (accType == acc::cuda) {
             T value;
             cudaCpyDeviceToHost<T>(&dPtr[idx], &value, 1, stream);
             streamSync();
             return value;
-        }
-        else
+        } else
         #endif
-            return hPtr[idx];
+        return {};
     }
 
-    T getDeviceAt(size_t idx)
-    {
+    void dumpDeviceToFile(const std::string &fileName) {
+        std::ofstream f (fileName.c_str());
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            T value;
-            cudaCpyDeviceToHost<T>(&dPtr[idx], &value, 1, stream);
-            streamSync();
-            return value;
-        }
-        #else
-        return nullptr;
-        #endif
-    }
-
-    void dumpDeviceToFile(const std::string &fileName)
-    {
-
-        #ifdef CUDA
-        if (accType == acc::cuda)
-        {
-            T *tmp = new T[size];
+        if (accType == acc::cuda) {
+            T tmp[size];
             cudaCpyDeviceToHost<T>(dPtr, tmp, size, stream);
-
-            std::ofstream f (fileName.c_str());
             streamSync();
-            for (unsigned i = 0; i < size; i ++)
+            for (unsigned i = 0; i < size; i++)
                 f << tmp[i] << std::endl;
-            delete [] tmp;
-        }
-        else
+        } else
         #endif
         {
-            std::ofstream f (fileName.c_str());
             f << "Pointer has no device support." << std::endl;
         }
     }
 
-    void dumpHostToFile(const std::string &fileName)
-    {
+    void dumpHostToFile(const std::string &fileName) {
         std::ofstream f (fileName.c_str());
         for (unsigned i = 0; i < size; i ++)
             f << hPtr[i] << std::endl;
     }
 
-    void dumpAccToFile(const std::string &fileName)
-    {
-        if (accType == acc::cuda)
-            dumpDeviceToFile(fileName);
-        else
-            dumpHostToFile(fileName);
+    void dumpAccToFile(const std::string &fileName) {
+        accType == acc::cuda ?  dumpDeviceToFile(fileName) : dumpHostToFile(fileName);
     }
 
     /**
@@ -676,15 +396,13 @@ class AccPtr
      */
     void freeDevice()
     {
-        if (!doFreeDevice) return;
+        if (!mustFreeDevice) return;
         #ifdef CUDA
-        if (accType == acc::cuda)
-        {
+        if (accType == acc::cuda) {
             #ifdef DEBUG_CUDA
             if (!dPtr)
                 ACC_PTR_DEBUG_FATAL("Free device memory was called on nullptr in free_device().\n");
             #endif
-            doFreeDevice = false;
 
             if (alloc->getReadyEvent() == 0)
                 alloc->markReadyEvent(stream);
@@ -694,6 +412,7 @@ class AccPtr
 			// DEBUG_HANDLE_ERROR(cudaFree(dPtr));
 
             dPtr = nullptr;
+            mustFreeDevice = false;
         }
         #endif
     }
@@ -701,26 +420,21 @@ class AccPtr
     /**
      * Delete host data
      */
-    void freeHost()
-    {
-        if (!doFreeHost) return;
-        #ifdef DEBUG_CUDA
-        if (!hPtr)
+    void freeHost() {
+        if (!mustFreeHost) return;
+        if (__debug_cuda__ && !hPtr)
             ACC_PTR_DEBUG_FATAL("free_host() called on nullptr.\n");
-        #endif
-        doFreeHost = false;
-        ::free(hPtr);  // free(nullptr) is a no-op
+        mustFreeHost = false;
+        ::free(hPtr);
         hPtr = nullptr;
     }
 
-    void free()
-    {
+    void free() {
         freeHost();
         freeDevice();
     }
 
-    ~AccPtr()
-    {
+    ~AccPtr() {
         free();
     }
 
@@ -728,136 +442,89 @@ class AccPtr
                        GETTERS AND SETTERS
     ======================================================*/
 
-    inline bool willFreeHost() const
-    {
-        return doFreeHost;
+    inline bool willFreeHost() const {
+        return mustFreeHost;
     }
 
-    inline bool willFreeDevice() const
-    {
-        return doFreeDevice;
+    inline bool willFreeDevice() const {
+        return mustFreeDevice;
     }
 
-    inline void setStream(StreamType s)
-    {
+    inline void setStream(StreamType s) {
         stream = s;
     }
 
-    inline StreamType getStream() const
-    {
+    inline StreamType getStream() const {
         return stream;
     }
 
-    inline void setSize(size_t s)
-    {
+    inline void setSize(size_t s) {
         size = s;
     }
 
-    inline size_t getSize() const
-    {
+    inline size_t getSize() const {
         return size;
     }
 
-    inline T *getDevicePtr() const
-    {
+    inline T *getDevicePtr() const {
         return dPtr;
     }
 
-    inline T *getHostPtr() const
-    {
+    inline T *getHostPtr() const {
         return hPtr;
     }
 
-    inline T *getAccPtr() const
-    {
-        if (accType == acc::cuda)
-            return dPtr;
-        else
-            return hPtr;
+    inline T *getAccPtr() const {
+        return accType == acc::cuda ? dPtr : hPtr;
     }
 
-    void setAllocator(AllocatorType *a)
-    {
+    void setAllocator(AllocatorType *a) {
         freeDevice();
         allocator = a;
     };
 
-    inline AllocatorType *getAllocator() const
-    {
+    inline AllocatorType *getAllocator() const {
         return allocator;
     }
 
-    void setDevicePtr(T *ptr)
-    {
-        #ifdef DEBUG_CUDA
-        if (doFreeDevice)
-            ACC_PTR_DEBUG_FATAL("Device pointer set without freeing the old one.\n");
-        #endif
+    void setDevicePtr(T *ptr) {
+        if (__debug_cuda__)
+            if (mustFreeDevice)
+                ACC_PTR_DEBUG_FATAL("Device pointer set without freeing the old one.\n");
         dPtr = ptr;
     }
 
-    void setDevicePtr(const AccPtr<T> &ptr)
-    {
-        #ifdef DEBUG_CUDA
-        if (!ptr.dPtr)
-            ACC_PTR_DEBUG_FATAL("Device pointer is not set.\n");
-        #endif
-        setDevicePtr(ptr.dPtr);
-    }
-
-    void setHostPtr(T *ptr)
-    {
-        #ifdef DEBUG_CUDA
-        if (doFreeHost)
-            ACC_PTR_DEBUG_FATAL("Host pointer set without freeing the old one.\n");
-        #endif
+    void setHostPtr(T *ptr) {
+        if (__debug_cuda__)
+            if (mustFreeHost)
+                ACC_PTR_DEBUG_FATAL("Host pointer set without freeing the old one.\n");
         hPtr = ptr;
     }
 
-    void setHostPtr(const AccPtr<T> &ptr)
-    {
-        #ifdef DEBUG_CUDA
-        if (!ptr.hPtr)
-            ACC_PTR_DEBUG_FATAL("Host pointer is not set.\n");
-        #endif
-        setHostPtr(ptr.hPtr);
-    }
-
-    inline void setAccPtr(const AccPtr<T> &ptr)
-    {
-        setAccPtr(ptr.hPtr);
-    }
-
-    void setAccPtr(T *ptr)
-    {
-        if (accType == acc::cuda)
-            setDevicePtr(ptr);
-        else
-            setHostPtr(ptr);
+    void setAccPtr(T *ptr) {
+        accType == acc::cuda ? setDevicePtr(ptr) : setHostPtr(ptr);
     }
 
     template <typename U>
-    AccPtr<U> make(size_t s = 0)
-    {
-        return AccPtr<U>(allocator, stream, accType, s);
+    AccPtr<U, accType> make(size_t s = 0) {
+        return AccPtr<U, accType>(allocator, stream, s);
     }
 
 };
 
-using AccPtrBundleByte = unsigned char;
 
-class AccPtrBundle: public AccPtr<AccPtrBundleByte>
-{
-    private:
+class AccPtrBundle: public AccPtr<unsigned char> {
+
+    using byte_t = unsigned char;
 
     size_t current_packed_pos;
 
     public:
 
-    AccPtrBundle(StreamType stream, AllocatorType *allocator, size_t size = 0, acc::Type accType = acc::type):
-        AccPtr<AccPtrBundleByte>(allocator, stream, accType, size),
-        current_packed_pos(0)
-    {}
+    template <acc::Type accType = acc::type>
+    AccPtrBundle(StreamType stream, AllocatorType *allocator, size_t size = 0):
+        AccPtr<byte_t, accType>(allocator, stream, size),
+        current_packed_pos(0) {}
 
     template <typename T>
     void pack(AccPtr<T> &ptr)
@@ -886,48 +553,42 @@ class AccPtrBundle: public AccPtr<AccPtrBundleByte>
     void allAlloc()
     {
         #ifdef CUDA
-        AccPtr<AccPtrBundleByte>::allAlloc();
+        AccPtr<byte_t>::allAlloc();
         #endif
     }
 
     void hostAlloc()
     {
         #ifdef CUDA
-        AccPtr<AccPtrBundleByte>::hostAlloc();
+        AccPtr<byte_t>::hostAlloc();
         #endif
     }
 
 };
 
-class AccPtrFactory
-{
+template <acc::Type accType = acc::cuda>
+class AccPtrFactory {
+
+    StreamType stream;
 
     public:
 
-    AccPtrFactory(acc::Type accT = acc::unset):  // Why not acc::cuda?
-        allocator(nullptr), stream(0), accType(accT)
-    {}
+    AllocatorType *allocator;
+
+    AccPtrFactory(): allocator(nullptr), stream(0) {}
 
     AccPtrFactory(AllocatorType *alloc, StreamType stream = 0):
-        allocator(alloc), stream(stream), accType(acc::cuda)
+        allocator(alloc), stream(stream)
     {}
 
     template <typename T>
-    AccPtr<T> make(size_t size = 0, StreamType stream = cudaStreamPerThread)
-    {
-        return AccPtr<T>(size, allocator, stream, accType);
+    AccPtr<T> make(size_t size = 0, StreamType stream = cudaStreamPerThread) {
+        return AccPtr<T, accType>(size, allocator, stream);
     }
 
-    AccPtrBundle makeBundle(size_t size = 0)
-    {
-        return AccPtrBundle(stream, allocator, size, accType);
+    AccPtrBundle makeBundle(size_t size = 0) {
+        return AccPtrBundle(stream, allocator, size);
     }
-
-    private:
-
-    AllocatorType *allocator;
-    StreamType stream;
-    acc::Type accType;
 
 };
 

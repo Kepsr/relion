@@ -689,7 +689,7 @@ void Reconstructor::applyCTFPandCTFQ(
             }
 
             // First time round: resize the output arrays
-            if (ipass == 0 && fabs(angle) < Xmipp::epsilon) {
+            if (ipass == 0 && fabs(angle) < Xmipp::epsilon<RFLOAT>()) {
                 outP.resize(Fapp);
                 outQ.resize(Fapp);
             }

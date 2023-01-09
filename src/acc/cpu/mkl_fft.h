@@ -28,7 +28,7 @@ class MklFFT
 {
 public:
 	std::vector<XFLOAT>  reals;
-	std::vector<ACCCOMPLEX> fouriers;
+	std::vector<acc::Complex> fouriers;
 
 	int    direction;
 	int    dimension;
@@ -173,7 +173,7 @@ class MklFFT
 	bool planSet;
 public:
 	AccPtr<XFLOAT>      reals;
-	AccPtr<ACCCOMPLEX> fouriers;
+	AccPtr<acc::Complex> fouriers;
 
 	int    direction;
 	int    dimension;
@@ -249,14 +249,14 @@ public:
 
 		if ((xSize * ySize * zSize)==0)
 			ACC_PTR_DEBUG_FATAL("Reals array resized to size zero.\n");
-//		reals.resizeHostCopy(xSize * ySize * zSize);
+		// reals.resizeHost(xSize * ySize * zSize);
 		reals.freeHost();
 		reals.setSize(xSize * ySize * zSize);
 		reals.hostAlloc();
 		
 		if ((xFSize * yFSize * zFSize)==0)
 			ACC_PTR_DEBUG_FATAL("Fouriers array resized to size zero.\n");
-//		fouriers.resizeHostCopy(xFSize * yFSize * zFSize);
+		// fouriers.resizeHost(xFSize * yFSize * zFSize);
 		fouriers.freeHost();
 		fouriers.setSize(xFSize * yFSize * zFSize);
 		fouriers.hostAlloc();
@@ -274,17 +274,17 @@ public:
 		{
 			tbb::spin_mutex::scoped_lock lock(mkl_mutex);
 #ifdef ACC_DOUBLE_PRECISION
-			fPlanForward = fftw_plan_dft_r2c(dimension, N,  reals(),
-										 (fftw_complex*) fouriers(), FFTW_ESTIMATE);
+			fPlanForward = fftw_plan_dft_r2c(dimension, N,  reals.getAccPtr(),
+										 (fftw_complex*) fouriers.getAccPtr(), FFTW_ESTIMATE);
 			fPlanBackward = fftw_plan_dft_c2r(dimension, N,
-										  (fftw_complex*) fouriers(),  reals(),
+										  (fftw_complex*) fouriers.getAccPtr(),  reals.getAccPtr(),
 										  FFTW_ESTIMATE);
 
 #else
-			fPlanForward = fftwf_plan_dft_r2c(dimension, N, reals(),
-										 (fftwf_complex*) fouriers(), FFTW_ESTIMATE);
+			fPlanForward = fftwf_plan_dft_r2c(dimension, N, reals.getAccPtr(),
+										 (fftwf_complex*) fouriers.getAccPtr(), FFTW_ESTIMATE);
 			fPlanBackward = fftwf_plan_dft_c2r(dimension, N,
-										  (fftwf_complex*) fouriers(), reals(), FFTW_ESTIMATE);
+										  (fftwf_complex*) fouriers.getAccPtr(), reals.getAccPtr(), FFTW_ESTIMATE);
 #endif
 			planSet = true;
 		}
@@ -298,9 +298,9 @@ public:
 			return;
 		}
 #ifdef ACC_DOUBLE_PRECISION
-		fftw_execute_dft_r2c(fPlanForward, reals(), (fftw_complex*) fouriers());
+		fftw_execute_dft_r2c(fPlanForward, reals.getAccPtr(), (fftw_complex*) fouriers.getAccPtr());
 #else
-		fftwf_execute_dft_r2c(fPlanForward, reals(),  (fftwf_complex*) fouriers());
+		fftwf_execute_dft_r2c(fPlanForward, reals.getAccPtr(),  (fftwf_complex*) fouriers.getAccPtr());
 #endif
      
 	}
@@ -314,9 +314,9 @@ public:
 	    }	     
 
 #ifdef ACC_DOUBLE_PRECISION
-        fftw_execute_dft_c2r(fPlanBackward, (fftw_complex*) fouriers(), reals());
+        fftw_execute_dft_c2r(fPlanBackward, (fftw_complex*) fouriers.getAccPtr(), reals.getAccPtr());
 #else
-        fftwf_execute_dft_c2r(fPlanBackward, (fftwf_complex*) fouriers(), reals());
+        fftwf_execute_dft_c2r(fPlanBackward, (fftwf_complex*) fouriers.getAccPtr(), reals.getAccPtr());
 #endif	
 	}
 

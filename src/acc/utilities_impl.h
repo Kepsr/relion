@@ -83,7 +83,7 @@ void dump_array(char *name, float *ptr, size_t size) {
     fclose(fp);
 }
 
-void dump_complex_array(char *name, ACCCOMPLEX *ptr, size_t size) {
+void dump_complex_array(char *name, acc::Complex *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
@@ -223,7 +223,7 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
     NoiseSpectra.allAlloc();
 
     for (int n = 0; n < sigmaNoiseSpectra.size(); n++)
-    NoiseSpectra[n] = (XFLOAT) sqrt(sigmaFudgeFactor * sigmaNoiseSpectra.data[n]);
+        NoiseSpectra.getHostPtr()[n] = (XFLOAT) sqrt(sigmaFudgeFactor * sigmaNoiseSpectra.data[n]);
 
     #ifdef CUDA
     // Set up states to seeda and run randomization on the GPU
@@ -238,23 +238,23 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
     // Initialize randomization by particle ID, like on the CPU-side
     cuda_kernel_initRND<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
                                      seed,
-                                    ~RandomStates);
+                                    RandomStates.getAccPtr());
     LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
 
     // Create noise image with the correct spectral profile
     if (is3D) {
         cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
-                                    ~accMLO->transformer1.fouriers,
-                                    ~RandomStates,
+                                    accMLO->transformer1.fouriers.getAccPtr(),
+                                    RandomStates.getAccPtr(),
                                     accMLO->transformer1.xFSize,
                                     accMLO->transformer1.yFSize,
-                                    ~NoiseSpectra);
+                                    NoiseSpectra.getAccPtr());
     } else {
         cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
-                                            ~accMLO->transformer1.fouriers,
-                                            ~RandomStates,
+                                            accMLO->transformer1.fouriers.getAccPtr(),
+                                            RandomStates.getAccPtr(),
                                             accMLO->transformer1.xFSize,
-                                            ~NoiseSpectra);
+                                            NoiseSpectra.getAccPtr());
     }
     LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
 
@@ -264,15 +264,21 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
 
     // Copy the randomized image to A separate device-array, so that the
     // transformer can be used to set up the actual particle image
-    accMLO->transformer1.reals.cpOnDevice(~RandomImage);
+    accMLO->transformer1.reals.cpOnDevice(RandomImage.getAccPtr());
     //cudaMLO->transformer1.reals.streamSync();
     #else
 
     // Create noise image with the correct spectral profile
     if (is3D) {
-        CpuKernels::RNDnormalDitributionComplexWithPowerModulation3D(accMLO->transformer1.fouriers(), accMLO->transformer1.xFSize, accMLO->transformer1.yFSize, ~NoiseSpectra);
+        CpuKernels::RNDnormalDitributionComplexWithPowerModulation3D(
+            accMLO->transformer1.fouriers.getAccPtr(),
+            accMLO->transformer1.xFSize, accMLO->transformer1.yFSize,
+            NoiseSpectra.getAccPtr());
     } else {
-        CpuKernels::RNDnormalDitributionComplexWithPowerModulation2D(accMLO->transformer1.fouriers(), accMLO->transformer1.xFSize,                              ~NoiseSpectra);
+        CpuKernels::RNDnormalDitributionComplexWithPowerModulation2D(
+            accMLO->transformer1.fouriers.getAccPtr(),
+            accMLO->transformer1.xFSize,
+            NoiseSpectra.getAccPtr());
     }
 
     // Transform to real-space, to get something which look like
@@ -282,7 +288,7 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
     // Copy the randomized image to A separate device-array, so that the
     // transformer can be used to set up the actual particle image
     for (size_t i = 0; i < RandomImage.getSize(); i++)
-        RandomImage[i]=accMLO->transformer1.reals[i];
+        RandomImage.getHostPtr()[i] = accMLO->transformer1.reals.getHostPtr()[i];
 
     #endif
 }
@@ -296,10 +302,7 @@ static void TranslateAndNormCorrect(
     // Temporary array because translate is out-of-place
     AccPtr<XFLOAT> temp = img_out.make<XFLOAT>(img_in.size());
     temp.allAlloc();
-
-    for (unsigned long i = 0; i < img_in.size(); i++)
-        temp[i] = (XFLOAT) img_in.data[i];
-
+    std::copy_n(img_in.begin(), img_in.size(), temp.getHostPtr());
     temp.cpToDevice();
     temp.streamSync();
 
@@ -307,28 +310,28 @@ static void TranslateAndNormCorrect(
     if (normcorr != 1) {
         #ifdef CUDA
         int BSZ = ((int) ceilf((float) temp.getSize() / (float) BLOCK_SIZE));
-        CudaKernels::cuda_kernel_multi<XFLOAT><<<BSZ, BLOCK_SIZE, 0, temp.getStream()>>>(temp(), normcorr, temp.getSize());
+        CudaKernels::cuda_kernel_multi<XFLOAT><<<BSZ, BLOCK_SIZE, 0, temp.getStream()>>>(temp.getAccPtr(), normcorr, temp.getSize());
         #else
-        CpuKernels::cpu_kernel_multi<XFLOAT>(temp(),normcorr, temp.getSize());
+        CpuKernels::cpu_kernel_multi<XFLOAT>(temp.getAccPtr(),normcorr, temp.getSize());
         #endif
     }
-    //LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+    // LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
 
     if (temp.getAccPtr()==img_out.getAccPtr())
         CRITICAL(ERRUNSAFEOBJECTREUSE);
     #ifdef CUDA
     int BSZ = ((int) ceilf((float)temp.getSize() /(float)BLOCK_SIZE));
     if (DATA3D)
-        CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
+        CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp.getAccPtr(), img_out.getAccPtr(), img_in.xdim * img_in.ydim * img_in.zdim, img_in.xdim, img_in.ydim, img_in.zdim, xOff, yOff, zOff);
     else
-        CudaKernels::cuda_kernel_translate2D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,xOff,yOff); // BUG? should be no zdim?
-    //LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+        CudaKernels::cuda_kernel_translate2D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp.getAccPtr(), img_out.getAccPtr(), img_in.xdim * img_in.ydim * img_in.zdim, img_in.xdim, img_in.ydim, xOff, yOff); // BUG? should be no zdim?
+    // LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
     #else
     if (DATA3D)
-        CpuKernels::cpu_translate3D<XFLOAT>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
+        CpuKernels::cpu_translate3D<XFLOAT>(temp.getAccPtr(), img_out.getAccPtr(), img_in.xdim * img_in.ydim * img_in.zdim, img_in.xdim, img_in.ydim, img_in.zdim, xOff, yOff, zOff);
     else
-        CpuKernels::cpu_translate2D<XFLOAT>(temp(),img_out(),img_in.xdim * img_in.ydim * img_in.zdim,img_in.xdim,img_in.ydim,xOff,yOff);
-#endif
+        CpuKernels::cpu_translate2D<XFLOAT>(temp.getAccPtr(), img_out.getAccPtr(), img_in.xdim * img_in.ydim * img_in.zdim, img_in.xdim, img_in.ydim, xOff, yOff);
+    #endif
 }
 template<typename MlClass>
 void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
@@ -338,7 +341,7 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
                                     size_t ySize,
                                     size_t zSize)
 {
-            img_in.cpOnAcc(accMLO->transformer1.reals);
+            img_in.cpOnAcc(accMLO->transformer1.reals.getDevicePtr());
             runCenterFFT(
                 accMLO->transformer1.reals,
                 (int) accMLO->transformer1.xSize,
@@ -353,13 +356,13 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
             size_t FMultiBsize = ((int) ceilf((float) accMLO->transformer1.fouriers.getSize() * 2 / (float) BLOCK_SIZE));
             AccUtilities::multiply<XFLOAT>(
                 FMultiBsize, BLOCK_SIZE, accMLO->transformer1.fouriers.getStream(),
-                (XFLOAT*) ~accMLO->transformer1.fouriers,
+                (XFLOAT*) accMLO->transformer1.fouriers.getAccPtr(),
                 (XFLOAT) 1 / (XFLOAT) accMLO->transformer1.reals.getSize(),
                 accMLO->transformer1.fouriers.getSize() * 2
             );
             //LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
 
-            AccPtr<ACCCOMPLEX> d_Fimg = img_in.make<ACCCOMPLEX>(xSize * ySize * zSize);
+            AccPtr<acc::Complex> d_Fimg = img_in.make<acc::Complex>(xSize * ySize * zSize);
             d_Fimg.allAlloc();
             accMLO->transformer1.fouriers.streamSync();
             windowFourierTransform2(
@@ -372,10 +375,10 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
 
             d_Fimg.cpToHost();
             d_Fimg.streamSync();
-            img_out.initZeros(zSize, ySize, xSize);
+            img_out.resize(xSize, ySize, zSize);
             for (unsigned long i = 0; i < img_out.size(); i++) {
-                img_out.data[i].real = (RFLOAT) d_Fimg[i].x;
-                img_out.data[i].imag = (RFLOAT) d_Fimg[i].y;
+                img_out.data[i].real = d_Fimg.getHostPtr()[i].x;
+                img_out.data[i].imag = d_Fimg.getHostPtr()[i].y;
             }
 
 }
@@ -385,23 +388,22 @@ static void softMaskBackgroundValue(
     XFLOAT radius, XFLOAT radius_p, XFLOAT cosine_width,
     AccPtr<XFLOAT> &g_sum, AccPtr<XFLOAT> &g_sum_bg
 ) {
-    int block_dim = 128; // TODO: set balanced (hardware-dep?)
+    const int block_dim = 128; // TODO: set balanced (hardware-dep?)
     #ifdef CUDA
     cuda_kernel_softMaskBackgroundValue<<<block_dim, SOFTMASK_BLOCK_SIZE, 0, vol.getStream()>>>(
-        ~vol, vol.getxyz(),
-        vol.getx(), vol.gety(), vol.getz(),
-        vol.getx() / 2, vol.gety() / 2, vol.getz() / 2,
-        radius, radius_p, cosine_width, ~g_sum, ~g_sum_bg
+        {vol.getAccPtr(), vol.getxyz(),
+         vol.getx(),     vol.gety(),     vol.getz(),
+         vol.getx() / 2, vol.gety() / 2, vol.getz() / 2},
+        radius, radius_p, cosine_width, g_sum.getAccPtr(), g_sum_bg.getAccPtr()
     );
     #else
     CpuKernels::softMaskBackgroundValue(
-        block_dim,
-        SOFTMASK_BLOCK_SIZE,
-        ~vol, vol.getxyz(),
+        block_dim, SOFTMASK_BLOCK_SIZE,
+        vol.getAccPtr(), vol.getxyz(),
         vol.getx(), vol.gety(), vol.getz(),
         vol.getx() / 2, vol.gety() / 2, vol.getz() / 2,
         radius, radius_p,
-        cosine_width, ~g_sum, ~g_sum_bg
+        cosine_width, g_sum.getAccPtr(), g_sum_bg.getAccPtr()
     );
     #endif
 }
@@ -414,23 +416,23 @@ static void cosineFilter(
     XFLOAT cosine_width,
     XFLOAT sum_bg_total
 ) {
-    int block_dim = 128; // TODO: set balanced (hardware-dep?)
+    const int block_dim = 128; // TODO: set balanced (hardware-dep?)
     #ifdef CUDA
-    cuda_kernel_cosineFilter<<<block_dim,SOFTMASK_BLOCK_SIZE,0,vol.getStream()>>>(
-        ~vol, vol.getxyz(),
-        vol.getx(), vol.gety(), vol.getz(),
-        vol.getx() / 2, vol.gety() / 2, vol.getz() / 2,
-        !do_Mnoise, ~Noise,
+    cuda_kernel_cosineFilter<<<block_dim, SOFTMASK_BLOCK_SIZE, 0, vol.getStream()>>>(
+        {vol.getAccPtr(), vol.getxyz(),
+         vol.getx(),     vol.gety(),     vol.getz(),
+         vol.getx() / 2, vol.gety() / 2, vol.getz() / 2},
+        !do_Mnoise, Noise.getAccPtr(),
         radius, radius_p,
         cosine_width, sum_bg_total
     );
     #else
     CpuKernels::cosineFilter(
         block_dim, SOFTMASK_BLOCK_SIZE,
-        ~vol, vol.getxyz(),
+        vol.getAccPtr(), vol.getxyz(),
         vol.getx(), vol.gety(), vol.getz(),
         vol.getx() / 2, vol.gety() / 2, vol.getz() / 2,
-        !do_Mnoise, ~Noise,
+        !do_Mnoise, Noise.getAccPtr(),
         radius, radius_p,
         cosine_width, sum_bg_total
     );
@@ -442,19 +444,15 @@ void initOrientations(
     AccPtr<bool> &pdf_orientation_zeros
 ) {
     #ifdef CUDA
-    int bs = 512;
-    int gs = ceil(pdfs.getSize() / (float) bs);
-    cuda_kernel_initOrientations<<<gs, bs, 0, pdfs.getStream()>>>(~pdfs, ~pdf_orientation, ~pdf_orientation_zeros, pdfs.getSize());
+    const int bs = 512;
+    const int gs = ceil(pdfs.getSize() / (float) bs);
+    cuda_kernel_initOrientations<<<gs, bs, 0, pdfs.getStream()>>>(pdfs.getAccPtr(), pdf_orientation.getAccPtr(), pdf_orientation_zeros.getAccPtr(), pdfs.getSize());
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
     #else
     for (int iorientclass = 0; iorientclass < pdfs.getSize(); iorientclass++) {
-        if (pdfs[iorientclass] == 0) {
-            pdf_orientation[iorientclass] = 0.f;
-            pdf_orientation_zeros[iorientclass] = true;
-        } else {
-            pdf_orientation[iorientclass] = log(pdfs[iorientclass]);
-            pdf_orientation_zeros[iorientclass] = false;
-        }
+        const RFLOAT n = pdfs.getHostPtr()[iorientclass];
+        pdf_orientation      .getHostPtr()[iorientclass] = n == 0.0 ? 0.0 : log(n);
+        pdf_orientation_zeros.getHostPtr()[iorientclass] = n == 0.0;
     }
     #endif
 }

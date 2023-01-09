@@ -27,17 +27,14 @@ void FourierHelper::FourierShift2D(MultidimArray<Complex> &img, RFLOAT xshift, R
     xshift /= h;
     yshift /= h;
 
-    if (abs(xshift) < Xmipp::epsilon && abs(yshift) < Xmipp::epsilon) return;
+    if (abs(xshift) < Xmipp::epsilon<RFLOAT>() && abs(yshift) < Xmipp::epsilon<RFLOAT>()) return;
 
-    for (long int yy = 0; yy < h; yy++)
-    for (long int xx = 0; xx < w; xx++) {
-        RFLOAT x = xx;
-        RFLOAT y = yy < w ? yy : yy - h;
-
-        const Complex c1 = Complex::unit(-2.0 * PI * (x * xshift + y * yshift));
-        const Complex c2 = direct::elem(img, xx, yy);
-
-        direct::elem(img, xx, yy) = c1 * c2;
+    for (long int j = 0; j < h; j++)
+    for (long int i = 0; i < w; i++) {
+        const RFLOAT x = i;
+        const RFLOAT y = j < w ? j : j - h;
+        const Complex z = Complex::unit(-2.0 * PI * (x * xshift + y * yshift));
+        direct::elem(img, i, j) *= z;
     }
 }
 
@@ -48,6 +45,5 @@ void FourierHelper::FourierShift2D(
     MultidimArray<Complex> &imgC = ft.FourierTransform(img);
     // FourierShift2D(imgC, xshift, yshift);
     shiftImageInFourierTransform(imgC, img.ydim, xshift, yshift);
-
     img = ft.inverseFourierTransform(imgC);
 }

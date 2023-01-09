@@ -60,16 +60,16 @@ void local_symmetry_parameters_mpi::run() {
             REPORT_ERROR("Invalid pixel size!");
         if (fn_op_mask_info_in != "None") {
             if (
-                ang_range      < Xmipp::epsilon && 
-                ang_rot_range  < Xmipp::epsilon && 
-                ang_tilt_range < Xmipp::epsilon && 
-                ang_psi_range  < Xmipp::epsilon
+                ang_range      < Xmipp::epsilon<RFLOAT>() && 
+                ang_rot_range  < Xmipp::epsilon<RFLOAT>() && 
+                ang_tilt_range < Xmipp::epsilon<RFLOAT>() && 
+                ang_psi_range  < Xmipp::epsilon<RFLOAT>()
             ) {
                 ang_range = 180.0;
                 std::cout << " Initial searches: reset searching ranges of all 3 Euler angles to +/-180 degrees." << std::endl;
             } else {
                 std::cout << " User-defined initial searches: ";
-                if (ang_range > Xmipp::epsilon) {
+                if (ang_range > Xmipp::epsilon<RFLOAT>()) {
                     std::cout << "searching ranges of all 3 Euler angles are set to +/-" << ang_range << " degree(s).";
                 } else {
                     std::cout << "(rot, tilt, psi) ranges are +/- (" << ang_rot_range << ", " << ang_tilt_range << ", " << ang_psi_range << ") degree(s).";
@@ -79,12 +79,12 @@ void local_symmetry_parameters_mpi::run() {
         }
         Localsym_composeOperator(
             op_search_ranges,
-            ang_range    > Xmipp::epsilon ? ang_range    : ang_rot_range,
-            ang_range    > Xmipp::epsilon ? ang_range    : ang_tilt_range,
-            ang_range    > Xmipp::epsilon ? ang_range    : ang_psi_range,
-            offset_range > Xmipp::epsilon ? offset_range : offset_x_range,
-            offset_range > Xmipp::epsilon ? offset_range : offset_y_range,
-            offset_range > Xmipp::epsilon ? offset_range : offset_z_range
+            ang_range    > Xmipp::epsilon<RFLOAT>() ? ang_range    : ang_rot_range,
+            ang_range    > Xmipp::epsilon<RFLOAT>() ? ang_range    : ang_tilt_range,
+            ang_range    > Xmipp::epsilon<RFLOAT>() ? ang_range    : ang_psi_range,
+            offset_range > Xmipp::epsilon<RFLOAT>() ? offset_range : offset_x_range,
+            offset_range > Xmipp::epsilon<RFLOAT>() ? offset_range : offset_y_range,
+            offset_range > Xmipp::epsilon<RFLOAT>() ? offset_range : offset_z_range
         );
         Localsym_scaleTranslations(op_search_ranges, 1.0 / angpix_image);
         offset_step /= angpix_image;
@@ -176,7 +176,7 @@ void local_symmetry_parameters_mpi::run() {
             // Rescale the map and the mask (if binning_factor > 1), set 'newdim'.
             tmp_binning_factor = 1.0;
             newdim = cropdim;
-            if (binning_factor - 1.0 > Xmipp::epsilon) {
+            if (binning_factor - 1.0 > Xmipp::epsilon<RFLOAT>()) {
                 newdim = ceil(RFLOAT(cropdim) / binning_factor);
                 if (newdim < 2)
                     REPORT_ERROR("ERROR: Binning factor is too large / Mask is too small!");

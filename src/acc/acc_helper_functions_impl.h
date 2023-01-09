@@ -32,9 +32,9 @@ long int makeJobsForDiff2Fine(
     dataMask.jobOrigin.hostAlloc();
     dataMask.jobExtent.hostAlloc();
 
-    dataMask.jobOrigin[k]=0;
+    dataMask.jobOrigin.getHostPtr()[k] = 0;
     for (long unsigned i = 0; i < orientation_num; i++) {
-        dataMask.jobExtent[k] = 0;
+        dataMask.jobExtent.getHostPtr()[k] = 0;
         long int tk = 0;
         long int iover_rot = FineProjectionData.iover_rots[i];
         for (long unsigned j = 0; j < translation_num; j++) {
@@ -42,26 +42,26 @@ long int makeJobsForDiff2Fine(
             long int ihidden = FineProjectionData.iorientclasses[i] * sp.nr_trans + ihiddens[j];
 
             if (direct::elem(op.Mcoarse_significant, img_id, ihidden) == 1) {
-                FPW.rot_id       [w_base + w] = FineProjectionData.iorientclasses[i] % (sp.nr_dir * sp.nr_psi); 	// where to look for priors etc
-                FPW.rot_idx      [w_base + w] = i;					// which rot for this significant task
-                FPW.trans_idx    [w_base + w] = j;					// which trans       - || -
-                FPW.ihidden_overs[w_base + w] = (ihidden * nr_over_orient + iover_rot) * nr_over_trans + iover_trans;
+                FPW.rot_id       .getHostPtr()[w_base + w] = FineProjectionData.iorientclasses[i] % (sp.nr_dir * sp.nr_psi); 	// where to look for priors etc
+                FPW.rot_idx      .getHostPtr()[w_base + w] = i;					// which rot for this significant task
+                FPW.trans_idx    .getHostPtr()[w_base + w] = j;					// which trans       - || -
+                FPW.ihidden_overs.getHostPtr()[w_base + w] = (ihidden * nr_over_orient + iover_rot) * nr_over_trans + iover_trans;
 
                 if (tk >= chunk) {
                     tk = 0;  // reset counter
                     k++;  // use new element
-                    dataMask.jobOrigin[k] = w;
-                    dataMask.jobExtent[k] = 0;   // prepare next element for ++ incrementing
+                    dataMask.jobOrigin.getHostPtr()[k] = w;
+                    dataMask.jobExtent.getHostPtr()[k] = 0;   // prepare next element for ++ incrementing
                 }
                 tk++;                 		   // increment limit-checker
-                dataMask.jobExtent[k]++;       // increment number of transes this job
+                dataMask.jobExtent.getHostPtr()[k]++;       // increment number of transes this job
                 w++;
             } else if (tk != 0) {
                 // start a new one with the same rotidx - we expect transes to be sequential.
                 tk = 0;  // reset counter
                 k++;  // use new element
-                dataMask.jobOrigin[k] = w;
-                dataMask.jobExtent[k] = 0;   // prepare next element for ++ incrementing
+                dataMask.jobOrigin.getHostPtr()[k] = w;
+                dataMask.jobExtent.getHostPtr()[k] = 0;   // prepare next element for ++ incrementing
             }
         }
         if (tk > 0) {
@@ -69,13 +69,13 @@ long int makeJobsForDiff2Fine(
             // then we are currently on an element with no signif,
             // so we should continue using this element
             k++;
-            dataMask.jobOrigin[k] = w;
-            dataMask.jobExtent[k] = 0;
+            dataMask.jobOrigin.getHostPtr()[k] = w;
+            dataMask.jobExtent.getHostPtr()[k] = 0;
         }
     }
     // If we started putting something in last element,
     // then the count is one higher than the index.
-    if (dataMask.jobExtent[k] != 0) { k += 1; }
+    if (dataMask.jobExtent.getHostPtr()[k] != 0) { k += 1; }
 
     dataMask.setNumberOfJobs(k);
     dataMask.setNumberOfWeights(w);
@@ -100,17 +100,17 @@ long int  makeJobsForCollect(
     // dataMask.jobExtent.hostAlloc();
 
     long int jobid = 0;
-    dataMask.jobOrigin[jobid] = 0;
-    dataMask.jobExtent[jobid] = 1;
-    long int crot = FPW.rot_idx[jobid]; // set current rot
+    dataMask.jobOrigin.getHostPtr()[jobid] = 0;
+    dataMask.jobExtent.getHostPtr()[jobid] = 1;
+    long int crot = FPW.rot_idx.getHostPtr()[jobid]; // set current rot
     for (long int n = 1; n < FPW.rot_idx.getSize(); n++) {
-        if (FPW.rot_idx[n] == crot) {
-            dataMask.jobExtent[jobid]++;
+        if (FPW.rot_idx.getHostPtr()[n] == crot) {
+            dataMask.jobExtent.getHostPtr()[jobid]++;
         } else {
             jobid++;
-            dataMask.jobExtent[jobid] = 1;
-            dataMask.jobOrigin[jobid] = n;
-            crot = FPW.rot_idx[n];
+            dataMask.jobExtent.getHostPtr()[jobid] = 1;
+            dataMask.jobOrigin.getHostPtr()[jobid] = n;
+            crot = FPW.rot_idx.getHostPtr()[n];
         }
     }
     dataMask.setNumberOfJobs(jobid + 1); // because max index is one less than size
@@ -155,10 +155,10 @@ void buildCorrImage(
     // CC or not
     if (baseMLO->iter == 1 && baseMLO->do_firstiter_cc || baseMLO->do_always_cc) {
         for (size_t i = 0; i < corr_img.getSize(); i++)
-            corr_img[i] = 1.0 / (op.local_sqrtXi2[img_id] * op.local_sqrtXi2[img_id]);
+            corr_img.getHostPtr()[i] = 1.0 / (op.local_sqrtXi2[img_id] * op.local_sqrtXi2[img_id]);
     } else {
         for (size_t i = 0; i < corr_img.getSize(); i++)
-            corr_img[i] = *(op.local_Minvsigma2[img_id].data + i);
+            corr_img.getHostPtr()[i] = *(op.local_Minvsigma2[img_id].data + i);
     }
 
     // ctf-correction or not ( NOTE this is not were the difference metric is ctf-corrected, but
@@ -167,10 +167,10 @@ void buildCorrImage(
     if (baseMLO->do_ctf_correction) {
         if (baseMLO->refs_are_ctf_corrected)
             for (size_t i = 0; i < corr_img.getSize(); i++)
-                corr_img[i] *= op.local_Fctf[img_id][i] * op.local_Fctf[img_id][i];
+                corr_img.getHostPtr()[i] *= op.local_Fctf[img_id][i] * op.local_Fctf[img_id][i];
         if (ctf_premultiplied)
             for (size_t i = 0; i < corr_img.getSize(); i++)
-                corr_img[i] *= op.local_Fctf[img_id][i] * op.local_Fctf[img_id][i];
+                corr_img.getHostPtr()[i] *= op.local_Fctf[img_id][i] * op.local_Fctf[img_id][i];
     }
 
     // scale-correction or not ( NOTE this is not were the difference metric is scale-corrected, but
@@ -179,7 +179,7 @@ void buildCorrImage(
     XFLOAT myscale = baseMLO->mymodel.scale_correction[group_id];
     if (baseMLO->do_scale_correction)
         for (size_t i = 0; i < corr_img.getSize(); i++)
-            corr_img[i] *= myscale * myscale;
+            corr_img.getHostPtr()[i] *= myscale * myscale;
 }
 
 void generateEulerMatrices(
@@ -1513,8 +1513,8 @@ void runCollect2jobs(
 #define WINDOW_FT_BLOCK_SIZE 128
 
 void windowFourierTransform2(
-    AccPtr<ACCCOMPLEX> &d_in,
-    AccPtr<ACCCOMPLEX> &d_out,
+    AccPtr<acc::Complex> &d_in,
+    AccPtr<acc::Complex> &d_out,
     size_t iX, size_t iY, size_t iZ,  // Input dimensions
     size_t oX, size_t oY, size_t oZ,  // Output dimensions
     size_t Npsi,
@@ -1528,15 +1528,15 @@ void windowFourierTransform2(
 //		REPORT_ERROR("windowFourierTransform ERROR: there is a one-to-one map between input and output!");
 
 
-    deviceInitComplexValue<ACCCOMPLEX>(d_out, (XFLOAT) 0.0);
+    deviceInitComplexValue<acc::Complex>(d_out, (XFLOAT) 0.0);
     HANDLE_ERROR(cudaStreamSynchronize(d_out.getStream()));
 
     if (oX == iX) {
         HANDLE_ERROR(cudaStreamSynchronize(d_in.getStream()));
         #ifdef CUDA
-        cudaCpyDeviceToDevice(&d_in(pos), ~d_out, oX * oY * oZ*Npsi, d_out.getStream() );
+        cudaCpyDeviceToDevice(d_in.getDevicePtr() + pos, d_out.getAccPtr(), oX * oY * oZ * Npsi, d_out.getStream());
         #else
-        memcpy(&d_out[0], &d_in[0], oX * oY * oZ*Npsi*sizeof(ACCCOMPLEX));
+        memcpy(d_out.getHostPtr(), d_in.getHostPtr(), oX * oY * oZ * Npsi * sizeof(acc::Complex));
         #endif
         return;
     }
@@ -1549,8 +1549,8 @@ void windowFourierTransform2(
         cuda_kernel_window_fourier_transform<true>
         <<<grid_dim, WINDOW_FT_BLOCK_SIZE, 0, d_out.getStream()>>>
         (
-            &d_in(pos),
-            ~d_out,
+            d_in.getDevicePtr() + pos,
+            d_out.getAccPtr(),
             iX, iY, iZ, iX * iY,  // Input dimensions
             oX, oY, oZ, oX * oY,  // Output dimensions
             iX * iY * iZ,
@@ -1564,8 +1564,8 @@ void windowFourierTransform2(
             grid_dim,
             Npsi,
             WINDOW_FT_BLOCK_SIZE,
-            &d_in[pos],
-            &d_out[0],
+            d_in.getHostPtr() + pos,
+            d_out.getHostPtr(),
             iX, iY, iZ, iX * iY,  // Input dimensions
             oX, oY, oZ, oX * oY,  // Output dimensions
             iX * iY * iZ,
@@ -1578,8 +1578,8 @@ void windowFourierTransform2(
         cuda_kernel_window_fourier_transform<false>
         <<<grid_dim, WINDOW_FT_BLOCK_SIZE, 0, d_out.getStream()>>>
         (
-            &d_in(pos),
-            ~d_out,
+            d_in.getDevicePtr() + pos,
+            d_out.getAccPtr(),
             iX, iY, iZ, iX * iY,  // Input dimensions
             oX, oY, oZ, oX * oY,  // Output dimensions
             oX * oY * oZ,
@@ -1592,8 +1592,8 @@ void windowFourierTransform2(
             grid_dim,
             Npsi,
             WINDOW_FT_BLOCK_SIZE,
-            &d_in[pos],
-            &d_out[0],
+            d_in.getHostPtr() + pos,
+            d_out.getHostPtr(),
             iX, iY, iZ, iX * iY,  // Input dimensions
             oX, oY, oZ, oX * oY,  // Output dimensions
             oX * oY * oZ

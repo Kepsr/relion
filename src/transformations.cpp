@@ -307,28 +307,29 @@ void alignWithZ(
     Axis.normalise();
 
     // Compute length of the projection on YZ plane
-    RFLOAT proj_mod = sqrt(YY(Axis) * YY(Axis) + ZZ(Axis) * ZZ(Axis));
-    if (proj_mod > Xmipp::epsilon) {   
+    const RFLOAT proj_mod = std::hypot(YY(Axis), ZZ(Axis));
+    if (proj_mod > Xmipp::epsilon<RFLOAT>()) {   
         // proj_mod != 0
         // Build Matrix result, which makes the turning axis coincident with Z
         result.at(0, 0) = proj_mod;
         result.at(0, 1) = -XX(Axis) * YY(Axis) / proj_mod;
         result.at(0, 2) = -XX(Axis) * ZZ(Axis) / proj_mod;
         result.at(1, 0) = 0;
-        result.at(1, 1) = ZZ(Axis) / proj_mod;
+        result.at(1, 1) = +ZZ(Axis) / proj_mod;
         result.at(1, 2) = -YY(Axis) / proj_mod;
-        result.at(2, 0) = XX(Axis);
-        result.at(2, 1) = YY(Axis);
-        result.at(2, 2) = ZZ(Axis);
+        result.at(2, 0) = +XX(Axis);
+        result.at(2, 1) = +YY(Axis);
+        result.at(2, 2) = +ZZ(Axis);
     } else {
         // I know that the Axis is the X axis, EITHER POSITIVE OR NEGATIVE!!
+        const auto x = sgn_nozero(XX(Axis));
         result.at(0, 0) = 0;
         result.at(0, 1) = 0;
-        result.at(0, 2) = -sgn_nozero(XX(Axis));
+        result.at(0, 2) = -x;
         result.at(1, 0) = 0;
         result.at(1, 1) = 1;
         result.at(1, 2) = 0;
-        result.at(2, 0) = sgn_nozero(XX(Axis));
+        result.at(2, 0) = +x;
         result.at(2, 1) = 0;
         result.at(2, 2) = 0;
     }

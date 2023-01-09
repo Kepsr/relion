@@ -95,7 +95,7 @@ extern const char *g_RELION_VERSION;
  * @ingroup MacrosConstants
  */
 #ifndef PI
-const double PI = 3.14159265358979323846;
+constexpr double PI = 3.14159265358979323846;
 #endif
 
 //@}
@@ -227,15 +227,17 @@ inline RFLOAT wrap(RFLOAT x, RFLOAT x0, RFLOAT xF) {
  * phi = radians(30.0); // 0.5235987755982988
  * @endcode
  */
-inline RFLOAT radians(RFLOAT theta) { return theta * PI / 180.0; }
+constexpr inline float  radians(float  theta) { return theta * (float)  PI / 180.f; }
+constexpr inline double radians(double theta) { return theta * (double) PI / 180.0; }
 
 /** Radians to degrees
  *
  * @code
- * phi = degrees(PI / 6); // 30.0
+ * degrees(PI / 6.0); // 30.0
  * @endcode
  */
-inline RFLOAT degrees(RFLOAT theta) { return theta * 180.0 / PI; }
+constexpr inline float  degrees(float  theta) { return theta * 180.f / (float)  PI; }
+constexpr inline double degrees(double theta) { return theta * 180.0 / (double) PI; }
 
 /** SINC function
  *
@@ -311,19 +313,23 @@ namespace Xmipp {
      * Value depends on whether RELION is operating in single or in double precision.
      * Required to correctly find symmetry subgroups.
      */
-    #ifdef RELION_SINGLE_PRECISION
-    const RFLOAT epsilon = 1e-4;
-    #else
-    const RFLOAT epsilon = 1e-6;
-    #endif
+    template <typename T> constexpr T epsilon();
+
+    template<> constexpr float epsilon() {
+        return 1e-4;
+    }
+
+    template<> constexpr double epsilon() {
+        return 1e-6;
+    }
 
     // The first index of an Xmipp volume/image/array of size 'size'.
-    inline long int init(int size) {
+    constexpr inline long int init(long int size) {
         return -(size / 2);
     }
 
     // The last index of an Xmipp volume/image/array of size 'size'.
-    inline long int last(int size) {
+    constexpr inline long int last(long int size) {
         return size - (size / 2) - 1;
         // n / 2 + n % 2 - 1
     }
@@ -336,24 +342,23 @@ namespace Xmipp {
 
     // Less than
     template <typename T>
-    inline T lt(T x, T y) {
-        return x < y - epsilon;
+    constexpr inline T lt(T x, T y) {
+        return x < y - epsilon<T>();
     }
 
     // Greater than
     template <typename T>
-    inline T gt(T x, T y) {
-        return x > y + epsilon;
+    constexpr inline T gt(T x, T y) {
+        return x > y + epsilon<T>();
     }
 
     // Equality
     template <typename T>
-    inline bool eq(T x, T y) {
+    constexpr inline bool eq(T x, T y) {
         return abs(x - y) < epsilon;
     }
 
 }
-
 
 static void PRINT_VERSION_INFO() {
 

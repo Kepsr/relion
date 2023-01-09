@@ -181,16 +181,13 @@ class tiltpair_plot_parameters {
         tilt_angle = degrees(tilt_angle_radians);
         RFLOAT sine_tilt_angle = 2.0 * sin(tilt_angle_radians);
 
-        Vector<RFLOAT> axis;
         // Get the tilt axis direction in angles alpha and beta
-        if (sine_tilt_angle > Xmipp::epsilon) {
-            axis = Vector<RFLOAT>({
+        Vector<RFLOAT> axis = sine_tilt_angle > Xmipp::epsilon<RFLOAT>() ?
+            Vector<RFLOAT>({
                 (E2(2, 1) - E2(1, 2)) / sine_tilt_angle,
                 (E2(0, 2) - E2(2, 0)) / sine_tilt_angle,
-                (E2(1, 0) - E2(0, 1)) / sine_tilt_angle});
-        } else {
-            axis = Vector<RFLOAT>({0.0, 0.0, 1.0});
-        }
+                (E2(1, 0) - E2(0, 1)) / sine_tilt_angle}) :
+            Vector<RFLOAT>({0.0, 0.0, 1.0});
 
         // Apply E1.inv() to the axis to get everyone in the same coordinate system again
         axis = matmul(E1.inv(), axis);
@@ -211,7 +208,6 @@ class tiltpair_plot_parameters {
         RFLOAT minimizer = 0.0;
         if (exp_beta < 999.0) { minimizer  = abs(beta       - exp_beta); }
         if (exp_tilt < 999.0) { minimizer += abs(tilt_angle - exp_tilt); }
-
         return minimizer;
     }
 
@@ -248,7 +244,7 @@ class tiltpair_plot_parameters {
             RFLOAT yp = dist_from_tilt * sin(radians(dist_from_alpha));
             RFLOAT x = tilt2p * cos(radians(rot2p));
             RFLOAT y = tilt2p * sin(radians(rot2p));
-            Vector<RFLOAT> aux2 {tilt2p, rot2p, psi2p, hypot(xp - x, yp - y)};
+            // Vector<RFLOAT> aux2 {tilt2p, rot2p, psi2p, hypot(xp - x, yp - y)};
             add_to_postscript(tilt2p, rot2p, psi2p);
         }
 

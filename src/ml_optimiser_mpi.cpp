@@ -91,6 +91,7 @@ void writeBinary(const MultidimArray<T> &arr, const FileName &fn) {
         ofs.write(reinterpret_cast<const char*>(&x), sizeof(T));
 }
 
+#ifdef CUDA
 void determine_gpu_compatibility(int devCount) {
     // Determine how many GPUs are capable of CUDA >= 3.5
     int compatibleDevices (0);
@@ -98,8 +99,7 @@ void determine_gpu_compatibility(int devCount) {
         cudaDeviceProp deviceProp;
         HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, i));
         if (std::make_pair(deviceProp.major, deviceProp.minor) >=
-            std::make_pair(CUDA_CC_MAJOR, CUDA_CC_MINOR))
-        {
+            std::make_pair(CUDA_CC_MAJOR, CUDA_CC_MINOR)) {
             compatibleDevices++;
         } else {
             // std::cout << "Rank " << node->rank << " found a " << deviceProp.name << " GPU with compute-capability " << deviceProp.major << "." << deviceProp.minor << std::endl;
@@ -111,6 +111,7 @@ void determine_gpu_compatibility(int devCount) {
         std::cerr << "WARNING : at least one of your GPUs is not compatible with RELION (CUDA-capable and compute-capability >= 3.5)" << std::endl;
     }
 }
+#endif
 
 /// FIXME: Calling this more than once will leak memory
 void MlOptimiserMpi::read(int argc, char **argv) {
@@ -141,7 +142,7 @@ void MlOptimiserMpi::read(int argc, char **argv) {
     #endif
 
     // TMP for debugging only
-    // if (node->rank==1)
+    // if (node->rank == 1)
     //    verb = 1;
     // Possibly also read parallelisation-dependent variables here
 
@@ -1809,7 +1810,7 @@ void MlOptimiserMpi::maximization() {
                 }
                 if (node->rank == reconstruct_rank1) {
 
-                    if (wsum_model.BPref[ith_recons].weight.sum() > Xmipp::epsilon) {
+                    if (wsum_model.BPref[ith_recons].weight.sum() > Xmipp::epsilon<RFLOAT>()) {
 
                         // Ideally, if do_sgd is false, old_reference should not even be in scope.
                         const auto old_reference = do_sgd ? reference : MultidimArray<RFLOAT>();

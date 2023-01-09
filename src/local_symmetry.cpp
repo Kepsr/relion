@@ -37,7 +37,7 @@ void sum3DCubicMask(
         RFLOAT val = direct::elem(v, i, j, k);
         if (Xmipp::lt(val, 0.0) || Xmipp::gt(val, 1.0))
             REPORT_ERROR("ERROR: mask - values are not in range [0,1]!");
-        if (val > Xmipp::epsilon) {
+        if (val > Xmipp::epsilon<RFLOAT>()) {
             val_sum += val;
             val_ctr += 1.0;
         }
@@ -258,7 +258,7 @@ bool sameLocalsymOperators(
 ) {
     RFLOAT aa1 = 0.0, bb1 = 0.0, gg1 = 0.0, dx1 = 0.0, dy1 = 0.0, dz1 = 0.0, cc1 = 0.0;
     RFLOAT aa2 = 0.0, bb2 = 0.0, gg2 = 0.0, dx2 = 0.0, dy2 = 0.0, dz2 = 0.0, cc2 = 0.0;
-    const RFLOAT eps = Xmipp::epsilon;
+    const RFLOAT eps = Xmipp::epsilon<RFLOAT>();
 
     Localsym_decomposeOperator(lhs, aa1, bb1, gg1, dx1, dy1, dz1, cc1);
     Localsym_decomposeOperator(rhs, aa2, bb2, gg2, dx2, dy2, dz2, cc2);
@@ -1069,7 +1069,7 @@ void applyLocalSymmetry(
     // Support 3D maps which are not cubic
     // Support 3D maps and masks which do not share the same origins
 
-    if (radius > 0.0 && cosine_width_pix < Xmipp::epsilon)
+    if (radius > 0.0 && cosine_width_pix < Xmipp::epsilon<RFLOAT>())
         REPORT_ERROR("ERROR: Cosine width should be larger than 0!");
 
     if (fn_masks.size() < 1 || ops.size() < 1)
@@ -1134,7 +1134,7 @@ void applyLocalSymmetry(
                 REPORT_ERROR("ERROR: mask " + std::string(fn_masks[imask]) + " - values are not in range [0,1]!");
 
             // This voxel is inside the mask
-            if (mask_val > Xmipp::epsilon) {
+            if (mask_val > Xmipp::epsilon<RFLOAT>()) {
                 direct::elem(vol1, i, j, k) *= mask_val / (nr_ops + 1.0); // "mask-weighted sum" - wsum
             } else {
                 // This voxel is not inside the mask
@@ -1182,7 +1182,7 @@ void applyLocalSymmetry(
         // TODO: check radius2 here!
 
         // This voxel is inside one of the masks
-        if (mask_val > Xmipp::epsilon) {
+        if (mask_val > Xmipp::epsilon<RFLOAT>()) {
             // weight > 0
             if (Xmipp::gt(mask_val, 1.0)) {
                 // weight > 1
@@ -1261,10 +1261,10 @@ void getMinCropSize(
     FOR_ALL_ELEMENTS_IN_ARRAY3D(vol, i, j, k) {
         val = vol.elem(i, j, k);
 
-        if (val < -Xmipp::epsilon)
+        if (val < -Xmipp::epsilon<RFLOAT>())
             REPORT_ERROR("ERROR: all voxels in the input map should have positive values!");
 
-        if (val > Xmipp::epsilon) {
+        if (val > Xmipp::epsilon<RFLOAT>()) {
             dist2 = hypot2(RFLOAT(i) - xori, RFLOAT(j) - yori, RFLOAT(k) - zori);
             if (dist2 > dist2_max)
                 dist2_max = dist2;
@@ -1340,9 +1340,9 @@ void getLocalSearchOperatorSamplings(
         gg_range = gg_range >   0.0 ? gg_range : 0.0;
     }
     if (
-        aa_range < ang_search_step && aa_range > Xmipp::epsilon ||
-        bb_range < ang_search_step && bb_range > Xmipp::epsilon ||
-        gg_range < ang_search_step && gg_range > Xmipp::epsilon
+        aa_range < ang_search_step && aa_range > Xmipp::epsilon<RFLOAT>() ||
+        bb_range < ang_search_step && bb_range > Xmipp::epsilon<RFLOAT>() ||
+        gg_range < ang_search_step && gg_range > Xmipp::epsilon<RFLOAT>()
     ) REPORT_ERROR("ERROR: Angular searching step should be smaller than its searching range!");
     if (!use_healpix) {
         // aa, bb, gg ranges >= 0, ang_search_step > 0.01
@@ -1356,9 +1356,9 @@ void getLocalSearchOperatorSamplings(
     dy_range = dy_range > 0.0 ? dy_range : 0.0;
     dz_range = dz_range > 0.0 ? dz_range : 0.0;
     if (
-        dx_range < trans_search_step && dx_range > Xmipp::epsilon ||
-        dy_range < trans_search_step && dy_range > Xmipp::epsilon ||
-        dz_range < trans_search_step && dz_range > Xmipp::epsilon
+        dx_range < trans_search_step && dx_range > Xmipp::epsilon<RFLOAT>() ||
+        dy_range < trans_search_step && dy_range > Xmipp::epsilon<RFLOAT>() ||
+        dz_range < trans_search_step && dz_range > Xmipp::epsilon<RFLOAT>()
     ) REPORT_ERROR("ERROR: Translational searching step should be smaller than its searching range!");
     // dx, dy, dz ranges >= 0, ang_search_step > 0.01
     dx_residue = dx_range - trans_search_step * floor(dx_range / trans_search_step);
@@ -1439,20 +1439,20 @@ void getLocalSearchOperatorSamplings(
         nr_dir = pointer_dir_nonzeroprior.size() * pointer_psi_nonzeroprior.size();
     } else {
         aas.clear(); bbs.clear(); ggs.clear();
-        if (aa_range > Xmipp::epsilon) {
-            for (val = aa_init + aa_residue - aa_range; val < aa_init + aa_range + Xmipp::epsilon; val += ang_search_step)
+        if (aa_range > Xmipp::epsilon<RFLOAT>()) {
+            for (val = aa_init + aa_residue - aa_range; val < aa_init + aa_range + Xmipp::epsilon<RFLOAT>(); val += ang_search_step)
                 aas.push_back(val);
         } else {
             aas.push_back(aa_init);
         }
-        if (bb_range > Xmipp::epsilon) {
-            for (val = bb_init + bb_residue - bb_range; val < bb_init + bb_range + Xmipp::epsilon; val += ang_search_step)
+        if (bb_range > Xmipp::epsilon<RFLOAT>()) {
+            for (val = bb_init + bb_residue - bb_range; val < bb_init + bb_range + Xmipp::epsilon<RFLOAT>(); val += ang_search_step)
                 bbs.push_back(val);
         } else {
             bbs.push_back(bb_init);
         }
-        if (gg_range > Xmipp::epsilon) {
-            for (val = gg_init + gg_residue - gg_range; val < gg_init + gg_range + Xmipp::epsilon; val += ang_search_step)
+        if (gg_range > Xmipp::epsilon<RFLOAT>()) {
+            for (val = gg_init + gg_residue - gg_range; val < gg_init + gg_range + Xmipp::epsilon<RFLOAT>(); val += ang_search_step)
                 ggs.push_back(val);
         } else {
             ggs.push_back(gg_init);
@@ -1463,22 +1463,22 @@ void getLocalSearchOperatorSamplings(
 
     // Translational samplings
     dxs.clear(); dys.clear(); dzs.clear();
-    if (dx_range > Xmipp::epsilon) {
-        for (val = dx_residue - dx_range; val < dx_range + Xmipp::epsilon; val += trans_search_step)
+    if (dx_range > Xmipp::epsilon<RFLOAT>()) {
+        for (val = dx_residue - dx_range; val < dx_range + Xmipp::epsilon<RFLOAT>(); val += trans_search_step)
             dxs.push_back(val);
     } else {
         dxs.push_back(0.0);
     }
 
-    if (dy_range > Xmipp::epsilon) {
-        for (val = dy_residue - dy_range; val < dy_range + Xmipp::epsilon; val += trans_search_step)
+    if (dy_range > Xmipp::epsilon<RFLOAT>()) {
+        for (val = dy_residue - dy_range; val < dy_range + Xmipp::epsilon<RFLOAT>(); val += trans_search_step)
             dys.push_back(val);
     } else {
         dys.push_back(0.0);
     }
 
-    if (dz_range > Xmipp::epsilon) {
-        for (val = dz_residue - dz_range; val < dz_range + Xmipp::epsilon; val += trans_search_step)
+    if (dz_range > Xmipp::epsilon<RFLOAT>()) {
+        for (val = dz_residue - dz_range; val < dz_range + Xmipp::epsilon<RFLOAT>(); val += trans_search_step)
             dzs.push_back(val);
     } else {
         dzs.push_back(0.);
@@ -1520,9 +1520,9 @@ void getLocalSearchOperatorSamplings(
     std::fill(op_tmp.begin(), op_tmp.end(), 0);
     nr_all_samplings = 0;
     // For translations: op_ori = op_int + op_res
-    if (dx_range < Xmipp::epsilon) dx_range = 1e+10;
-    if (dy_range < Xmipp::epsilon) dy_range = 1e+10;
-    if (dz_range < Xmipp::epsilon) dz_range = 1e+10;
+    if (dx_range < Xmipp::epsilon<RFLOAT>()) dx_range = 1e+10;
+    if (dy_range < Xmipp::epsilon<RFLOAT>()) dy_range = 1e+10;
+    if (dz_range < Xmipp::epsilon<RFLOAT>()) dz_range = 1e+10;
     for (auto &dz : dzs) for (auto &dy : dys) for (auto &dx : dxs) {
         r2 = (dz * dz) / (dz_range * dz_range) + (dy * dy) / (dy_range * dy_range) + (dx * dx) / (dx_range * dx_range);
         if (Xmipp::gt(r2, 1.0))
@@ -1617,7 +1617,7 @@ void calculateOperatorCC(
         for (long int j = 0; j < Ysize(vol); j++)
         for (long int i = 0; i < Xsize(vol); i++) {
             mask_val = direct::elem(mask, i, j, k);
-            if (mask_val < Xmipp::epsilon)
+            if (mask_val < Xmipp::epsilon<RFLOAT>())
                 continue;
 
             val = direct::elem(vol, i, j, k) - direct::elem(src, i, j, k);
@@ -1688,7 +1688,7 @@ void separateMasksBFS(const FileName& fn_in, const int K, RFLOAT val_thres) {
     for (long int k = 0; k < Zsize(img()); k++)
     for (long int j = 0; j < Ysize(img()); j++)
     for (long int i = 0; i < Xsize(img()); i++) {
-        // if (val < -Xmipp::epsilon)
+        // if (val < -Xmipp::epsilon<RFLOAT>())
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");
         if (float(direct::elem(img(), i, j, k)) > val_thres) {
             pos_val_ctr++;
@@ -1838,9 +1838,9 @@ void separateMasksKMeans(
     for (long int j = 0; j < Ysize(img()); j++)
     for (long int i = 0; i < Xsize(img()); i++) {
         val = direct::elem(img(), i, j, k);
-        //if (val < -Xmipp::epsilon)
+        //if (val < -Xmipp::epsilon<RFLOAT>())
         //    REPORT_ERROR("ERROR: Image file " + fn_in + " contains negative values!");
-        if (val > Xmipp::epsilon)
+        if (val > Xmipp::epsilon<RFLOAT>())
             pos_val_ctr++;
     }
     if (pos_val_ctr <= K)
@@ -1883,7 +1883,7 @@ void separateMasksKMeans(
     {
         if (best_cen >= K)
             break;
-        if (img().elem(i, j, k) > Xmipp::epsilon)
+        if (img().elem(i, j, k) > Xmipp::epsilon<RFLOAT>())
         {
             pos_val_ctr++;
             if (vec_rec[best_cen] == pos_val_ctr)
@@ -1927,7 +1927,7 @@ void separateMasksKMeans(
         {
             // For voxels with positive values
             val = img().elem(i, j, k);
-            if (val < Xmipp::epsilon)
+            if (val < Xmipp::epsilon<RFLOAT>())
                 continue;
 
             // Find the smallest distance to one of the centroids
@@ -1957,7 +1957,7 @@ void separateMasksKMeans(
         // Update centroids
         for (int ii = 0; ii < K; ii++)
         {
-            if (wcen[ii] < Xmipp::epsilon)
+            if (wcen[ii] < Xmipp::epsilon<RFLOAT>())
                 REPORT_ERROR("ERROR: wcen[ii] <= 0 !");
             ocen[ii] = ncen[ii] / wcen[ii];
 
@@ -2214,15 +2214,15 @@ void local_symmetry_parameters::run() {
             REPORT_ERROR("Invalid pixel size!");
         if (fn_op_mask_info_in != "None") {
             if (
-                ang_range      < Xmipp::epsilon &&
-                ang_rot_range  < Xmipp::epsilon &&
-                ang_tilt_range < Xmipp::epsilon &&
-                ang_psi_range  < Xmipp::epsilon
+                ang_range      < Xmipp::epsilon<RFLOAT>() &&
+                ang_rot_range  < Xmipp::epsilon<RFLOAT>() &&
+                ang_tilt_range < Xmipp::epsilon<RFLOAT>() &&
+                ang_psi_range  < Xmipp::epsilon<RFLOAT>()
             ) {
                 ang_range = 180.0;
                 std::cout << " Initial searches: reset searching ranges of all 3 Euler angles to +/-180 degrees." << std::endl;
             } else {
-                if (ang_range > Xmipp::epsilon) {
+                if (ang_range > Xmipp::epsilon<RFLOAT>()) {
                     std::cout << " User-defined initial searches: searching ranges of all 3 Euler angles are set to +/-" << ang_range << " degree(s)." << std::endl;
                 } else {
                     std::cout << " User-defined initial searches: (rot, tilt, psi) ranges are +/- (" << ang_rot_range << ", " << ang_tilt_range << ", " << ang_psi_range << ") degree(s)." << std::endl;
@@ -2231,12 +2231,12 @@ void local_symmetry_parameters::run() {
         }
         Localsym_composeOperator(
             op_search_ranges,
-            ang_range    > Xmipp::epsilon ? ang_range    : ang_rot_range,
-            ang_range    > Xmipp::epsilon ? ang_range    : ang_tilt_range,
-            ang_range    > Xmipp::epsilon ? ang_range    : ang_psi_range,
-            offset_range > Xmipp::epsilon ? offset_range : offset_x_range,
-            offset_range > Xmipp::epsilon ? offset_range : offset_y_range,
-            offset_range > Xmipp::epsilon ? offset_range : offset_z_range
+            ang_range    > Xmipp::epsilon<RFLOAT>() ? ang_range    : ang_rot_range,
+            ang_range    > Xmipp::epsilon<RFLOAT>() ? ang_range    : ang_tilt_range,
+            ang_range    > Xmipp::epsilon<RFLOAT>() ? ang_range    : ang_psi_range,
+            offset_range > Xmipp::epsilon<RFLOAT>() ? offset_range : offset_x_range,
+            offset_range > Xmipp::epsilon<RFLOAT>() ? offset_range : offset_y_range,
+            offset_range > Xmipp::epsilon<RFLOAT>() ? offset_range : offset_z_range
         );
         Localsym_scaleTranslations(op_search_ranges, 1.0 / angpix_image);
         offset_step /= angpix_image;

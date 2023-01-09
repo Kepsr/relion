@@ -247,11 +247,11 @@ class CudaFFT {
         planSet = true;
     }
 
-    void forward() { HANDLE_CUFFT_ERROR(cufftExecD2Z(cufftPlanForward, ~reals, ~fouriers)); }
+    void forward() { HANDLE_CUFFT_ERROR(cufftExecD2Z(cufftPlanForward, reals.getAccPtr(), fouriers.getAccPtr())); }
 
-    void backward() { HANDLE_CUFFT_ERROR( cufftExecZ2D(cufftPlanBackward, ~fouriers, ~reals)); }
+    void backward() { HANDLE_CUFFT_ERROR( cufftExecZ2D(cufftPlanBackward, fouriers.getAccPtr(), reals.getAccPtr())); }
 
-    void backward(AccPtr<cufftDoubleReal> &dst) { HANDLE_CUFFT_ERROR(cufftExecZ2D(cufftPlanBackward, ~fouriers, ~dst)); }
+    void backward(AccPtr<cufftDoubleReal> &dst) { HANDLE_CUFFT_ERROR(cufftExecZ2D(cufftPlanBackward, fouriers.getAccPtr(), ~dst)); }
         #else
          if (direction <= 0) {
              HANDLE_CUFFT_ERROR(cufftPlanMany(&cufftPlanForward, dimension, inembed, inembed, istride, idist, onembed, ostride, odist, CUFFT_R2C, batchSize[0]));
@@ -269,7 +269,7 @@ class CudaFFT {
             std::cout << "trying to execute a forward plan for a cudaFFT transformer which is backwards-only" << std::endl;
             CRITICAL(ERRCUFFTDIRF);
         }
-        HANDLE_CUFFT_ERROR(cufftExecR2C(cufftPlanForward, ~reals, ~fouriers));
+        HANDLE_CUFFT_ERROR(cufftExecR2C(cufftPlanForward, reals.getAccPtr(), fouriers.getAccPtr()));
     }
 
     void backward() {
@@ -277,7 +277,7 @@ class CudaFFT {
             std::cout << "trying to execute a backwards plan for a cudaFFT transformer which is forwards-only" << std::endl;
             CRITICAL(ERRCUFFTDIRR);
         }
-        HANDLE_CUFFT_ERROR(cufftExecC2R(cufftPlanBackward, ~fouriers, ~reals));
+        HANDLE_CUFFT_ERROR(cufftExecC2R(cufftPlanBackward, fouriers.getAccPtr(), reals.getAccPtr()));
     }
 
     #endif

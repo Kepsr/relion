@@ -301,14 +301,14 @@ class Vector {
     const iterator end() const { return vdata + vdim; }
 
     /// Sum of vector values
-    RFLOAT sum() const {
-        return std::accumulate(begin(), end(), 0);
+    T sum() const {
+        return std::accumulate(begin(), end(), T(0));
     }
 
-    inline RFLOAT mean() const { return sum() / (RFLOAT) size(); }
+    inline T mean() const { return sum() / (T) size(); }
 
     /// Sum of squared vector values
-    RFLOAT sum2() const {
+    T sum2() const {
         return std::accumulate(begin(), end(), 0,
             [] (const T& running_total, const T& x) { return running_total + x * x; });
     }
@@ -318,21 +318,21 @@ class Vector {
      * This modulus is defined as the square root of the sum of the squared
      * components. Euclidean norm of the vector.
      */
-    RFLOAT modulus() const { return sqrt(sum2()); }
+    T modulus() const { return sqrt(sum2()); }
 
     /** Angle of the vector
      *
      * Supposing this vector is in R2 this function returns the angle of this
      * vector with X axis, ie, atan2(YY(v), XX(v))
      */
-    RFLOAT angle() {
-        return atan2((RFLOAT) (*this)[1], (RFLOAT) (*this)[0]);
+    T angle() {
+        return atan2((*this)[1], (*this)[0]);
     }
 
     /// Normalise vector
     void normalise() {
-        const RFLOAT m = modulus();
-        if (abs(m) > Xmipp::epsilon) {
+        const T m = modulus();
+        if (abs(m) > Xmipp::epsilon<T>()) {
             *this *= (T) (1.0 / m);
         } else {
             std::fill(begin(), end(), 0);
@@ -469,7 +469,7 @@ std::ostream& operator << (std::ostream &ostrm, const Vector<T> &v) {
  * V1y*V2y + V1z*V2z.
  *
  * @code
- * Vector< RFLOAT > v1(1000);
+ * Vector<RFLOAT> v1 (1000);
  * v1.init_random(0, 10, "gaussian");
  * std::cout << "The power_class of this vector should be 100 and is " <<
  *     dotProduct(v1, v1) << std::endl;

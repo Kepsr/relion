@@ -1512,7 +1512,6 @@ void pickerViewerCanvas::draw() {
         if (color_label == EMDL::UNDEFINED) {
             fl_color(FL_GREEN);
         } else {
-            RFLOAT colval;
             if (EMDL::is<int>(color_label)) {
                 int ival;
                 try {
@@ -1521,30 +1520,23 @@ void pickerViewerCanvas::draw() {
                     // populate as green if absent
                     MDcoords.setValue(color_label, ival = 2, icoord);
                 }
-                colval = ival;
                 fl_color(
                     ival >= 1 && ival <= NUM_COLORS ?
                     color_choices[ival - 1].labelcolor_ :
                     FL_GREEN
                 );
             } else {
-                colval = MDcoords.getValue<RFLOAT>(color_label, icoord);
-
+                RFLOAT colval = MDcoords.getValue<RFLOAT>(color_label, icoord);
                 // Assume undefined values are set to -999....
-                if (colval + 999.0 < Xmipp::epsilon) {
+                if (colval + 999.0 < Xmipp::epsilon<RFLOAT>()) {
                     fl_color(FL_GREEN);
                 } else {
                     // Bound colval
                     colval = std::max(colval, smallest_color_value);
                     colval = std::min(colval, biggest_color_value);
-                    unsigned char red, blue;
-                    if (do_blue_to_red) {
-                        red  = round(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));
-                        blue = round(255.0 * (biggest_color_value - colval)  / (biggest_color_value - smallest_color_value));
-                    } else {
-                        blue = round(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));
-                        red  = round(255.0 * (biggest_color_value - colval)  / (biggest_color_value - smallest_color_value));
-                    }
+                    unsigned char blue = round(255.0 * (colval - smallest_color_value) / (biggest_color_value - smallest_color_value));
+                    unsigned char red  = round(255.0 * (biggest_color_value - colval)  / (biggest_color_value - smallest_color_value));
+                    if (do_blue_to_red) std::swap(blue, red);
                     fl_color(red, 0, blue);
                 }
             }
@@ -1785,7 +1777,7 @@ void pickerViewerCanvas::findColorColumnForCoordinates() {
             RFLOAT x = MDcolor.getValue<RFLOAT>(EMDL::IMAGE_COORD_X, i);
             RFLOAT y = MDcolor.getValue<RFLOAT>(EMDL::IMAGE_COORD_Y, i);
 
-            if (abs(x - my_xpos) + abs(y - my_ypos) > Xmipp::epsilon) {
+            if (abs(x - my_xpos) + abs(y - my_ypos) > Xmipp::epsilon<RFLOAT>()) {
                 std::cerr << " _fn_img= " << _fn_img << " iimg= " << iimg << " _fn_mic= " << _fn_mic << std::endl;
                 std::cerr << " x= " << x << " my_xpos= " << my_xpos << std::endl;
                 std::cerr << " y= " << y << " my_ypos= " << my_ypos << std::endl;

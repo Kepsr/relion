@@ -20,31 +20,36 @@ class Image: public AccPtr<T> {
                          CONSTRUCTORS
     ======================================================*/
 
-    Image(AccPtrFactory &f):
-        AccPtr<T>(f.make<T>()),
+    template <acc::Type accType>
+    Image(AccPtrFactory<accType> &f):
+        AccPtr<T>(f.template make<T>()),
         x(0), y(0), z(0), fourier(false) {}
 
-    Image(int xdim, AccPtrFactory &f):
-        AccPtr<T>(f.make<T>(xdim)),
+    template <acc::Type accType>
+    Image(int xdim, AccPtrFactory<accType> &f):
+        AccPtr<T>(f.template make<T>(xdim)),
         x(xdim), y(1), z(1), fourier(false) {}
 
-    Image(int xdim, int ydim, AccPtrFactory &f):
-        AccPtr<T>(f.make<T>(xdim * ydim)),
+    template <acc::Type accType>
+    Image(int xdim, int ydim, AccPtrFactory<accType> &f):
+        AccPtr<T>(f.template make<T>(xdim * ydim)),
         x(xdim), y(ydim), z(1), fourier(false) {}
 
-    Image(int xdim, int ydim, int zdim, AccPtrFactory &f):
-        AccPtr<T>(f.make<T>(xdim * ydim * zdim)),
+    template <acc::Type accType>
+    Image(int xdim, int ydim, int zdim, AccPtrFactory<accType> &f):
+        AccPtr<T>(f.template make<T>(xdim * ydim * zdim)),
         x(xdim), y(ydim), z(zdim), fourier(false) {}
 
-    template<typename T1>
-    Image(MultidimArray<T1> img, AccPtrFactory &f):
-        AccPtr<T>(f.make<T>(img.size())),
+    template<typename T1, acc::Type accType>
+    Image(MultidimArray<T1> img, AccPtrFactory<accType> &f):
+        AccPtr<T>(f.template make<T>(img.size())),
         x(img.xdim), y(img.ydim), z(img.zdim),
         fourier(false) {}
 
-    Image(int box_dim, bool is_fourier, bool is3D, AccPtrFactory &f) {
+    template <acc::Type accType>
+    Image(int box_dim, bool is_fourier, bool is3D, AccPtrFactory<accType> &f) {
         setSize(box_dim, is_fourier, is3D);
-        AccPtr<T>(f.make<T>(x * y * z));
+        AccPtr<T>(f.template make<T>(x * y * z));
     }
 
     /*======================================================

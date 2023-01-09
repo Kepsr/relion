@@ -46,11 +46,11 @@
 
 // -------------------------------  Some explicit template instantiations
 template __global__ void CudaKernels::cuda_kernel_translate2D<XFLOAT>(
-    XFLOAT*, XFLOAT*, int, int, int, int, int
+    XFLOAT const*, XFLOAT*, int, int, int, int, int
 );
 
 template __global__ void CudaKernels::cuda_kernel_translate3D<XFLOAT>(
-    XFLOAT*, XFLOAT*, int, int, int, int, int, int, int
+    XFLOAT const*, XFLOAT*, int, int, int, int, int, int, int
 );
 
 template __global__ void cuda_kernel_multi<XFLOAT>(
@@ -62,7 +62,7 @@ template __global__ void CudaKernels::cuda_kernel_multi<XFLOAT>(
 );
 
 template __global__ void cuda_kernel_multi<XFLOAT>(
-    XFLOAT*, XFLOAT*, XFLOAT*, XFLOAT, int
+    XFLOAT const*, XFLOAT const*, XFLOAT*, XFLOAT, int
 );
 
 // ----------------------------------------------------------------------
@@ -71,7 +71,6 @@ template __global__ void cuda_kernel_multi<XFLOAT>(
 
 size_t MlDeviceBundle::checkFixedSizedObjects(int shares) {
     int devCount;
-    size_t BoxLimit;
     HANDLE_ERROR(cudaGetDeviceCount(&devCount));
     if (device_id >= devCount) {
         CRITICAL(ERR_GPUID);
@@ -82,9 +81,8 @@ size_t MlDeviceBundle::checkFixedSizedObjects(int shares) {
     size_t free(0), total(0);
     DEBUG_HANDLE_ERROR(cudaMemGetInfo(&free, &total));
     float margin(1.05);
-    BoxLimit = pow(free / (margin * 2.5 * sizeof(XFLOAT) * ((float) shares)),(1 / 3.0)) / ((float) baseMLO->mymodel.padding_factor);
+    const size_t BoxLimit = pow(free / (margin * 2.5 * sizeof(XFLOAT) * ((float) shares)),(1 / 3.0)) / ((float) baseMLO->mymodel.padding_factor);
     // size_t BytesNeeded = ((float) shares) * margin * 2.5 * sizeof(XFLOAT) * pow((baseMLO->mymodel.ori_size * baseMLO->mymodel.padding_factor),3);
-
     return BoxLimit;
 }
 
@@ -269,7 +267,7 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id) {
             baseMLO->timer.tic(baseMLO->TIMING_ESP_DIFF2_A);
             #endif
 
-            AccPtrFactory ptrFactory(allocator, cudaStreamPerThread);
+            AccPtrFactory<> ptrFactory (allocator, cudaStreamPerThread);
             accDoExpectationOneParticle<MlOptimiserCuda>(this, baseMLO->exp_my_first_part_id + ipart, thread_id, ptrFactory);
 
         }

@@ -21,9 +21,6 @@
 #include "src/parallel.h"
 #include "src/complex.h"
 
-// Forward definition
-template <typename T>  class AccPtr;
-
 /**
  * Print cuda device memory info
  */

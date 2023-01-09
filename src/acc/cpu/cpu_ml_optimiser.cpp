@@ -176,7 +176,7 @@ void MlOptimiserCpu::resetData()
 
 void MlOptimiserCpu::expectationOneParticle(unsigned long my_part_id, int thread_id)
 {
-	AccPtrFactory ptrFactory(AccType::accCPU);
+	AccPtrFactory<acc::cpu> ptrFactory;
 	accDoExpectationOneParticle<MlOptimiserCpu>(this, my_part_id, thread_id, ptrFactory);
 };
 

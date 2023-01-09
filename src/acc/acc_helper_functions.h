@@ -135,17 +135,16 @@ void arrayOverThreshold(AccPtr<T> &data, AccPtr<bool> &passed, T threshold) {
     #ifdef CUDA
     int grid_size = ceil((float) data.getSize() / (float) OVER_THRESHOLD_BLOCK_SIZE);
     cuda_kernel_array_over_threshold<T><<<grid_size, OVER_THRESHOLD_BLOCK_SIZE, 0, data.getStream()>>>(
-        ~data,
-        ~passed,
+        data.getAccPtr(),
+        passed.getAccPtr(),
         threshold,
         data.getSize(),
         OVER_THRESHOLD_BLOCK_SIZE
     );
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
     #else
-    int Size = data.getSize();
-    for (size_t i = 0; i < Size; i++) {
-        passed[i] = data[i] >= threshold;
+    for (size_t i = 0; i < data.getSize(); i++) {
+        passed.getHostPtr()[i] = data.getHostPtr()[i] >= threshold;
     }
     #endif
 }
@@ -158,25 +157,25 @@ size_t findThresholdIdxInCumulativeSum(AccPtr<T> &data, T threshold) {
         return(0);
     } else {
         #ifdef CUDA
-        AccPtr<size_t> idx(1, data.getAllocator(), data.getStream());
-        idx[0] = 0;
+        AccPtr<size_t> idx (1, data.getAllocator(), data.getStream());
+        idx.getHostPtr()[0] = 0;
 
         idx.putOnDevice();
         cuda_kernel_find_threshold_idx_in_cumulative<<<grid_size, FIND_IN_CUMULATIVE_BLOCK_SIZE, 0, data.getStream()>>>(
-            ~data,
+            data.getAccPtr(),
             threshold,
             data.getSize() - 1,
-            ~idx,
+            idx.getAccPtr(),
             FIND_IN_CUMULATIVE_BLOCK_SIZE
         );
         idx.cpToHost();
         DEBUG_HANDLE_ERROR(cudaStreamSynchronize(data.getStream()));
-        return idx[0];
+        return idx.getHostPtr()[0];
         #else
         size_t idx = 0;
         size_t size_m1 = data.getSize()-1;
         for (size_t i = 0; i < size_m1; i++) {
-            if (data[i] <= threshold && threshold < data[i + 1])
+            if (data.getHostPtr()[i] <= threshold && threshold < data.getHostPtr()[i + 1])
                 idx = i + 1;
         }
         return idx;
@@ -241,15 +240,14 @@ void runCollect2jobs(
 );
 
 void windowFourierTransform2(
-    AccPtr<ACCCOMPLEX> &d_in,
-    AccPtr<ACCCOMPLEX> &d_out,
-    size_t iX, size_t iY, size_t iZ, //Input dimensions
-    size_t oX, size_t oY, size_t oZ,  //Output dimensions
+    AccPtr<acc::Complex> &d_in,
+    AccPtr<acc::Complex> &d_out,
+    size_t iX, size_t iY, size_t iZ,  // Input dimensions
+    size_t oX, size_t oY, size_t oZ,  // Output dimensions
     size_t Npsi = 1,
     size_t pos = 0,
     cudaStream_t stream = 0
 );
-
 
 void selfApplyBeamTilt2(
     MultidimArray<Complex> &Fimg, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
@@ -257,12 +255,11 @@ void selfApplyBeamTilt2(
 );
 
 template <typename T>
-void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allocator) {
+void runCenterFFT(MultidimArray<T>& v, bool forward, CudaCustomAllocator *allocator) {
     AccPtr<XFLOAT> img_in (v.size(), allocator);   // with original data pointer
-	// AccPtr<XFLOAT >  img_aux (v.size(), allocator);   // temporary holder
+	// AccPtr<XFLOAT>  img_aux (v.size(), allocator);   // temporary holder
 
-    for (unsigned long i = 0; i < v.size(); i ++)
-        img_in[i] = (XFLOAT) v.data[i];
+    std::copy_n(v.begin(), v.size(), img_in.getHostPtr());
 
     img_in.putOnDevice();
 	// img_aux.deviceAlloc();
@@ -270,12 +267,10 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
     if (v.getDim() == 1) {
         std::cerr << "CenterFFT on gpu reverts to cpu for dim!=2 (now dim=1)" <<std::endl;
         // 1D
-        MultidimArray<T> aux;
-        int l, shift;
 
-        l = Xsize(v);
-        aux.resize(l);
-        shift = l / 2;
+        int l = v.size();
+        int shift = l / 2;
+        MultidimArray<T> aux (l);
 
         if (!forward) { shift = -shift; }
 
@@ -289,12 +284,11 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
                 ip -= l;
             }
 
-            aux(ip) = direct::elem(v, i);
+            aux[ip] = v[i];
         }
 
-        // Copy the vector
-        for (int i = 0; i < l; i++)
-            direct::elem(v, i) = direct::elem(aux, i);
+        v = std::move(aux);
+
     } else if (v.getDim() == 2) {
         // 2D
         // std::cerr << "CenterFFT on gpu with dim=2!" <<std::endl;
@@ -311,9 +305,9 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
         AccUtilities::centerFFT_2D(
             dim, 0, CFTT_BLOCK_SIZE,
             #ifdef CUDA
-                ~img_in,
+            img_in.getAccPtr(),
             #else
-                &img_in[0],
+            img_in.getHostPtr(),
             #endif
             v.size(),
             Xsize(v), Ysize(v),
@@ -323,21 +317,18 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
 
         img_in.cpToHost();
 
-        for (unsigned long i = 0; i < v.size(); i ++)
-            v.data[i] = (T) img_in[i];
+        std::copy_n(img_in.getHostPtr(), v.size(), v.begin());
 
     } else if (v.getDim() == 3) {
         // TODO - convert this to use the faster AccUtilities::centerFFT_3D like the 2D case above
         // and in fftw.h when FAST_CENTERFFT is defined
-        std::cerr << "CenterFFT on gpu reverts to cpu for dim!=2 (now dim=3)" <<std::endl;
+        std::cerr << "CenterFFT on gpu reverts to cpu for dim!=2 (now dim=3)" << std::endl;
         // 3D
-        MultidimArray<T> aux;
-        int l, shift;
 
         // Shift in the X direction
-        l = Xsize(v);
-        aux.resize(l);
-        shift = l / 2;
+        int l = Xsize(v);
+        MultidimArray<T> aux (l);
+        int shift = l / 2;
 
         if (!forward) { shift = -shift; }
 
@@ -443,7 +434,7 @@ void runCenterFFT(
     AccUtilities::centerFFT_2D(
         blocks, batchSize, CFTT_BLOCK_SIZE,
         img_in.getStream(),
-        ~img_in,
+        img_in.getAccPtr(),
         xSize * ySize,
         xSize, ySize,
         xshift, yshift    
@@ -485,7 +476,7 @@ void runCenterFFT(
         AccUtilities::centerFFT_3D(
             grid_size, batchSize, CFTT_BLOCK_SIZE,
             img_in.getStream(),
-            ~img_in,
+            img_in.getAccPtr(),
             (size_t) xSize * (size_t) ySize * (size_t) zSize,
             xSize, ySize, zSize,
             xshift, yshift, zshift
@@ -506,7 +497,7 @@ void runCenterFFT(
         AccUtilities::centerFFT_2D(
             blocks, batchSize, CFTT_BLOCK_SIZE,
             img_in.getStream(),
-            ~img_in,
+            img_in.getAccPtr(),
             xSize * ySize,
             xSize, ySize,
             xshift, yshift
@@ -546,7 +537,7 @@ void lowPassFilterMapGPU(
     if (do_highpass) {
         AccUtilities::frequencyPass<true>(
             blocks, CFTT_BLOCK_SIZE, img_in.getStream(),
-            ~img_in,
+            img_in.getAccPtr(),
             ori_size,
             Xdim, Ydim, Zdim,
             edge_low, edge_width, edge_high,
@@ -556,7 +547,7 @@ void lowPassFilterMapGPU(
     } else {
         AccUtilities::frequencyPass<false>(
             blocks, CFTT_BLOCK_SIZE, img_in.getStream(),
-            ~img_in,
+            img_in.getAccPtr(),
             ori_size,
             Xdim, Ydim, Zdim,
             edge_low, edge_width, edge_high,

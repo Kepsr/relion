@@ -228,8 +228,8 @@ class ProjectionParams {
     // ends   @ element class_idx[n]+class_entries[n]
 
     void pushBackAll(
-        size_t iclass, 
-        RFLOAT NEWrot, RFLOAT NEWtilt, RFLOAT NEWpsi, 
+        size_t iclass,
+        RFLOAT NEWrot, RFLOAT NEWtilt, RFLOAT NEWpsi,
         size_t NEWiorientclasses, size_t NEWiover_rots
     ) {
         // incremement the counter for this class
@@ -253,15 +253,16 @@ class IndexedDataArrayMask {
 
     size_t firstPos, lastPos; // positions in indexedDataArray data and index arrays to slice out
     size_t weightNum, jobNum; // number of weights and jobs this class
-    
+
     public:
-        
-    IndexedDataArrayMask(AccPtrFactory ptrFactory):
+
+    template <acc::Type T>
+    IndexedDataArrayMask(AccPtrFactory<T> ptrFactory):
     firstPos(), lastPos(), weightNum(), jobNum() {
-        jobOrigin = ptrFactory.make<size_t>();
-        jobExtent = ptrFactory.make<size_t>();
+        jobOrigin = ptrFactory.template make<size_t>();
+        jobExtent = ptrFactory.template make<size_t>();
     }
-    
+
     void setNumberOfJobs(size_t newSize) {
         jobNum = newSize;
         jobOrigin.setSize(newSize);
@@ -295,13 +296,14 @@ class IndexedDataArray {
     AccPtr<size_t> rot_id, rot_idx, trans_idx, ihidden_overs;
 
     public:
-    
-    inline IndexedDataArray(AccPtrFactory ptrFactory):
-    weights(ptrFactory.make<XFLOAT>()),
-    rot_id(ptrFactory.make<size_t>()),
-    rot_idx(ptrFactory.make<size_t>()),
-    trans_idx(ptrFactory.make<size_t>()),
-    ihidden_overs(ptrFactory.make<size_t>())
+
+    template <acc::Type T>
+    inline IndexedDataArray(AccPtrFactory<T> ptrFactory):
+    weights      (ptrFactory.template make<XFLOAT>()),
+    rot_id       (ptrFactory.template make<size_t>()),
+    rot_idx      (ptrFactory.template make<size_t>()),
+    trans_idx    (ptrFactory.template make<size_t>()),
+    ihidden_overs(ptrFactory.template make<size_t>())
     {};
 
     inline IndexedDataArray(IndexedDataArray &parent, IndexedDataArrayMask &mask):
@@ -352,7 +354,7 @@ class IndexedDataArray {
         host_alloc_all();
         device_alloc_all();
     }
-    
+
     void dual_free_all() {
         weights.freeDevice();
         rot_id.freeDevice();
@@ -365,7 +367,7 @@ class IndexedDataArray {
         trans_idx.freeHost();
         ihidden_overs.freeHost();
     }
-    
+
     ~IndexedDataArray() {
         dual_free_all();
     }

@@ -19,7 +19,7 @@ void dump_array(char *name, bool *ptr, size_t size);
 void dump_array(char *name, int *ptr, size_t size);
 void dump_array(char *name, size_t *ptr, size_t size);
 void dump_array(char *name, float *ptr, size_t size);
-void dump_complex_array(char *name, ACCCOMPLEX *ptr, size_t size);
+void dump_complex_array(char *name, acc::Complex *ptr, size_t size);
 void dump_complex_array(char *name, Complex *ptr, size_t size);
 void dump_double_array(char *name, float *ptr, float *ptr2, size_t size);
 void dump_triple_array(char *name, float *ptr, float *ptr2, float *ptr3, size_t size);
@@ -36,12 +36,12 @@ static void multiply(int block_size, AccDataTypes::Image<T> &ptr, T value)
 #ifdef CUDA
     int BSZ = ( (int) ceilf(( float)ptr.getSize() /(float)block_size));
     CudaKernels::cuda_kernel_multi<T><<<BSZ,block_size,0,ptr.getStream()>>>(
-        ptr(),
+        ptr.getAccPtr(),
         value,
         ptr.getSize());
 #else
     CpuKernels::cpu_kernel_multi<T>(
-    ptr(),
+    ptr.getAccPtr(),
     value,
     ptr.getSize());
 #endif
@@ -130,23 +130,18 @@ else
 
 
 template <typename T>
-static T getSumOnDevice(AccPtr<T> &ptr)
-{
-#ifdef CUDA
+static T getSumOnDevice(AccPtr<T> &ptr) {
+    #ifdef CUDA
     return CudaKernels::getSumOnDevice<T>(ptr);
-#else
-#ifdef DEBUG_CUDA
+    #else
+    #ifdef DEBUG_CUDA
     if (ptr.getSize() == 0)
         printf("DEBUG_ERROR: getSumOnDevice called with pointer of zero size.\n");
-    if (ptr.getHostPtr() == NULL)
+    if (!ptr.getHostPtr())
         printf("DEBUG_ERROR: getSumOnDevice called with null device pointer.\n");
-#endif
-    size_t size = ptr.getSize();
-    T sum = 0;
-    for (size_t i=0; i<size; i++)
-        sum += ptr[i];
-    return sum;
-#endif
+    #endif
+    return std::accumulate(ptr.getHostPtr(), ptr.getHostPtr() + ptr.getSize(), T(0));
+    #endif
 }
 
 template <typename T>
@@ -158,10 +153,10 @@ static T getMinOnDevice(AccPtr<T> &ptr)
 #ifdef DEBUG_CUDA
     if (ptr.getSize() == 0)
         printf("DEBUG_ERROR: getMinOnDevice called with pointer of zero size.\n");
-    if (ptr.getHostPtr() == NULL)
+    if (!ptr.getHostPtr())
         printf("DEBUG_ERROR: getMinOnDevice called with null device pointer.\n");
 #endif
-    return CpuKernels::getMin<T>(ptr(), ptr.getSize());
+    return CpuKernels::getMin<T>(ptr.getAccPtr(), ptr.getSize());
 #endif
 }
 
@@ -174,10 +169,10 @@ static T getMaxOnDevice(AccPtr<T> &ptr)
 #ifdef DEBUG_CUDA
     if (ptr.getSize() == 0)
         printf("DEBUG_ERROR: getMaxOnDevice called with pointer of zero size.\n");
-    if (ptr.getHostPtr() == NULL)
+    if (!ptr.getHostPtr())
         printf("DEBUG_ERROR: getMaxOnDevice called with null device pointer.\n");
 #endif
-    return CpuKernels::getMax<T>(ptr(), ptr.getSize());
+    return CpuKernels::getMax<T>(ptr.getAccPtr(), ptr.getSize());
 #endif
 }
 
@@ -190,10 +185,10 @@ static std::pair<size_t, T> getArgMinOnDevice(AccPtr<T> &ptr)
 #ifdef DEBUG_CUDA
     if (ptr.getSize() == 0)
         printf("DEBUG_ERROR: getArgMinOnDevice called with pointer of zero size.\n");
-    if (ptr.getHostPtr() == NULL)
+    if (!ptr.getHostPtr())
         printf("DEBUG_ERROR: getArgMinOnDevice called with null device pointer.\n");
 #endif
-    return CpuKernels::getArgMin<T>(ptr(), ptr.getSize());
+    return CpuKernels::getArgMin<T>(ptr.getAccPtr(), ptr.getSize());
 #endif
 }
 
@@ -206,10 +201,10 @@ static std::pair<size_t, T> getArgMaxOnDevice(AccPtr<T> &ptr)
 #ifdef DEBUG_CUDA
     if (ptr.getSize() == 0)
         printf("DEBUG_ERROR: getArgMaxOnDevice called with pointer of zero size.\n");
-    if (ptr.getHostPtr() == NULL)
+    if (!ptr.getHostPtr())
         printf("DEBUG_ERROR: getArgMaxOnDevice called with null device pointer.\n");
 #endif
-    return CpuKernels::getArgMax<T>(ptr(), ptr.getSize());
+    return CpuKernels::getArgMax<T>(ptr.getAccPtr(), ptr.getSize());
 #endif
 }
 
@@ -226,7 +221,7 @@ static int filterGreaterZeroOnDevice(AccPtr<T> &in, AccPtr<T> &out)
     // Find how many entries the output array will have
     for(size_t i=0; i<arr_size; i++)
     {
-        if(in[i] > (T)0.0)
+        if (in.getHostPtr()[i] > 0.0)
             filt_size++;
     }
 #ifdef DEBUG_CUDA
@@ -235,9 +230,9 @@ static int filterGreaterZeroOnDevice(AccPtr<T> &in, AccPtr<T> &out)
 #endif
     out.resizeHost(filt_size);
     // Now populate output array
-    for(size_t i=0; i<arr_size; i++)
-        if(in[i] > (T)0.0) {
-            out[outindex] = in[i];
+    for (size_t i = 0; i < arr_size; i++)
+        if (in.getHostPtr()[i] > (T) 0.0) {
+            out.getHostPtr()[outindex] = in.getHostPtr()[i];
             outindex++;
         }
     return filt_size;
@@ -245,35 +240,29 @@ static int filterGreaterZeroOnDevice(AccPtr<T> &in, AccPtr<T> &out)
 }
 
 template <typename T>
-static void sortOnDevice(AccPtr<T> &in, AccPtr<T> &out)
-{
-#ifdef CUDA
+static void sortOnDevice(const AccPtr<T> &in, AccPtr<T> &out) {
+    #ifdef CUDA
     CudaKernels::sortOnDevice(in, out);
-#else
-    //TODO - convert ACCPTR to store data as vector so we don't need to make
-    //an extra copies here.  For now, nasty hack
-    size_t arr_size = in.getSize();
-    std::vector<T> sortVector(in(), in() + in.getSize());
-    sort(sortVector.begin(), sortVector.end());
-    for (size_t i=0; i < arr_size; i++)
-        out[i] = sortVector[i];
-#endif
+    #else
+    T const* const src = in.getAccPtr();
+    T* const dest = out.getHostPtr();
+    const auto n = in.getSize();
+    std::copy_n(src, n, dest);
+    std::sort(dest, dest + n);
+    #endif
 }
 
 template <typename T>
-static void scanOnDevice(AccPtr<T> &in, AccPtr<T> &out)
-{
-#ifdef CUDA
+static void scanOnDevice(AccPtr<T> &in, AccPtr<T> &out) {
+    #ifdef CUDA
     CudaKernels::scanOnDevice(in, out);
-#else
+    #else
     T sum = 0.0;
-    size_t arr_size = in.getSize();
-    for(size_t i=0; i<arr_size; i++)
-    {
-        sum += in[i];
-        out[i] = sum;
+    for (size_t i = 0; i < in.getSize(); i++) {
+        sum += in.getHostPtr()[i];
+        out.getHostPtr()[i] = sum;
     }
-#endif
+    #endif
 }
 
 static void TranslateAndNormCorrect(MultidimArray<RFLOAT > &img_in,
@@ -316,7 +305,7 @@ static void cosineFilter(
 template<bool DATA3D>
 void powerClass(int		in_gridSize,
                 int			in_blocksize,
-                ACCCOMPLEX  *g_image,
+                acc::Complex  *g_image,
                 XFLOAT      *g_spectrum,
                 size_t       image_size,
                 size_t       spectrum_size,
@@ -407,41 +396,35 @@ void acc_make_eulers_3D(
     #define INIT_VALUE_BLOCK_SIZE 512
 #endif
 
-template< typename T>
-void InitComplexValue(AccPtr<T> &data, XFLOAT value)
-{
-#ifdef CUDA
-    int grid_size = ceil((float)(data.getSize())/(float)INIT_VALUE_BLOCK_SIZE);
-    cuda_kernel_init_complex_value<T><<< grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream() >>>(
-            ~data,
-            value,
-            data.getSize(), INIT_VALUE_BLOCK_SIZE);
-#else
-    size_t Size = data.getSize();
-    for(size_t i=0; i<Size; i++)
-    {
-        data[i].x = value;
-        data[i].y = value;
+template<typename T>
+void InitComplexValue(AccPtr<T> &data, XFLOAT value) {
+    #ifdef CUDA
+    const int grid_size = ceil((float) data.getSize() / (float) INIT_VALUE_BLOCK_SIZE);
+    cuda_kernel_init_complex_value<T><<<grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream() >>>(
+        data.getAccPtr(), value, data.getSize(), INIT_VALUE_BLOCK_SIZE
+    );
+    #else
+    for (size_t i = 0; i < data.getSize(); i++) {
+        data.getHostPtr()[i].x = value;
+        data.getHostPtr()[i].y = value;
     }
-#endif
+    #endif
 }
 
 template< typename T>
-void InitValue(AccPtr<T> &data, T value)
-{
-#ifdef CUDA
+void InitValue(AccPtr<T> &data, T value) {
+    #ifdef CUDA
     int grid_size = ceil((float)data.getSize()/(float)INIT_VALUE_BLOCK_SIZE);
     cuda_kernel_init_value<T><<< grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream() >>>(
-            ~data,
+            data.getAccPtr(),
             value,
             data.getSize(),
             INIT_VALUE_BLOCK_SIZE);
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
-#else
-    size_t Size = data.getSize();
-    for (size_t i=0; i < Size; i++)
-        data[i] = value;
-#endif
+    #else
+    for (size_t i = 0; i < data.getSize(); i++)
+        data.getHostPtr()[i] = value;
+    #endif
 }
 
 template< typename T>
@@ -450,7 +433,7 @@ void InitValue(AccPtr<T> &data, T value, size_t Size)
 #ifdef CUDA
     int grid_size = ceil((float)Size/(float)INIT_VALUE_BLOCK_SIZE);
     cuda_kernel_init_value<T><<< grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream() >>>(
-            ~data,
+            data.getAccPtr(),
             value,
             Size,
             INIT_VALUE_BLOCK_SIZE);
@@ -495,7 +478,7 @@ void centerFFT_3D(int grid_size, int batch_size, int block_size,
 template<bool do_highpass>
 void frequencyPass(int grid_size, int block_size,
                 cudaStream_t stream,
-                ACCCOMPLEX *A,
+                acc::Complex *A,
                 long int ori_size,
                 size_t Xdim,
                 size_t Ydim,
@@ -987,22 +970,22 @@ void kernel_weights_exponent_coarse(
 #ifdef CUDA
     cuda_kernel_weights_exponent_coarse<T>
     <<<block_num,SUMW_BLOCK_SIZE,0,g_Mweight.getStream()>>>(
-            ~g_pdf_orientation,
-            ~g_pdf_orientation_zeros,
-            ~g_pdf_offset,
-            ~g_pdf_offset_zeros,
-            ~g_Mweight,
+            g_pdf_orientation.getAccPtr(),
+            g_pdf_orientation_zeros.getAccPtr(),
+            g_pdf_offset.getAccPtr(),
+            g_pdf_offset_zeros.getAccPtr(),
+            g_Mweight.getAccPtr(),
             g_min_diff2,
             nr_coarse_orient,
             nr_coarse_trans,
             nr_coarse_orient*nr_coarse_trans*num_classes);
 #else
     CpuKernels::weights_exponent_coarse(
-            ~g_pdf_orientation,
-            ~g_pdf_orientation_zeros,
-            ~g_pdf_offset,
-            ~g_pdf_offset_zeros,
-            ~g_Mweight,
+            g_pdf_orientation.getAccPtr(),
+            g_pdf_orientation_zeros.getAccPtr(),
+            g_pdf_offset.getAccPtr(),
+            g_pdf_offset_zeros.getAccPtr(),
+            g_Mweight.getAccPtr(),
             g_min_diff2,
             nr_coarse_orient,
             nr_coarse_trans,
@@ -1019,10 +1002,10 @@ void kernel_exponentiate(
 #ifdef CUDA
     cuda_kernel_exponentiate<T>
     <<< blockDim,BLOCK_SIZE,0,array.getStream()>>>
-    (~array, add, array.getSize());
+    (array.getAccPtr(), add, array.getSize());
 #else
     CpuKernels::exponentiate<T>
-    (~array, add, array.getSize());
+    (array.getAccPtr(), add, array.getSize());
 #endif
 }
 
