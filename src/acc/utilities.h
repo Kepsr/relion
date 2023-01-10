@@ -240,13 +240,13 @@ static int filterGreaterZeroOnDevice(AccPtr<T> &in, AccPtr<T> &out)
 }
 
 template <typename T>
-static void sortOnDevice(const AccPtr<T> &in, AccPtr<T> &out) {
+static void sortOnDevice(AccPtr<T> &in, AccPtr<T> &out) {
     #ifdef CUDA
     CudaKernels::sortOnDevice(in, out);
     #else
     T const* const src = in.getAccPtr();
     T* const dest = out.getHostPtr();
-    const auto n = in.getSize();
+    const size_t n = in.getSize();
     std::copy_n(src, n, dest);
     std::sort(dest, dest + n);
     #endif

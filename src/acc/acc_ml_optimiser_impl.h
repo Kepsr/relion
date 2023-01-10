@@ -3,7 +3,7 @@ static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "src/ml_optimiser_mpi.h"
 #include "src/jaz/ctf_helper.h"
 
-#define CTICTOC(timer, timing, block) CTIC(timer, timing); block; CTOC(timer, timing);
+// #define CTICTOC(timer, timing, block) CTIC(timer, timing); block; CTOC(timer, timing);
 #define EQUAL(a, b) ((a) > (b) - 0.01 && (a) < (b) + 0.01)
 
 // ----------------------------------------------------------------------------
@@ -37,7 +37,7 @@ void getFourierTransformsAndCtfs(
         int my_metadata_offset, optics_group, group_id;
         RFLOAT my_pixel_size, normcorr;
         FileName fn_img;
-        CTICTOC(accMLO->timer, "init", ({
+        // CTICTOC(accMLO->timer, "init", ({
 
         // Which group do I belong to?
         group_id = baseMLO->mydata.getGroupId(part_id, img_id);
@@ -127,7 +127,7 @@ void getFourierTransformsAndCtfs(
             std::fill(my_prior.begin(), my_prior.end(), 0);
         }
 
-        }))
+        // }))
 
         CTICTOC(accMLO->timer, "nonZeroProb", ({
         // Orientational priors
@@ -305,7 +305,7 @@ void getFourierTransformsAndCtfs(
                 }));
             }
         }
-        }));
+        }))
 
         // ------------------------------------------------------------------------------------------
 
@@ -666,7 +666,7 @@ void getFourierTransformsAndCtfs(
             if (accMLO->dataIs3D) {
                 Image<RFLOAT> Ictf;
                 if (baseMLO->do_parallel_disc_io) {
-                    CTICTOC(accMLO->timer, "CTFRead3D_disk", ({
+                    // CTICTOC(accMLO->timer, "CTFRead3D_disk", ({
                     // Read CTF-image from disc
                     FileName fn_ctf;
                     try {
@@ -678,7 +678,7 @@ void getFourierTransformsAndCtfs(
                             getline(split, fn_ctf);
                     }
                     Ictf.read(fn_ctf);
-                    }))
+                    // }))
                 } else {
                     CTICTOC(accMLO->timer, "CTFRead3D_array", ({
                     // Unpack the CTF-image from the exp_imagedata array

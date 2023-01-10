@@ -304,7 +304,7 @@ class IndexedDataArray {
     rot_idx      (ptrFactory.template make<size_t>()),
     trans_idx    (ptrFactory.template make<size_t>()),
     ihidden_overs(ptrFactory.template make<size_t>())
-    {};
+    {}
 
     inline IndexedDataArray(IndexedDataArray &parent, IndexedDataArrayMask &mask):
     weights(      parent.weights,       mask.firstPos, mask.weightNum),

@@ -30,6 +30,14 @@ namespace device {
         return sqrt(double(x * x + y * y));
     }
 
+    __device__ constexpr inline float radians(float theta) {
+        return theta * (float) PI / (float) 180.0;
+    }
+
+    __device__ constexpr inline double radians(double theta) {
+        return theta * (double) PI / (double) 180.0;
+    }
+
 }
 
 /// Needed explicit template instantiations
@@ -513,10 +521,6 @@ __global__ void cuda_kernel_square(XFLOAT *A, int image_size) {
     A[i] = A[i] * A[i];
 }
 
-__device__ inline XFLOAT radians(XFLOAT theta) {
-    return theta * (XFLOAT) PI / (XFLOAT) 180.0;
-}
-
 template<bool invert>
 __global__ void cuda_kernel_make_eulers_2D(
     XFLOAT *alphas, XFLOAT *eulers, unsigned orientation_num
@@ -525,7 +529,7 @@ __global__ void cuda_kernel_make_eulers_2D(
     const unsigned i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i >= orientation_num) return;
     XFLOAT ca, sa;
-    const XFLOAT a = radians(invert ? -alphas[i] : alphas[i]);
+    const XFLOAT a = device::radians(invert ? -alphas[i] : alphas[i]);
     #ifdef ACC_DOUBLE_PRECISION
     sincos(a, &sa, &ca);
     #else
@@ -551,9 +555,9 @@ __global__ void cuda_kernel_make_eulers_3D(
     const unsigned i = blockIdx.x * blockDim.x + threadIdx.x;  // Orientation id
     if (i >= orientation_num) return;
 
-    const XFLOAT a = radians(alphas[i]);
-    const XFLOAT b = radians(betas [i]);
-    const XFLOAT g = radians(gammas[i]);
+    const XFLOAT a = device::radians(alphas[i]);
+    const XFLOAT b = device::radians(betas [i]);
+    const XFLOAT g = device::radians(gammas[i]);
 
     XFLOAT ca, sa, cb, sb, cg, sg;
     #ifdef ACC_DOUBLE_PRECISION

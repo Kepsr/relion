@@ -1659,7 +1659,7 @@ class MultidimArray {
      * perfect accuracy.
      */
     void substitute(
-        T oldv, T newv, RFLOAT accuracy = Xmipp::epsilon,
+        T oldv, T newv, RFLOAT accuracy = Xmipp::epsilon<RFLOAT>(),
         MultidimArray<int> *mask = nullptr
     ) {
         int *maskptr = mask ? mask->begin() : nullptr;
@@ -1678,7 +1678,7 @@ class MultidimArray {
      * to the old value.  Set it to 0 for perfect accuracy.
      */
     void randomSubstitute(
-        T oldv, T avgv, T sigv, RFLOAT accuracy = Xmipp::epsilon,
+        T oldv, T avgv, T sigv, RFLOAT accuracy = Xmipp::epsilon<RFLOAT>(),
         MultidimArray<int> *mask = nullptr
     ) {
         int *maskptr = mask ? mask->begin() : nullptr;
@@ -1697,7 +1697,7 @@ class MultidimArray {
      * Use threshold to get a very powerful binarization.
      */
     void binarize(
-        RFLOAT val = 0, RFLOAT accuracy = Xmipp::epsilon,
+        RFLOAT val = 0, RFLOAT accuracy = Xmipp::epsilon<RFLOAT>(),
         MultidimArray<int> *mask = nullptr
     ) {
         int *maskptr = mask ? mask->begin() : nullptr;
@@ -1986,7 +1986,7 @@ class MultidimArray {
      * Do these two objects have the same shape (origin and size)
      * and the same values (to within accuracy)?
      */
-    bool equal(const MultidimArray<T> &other, RFLOAT accuracy = Xmipp::epsilon) const {
+    bool equal(const MultidimArray<T> &other, RFLOAT accuracy = Xmipp::epsilon<RFLOAT>()) const {
 
         if (!sameShape(other) || !data || !other.data) return false;
 

@@ -588,7 +588,7 @@ void svdcmp(
 
 // Solve a system of linear equations (Ax = b) by SVD
 template<typename T>
-void solve(const Matrix<T> &A, Vector<T> b, Vector<RFLOAT> &x, RFLOAT epsilon = Xmipp::epsilon);
+void solve(const Matrix<T> &A, Vector<T> b, Vector<RFLOAT> &x, RFLOAT epsilon = Xmipp::epsilon<RFLOAT>());
 
 // Solve a system of linear equations (Ax=b), where x and b are matrices,
 // by SVD Decomposition (through Gauss-Jordan numerical recipes)
