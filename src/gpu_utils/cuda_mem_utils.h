@@ -116,43 +116,43 @@ static void cudaPrintMemInfo() {
     );
 }
 
-template< typename T>
+template <typename T>
 static inline
 void cudaCpyHostToDevice(T *h_ptr, T *d_ptr, size_t size) {
     DEBUG_HANDLE_ERROR(cudaMemcpy(d_ptr, h_ptr, size * sizeof(T), cudaMemcpyHostToDevice));
 };
 
-template< typename T>
+template <typename T>
 static inline
 void cudaCpyHostToDevice(T *h_ptr, T *d_ptr, size_t size, cudaStream_t &stream) {
     DEBUG_HANDLE_ERROR(cudaMemcpyAsync(d_ptr, h_ptr, size * sizeof(T), cudaMemcpyHostToDevice, stream));
 };
 
-template< typename T>
+template <typename T>
 static inline
 void cudaCpyDeviceToHost(T *d_ptr, T *h_ptr, size_t size) {
     DEBUG_HANDLE_ERROR(cudaMemcpy(h_ptr, d_ptr, size * sizeof(T), cudaMemcpyDeviceToHost));
 };
 
-template< typename T>
+template <typename T>
 static inline
 void cudaCpyDeviceToHost(T *d_ptr, T *h_ptr, size_t size, cudaStream_t &stream) {
     DEBUG_HANDLE_ERROR(cudaMemcpyAsync(h_ptr, d_ptr, size * sizeof(T), cudaMemcpyDeviceToHost, stream));
 };
 
-template< typename T>
+template <typename T>
 static inline
 void cudaCpyDeviceToDevice(T *src, T *des, size_t size, cudaStream_t &stream) {
     DEBUG_HANDLE_ERROR(cudaMemcpyAsync(des, src, size * sizeof(T), cudaMemcpyDeviceToDevice, stream));
 };
 
-template< typename T>
+template <typename T>
 static inline
 void cudaMemInit(T *ptr, T value, size_t size) {
     DEBUG_HANDLE_ERROR(cudaMemset(ptr, value, size * sizeof(T)));
 };
 
-template< typename T>
+template <typename T>
 static inline
 void cudaMemInit(T *ptr, T value, size_t size, cudaStream_t &stream) {
     DEBUG_HANDLE_ERROR(cudaMemsetAsync(ptr, value, size * sizeof(T), stream));
@@ -160,11 +160,11 @@ void cudaMemInit(T *ptr, T value, size_t size, cudaStream_t &stream) {
 
 class CudaCustomAllocator {
 
-    typedef unsigned char BYTE;
+    using byte_t = unsigned char;
 
-    const static unsigned GUARD_SIZE = 4;
-    const static BYTE GUARD_VALUE = 145;
-    const static int ALLOC_RETRY = 500;
+    static const unsigned GUARD_SIZE =   4;
+    static const byte_t GUARD_VALUE  = 145;
+    static const int ALLOC_RETRY     = 500;
 
     public:
 
@@ -174,47 +174,42 @@ class CudaCustomAllocator {
 
         private:
 
-        Alloc *prev, *next;
-        BYTE *ptr;
+        byte_t *ptr;
         size_t size;
-        bool free;
-        cudaEvent_t readyEvent; //Event record used for auto free
-        bool freeWhenReady;
-
+        Alloc *prev, *next;
+        bool free, freeWhenReady;
+        cudaEvent_t readyEvent;  // Event record used for auto free
 
         #ifdef CUSTOM_ALLOCATOR_MEMGUARD
-        BYTE *guardPtr;
+        byte_t *guardPtr;
         void *backtrace[20];
         size_t backtraceSize;
         #endif
 
-        Alloc():
-        prev(NULL), next(NULL),
-        ptr(NULL),
-        size(0),
-        free(0),
-        readyEvent(0),
-        freeWhenReady(false)
+        Alloc(size_t size = 0, bool free = false):
+            ptr(nullptr), prev(nullptr), next(nullptr),
+            size(size), free(free), readyEvent(nullptr), freeWhenReady(false)
         {}
 
         ~Alloc() {
-            prev = NULL;
-            next = NULL;
-            ptr = NULL;
-
-            if (readyEvent != 0)
+            prev = nullptr;
+            next = nullptr;
+            ptr  = nullptr;
+            if (readyEvent)
                 DEBUG_HANDLE_ERROR(cudaEventDestroy(readyEvent));
         }
 
         public:
 
-        inline BYTE *getPtr() { return ptr; }
+        inline byte_t *getPtr() { return ptr; }
 
-        inline size_t getSize() { return size; }
+        inline size_t getSize() const { return size; }
 
-        inline bool isFree() { return free; }
+        inline bool isFree() const { return free; }
 
-        inline cudaEvent_t getReadyEvent() { return readyEvent; }
+        inline void doFreeWhenReady() const { freeWhenReady = true; }
+
+        inline cudaEvent_t getReadyEvent() const { return readyEvent; }
 
         inline void markReadyEvent(cudaStream_t stream = 0) {
             //TODO add a debug warning if event already set
@@ -222,7 +217,6 @@ class CudaCustomAllocator {
             DEBUG_HANDLE_ERROR(cudaEventRecord(readyEvent, stream));
         }
 
-        inline     void doFreeWhenReady() { freeWhenReady = true; }
     };
 
     private:
@@ -235,58 +229,43 @@ class CudaCustomAllocator {
 
     pthread_mutex_t mutex;
 
-
-    //Look for the first suited space
+    // Look for the first suited space
     inline Alloc *_getFirstSuitedFree(size_t size) {
-        Alloc *a = first;
-        //If not the last and too small or not free go to next allocation region
-        while (a != NULL && (a->size <= size || ! a->free ) )
-            a = a->next;
-
-        return a;
+        for (Alloc *a = first; a; a = a->next)
+            if (a->free && a->size >= size)
+                return a;
+        return nullptr;
     }
 
-    //Free allocs with recorded ready events
+    // Free allocs with recorded ready events
     inline bool _syncReadyEvents() {
-        bool somethingReady(false);
-        Alloc *a = first;
-
-        while (a) {
-            if (!a->free && a->freeWhenReady && a->readyEvent != 0) {
+        bool anything_ready = false;
+        for (Alloc *a = first; a; a = a->next) {
+            if (!a->free && a->freeWhenReady && a->readyEvent) {
                 DEBUG_HANDLE_ERROR(cudaEventSynchronize(a->readyEvent));
-                somethingReady = true;
+                anything_ready = true;
             }
-
-            a = a->next;
         }
-
-        return somethingReady;
+        return anything_ready;
     }
 
-    //Free allocs with recorded ready events
+    // Free allocs with recorded ready events
     inline bool _freeReadyAllocs() {
-        bool somethingFreed(false);
-        Alloc *next = first;
-        Alloc *curr;
-
-        while (next) {
-            curr = next;
-            next = curr->next;
-
-            if (!curr->free && curr->freeWhenReady && curr->readyEvent != 0) {
-                cudaError_t e = cudaEventQuery(curr->readyEvent);
-
+        bool anything_freed = false;
+        for (Alloc *curr = first, *next = curr->next; next; curr = next, next = curr->next) {
+            if (!curr->free && curr->freeWhenReady && curr->readyEvent) {
+                const cudaError_t e = cudaEventQuery(curr->readyEvent);
                 if (e == cudaSuccess) {
                     _free(curr);
-                    next = first; //List modified, restart
-                    somethingFreed = true;
+                    next = first;  // List modified, restart
+                    anything_freed = true;
                 } else if (e != cudaErrorNotReady) {
                     _printState();
                     HandleError(e, __FILE__, __LINE__ );
                 }
             }
         }
-        return somethingFreed;
+        return anything_freed;
     }
 
     inline size_t _getTotalFreeSpace() {
@@ -335,13 +314,10 @@ class CudaCustomAllocator {
     inline size_t _getLargestContinuousFreeSpace() {
         if (cache) {
             size_t largest = 0;
-            Alloc *a = first;
-
-            while (a) {
-                if (a->free && a->size > largest) { largest = a->size; }
-                a = a->next;
+            for (Alloc *a = first; a; a = a->next) {
+                if (a->free && a->size > largest)
+                    largest = a->size;
             }
-
             return largest;
         } else {
             return _getTotalFreeSpace();
@@ -350,22 +326,17 @@ class CudaCustomAllocator {
 
     inline void _printState() {
         size_t total = 0;
-        Alloc *a = first;
-
-        while (a) {
-            total += a->size;
+        for (Alloc *a = first; a; a = a->next) {
             if (a->free) {
-                printf("[%luB] ", (unsigned long) a->size);
+                printf("[%luB] ", a->size);
             } else if (a->freeWhenReady) {
-                printf("<%luB> ", (unsigned long) a->size);
+                printf("<%luB> ", a->size);
             } else {
-                printf("(%luB) ", (unsigned long) a->size);
+                printf("(%luB) ", a->size);
             }
-
-            a = a->next;
+            total += a->size;
         }
-
-        printf("= %luB\n", (unsigned long) total);
+        printf("= %luB\n", total);
         fflush(stdout);
     }
 
@@ -375,18 +346,18 @@ class CudaCustomAllocator {
 
         #ifdef CUSTOM_ALLOCATOR_MEMGUARD
         size_t guardCount = a->size - (a->guardPtr - a->ptr);
-        BYTE *guards = new BYTE[guardCount];
+        byte_t *guards = new byte_t[guardCount];
         cudaStream_t stream = 0;
-        cudaCpyDeviceToHost<BYTE>(a->guardPtr, guards, guardCount, stream);
+        cudaCpyDeviceToHost<byte_t>(a->guardPtr, guards, guardCount, stream);
         DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
         for (int i = 0; i < guardCount; i ++)
             if (guards[i] != GUARD_VALUE) {
-                fprintf (stderr, "ERROR: CORRUPTED BYTE GUARDS DETECTED\n");
+                fprintf (stderr, "ERROR: CORRUPTED byte_t GUARDS DETECTED\n");
 
                 char ** messages = backtrace_symbols(a->backtrace, a->backtraceSize);
 
                 // skip first stack frame (points here)
-                for (int i = 1; i < a->backtraceSize && messages != NULL; ++i) {
+                for (int i = 1; i < a->backtraceSize && messages; ++i) {
                     char *mangled_name = 0, *offset_begin = 0, *offset_end = 0;
 
                     // find parantheses and +address offset surrounding mangled name
@@ -463,7 +434,7 @@ class CudaCustomAllocator {
             }
 
             // Next neighbor is free, concatenate
-            if (a->next != NULL && a->next->free) {
+            if (a->next && a->next->free) {
                 //Resize and set pointer
                 a->size += a->next->size;
 
@@ -479,7 +450,7 @@ class CudaCustomAllocator {
             }
         } else {
             DEBUG_HANDLE_ERROR(cudaFree(a->ptr ));
-            a->ptr = NULL;
+            a->ptr = nullptr;
 
             if (a->prev) {
                 a->prev->next = a->next;
@@ -493,44 +464,24 @@ class CudaCustomAllocator {
         }
     };
 
-    void _setup() {
-        first = new Alloc();
-        first->prev = NULL;
-        first->next = NULL;
-        first->size = totalSize;
-        first->free = true;
-
-        if (totalSize > 0) {
-            HANDLE_ERROR(cudaMalloc((void**) &first->ptr, totalSize));
-            cache = true;
-        } else {
-            cache = false;
-        }
-    }
-
     void _clear() {
-        if (first->ptr) DEBUG_HANDLE_ERROR(cudaFree(first->ptr ));
-
-        first->ptr = NULL;
-
-        Alloc *a = first, *nL;
-
-        while (a) {
-            nL = a->next;
+        DEBUG_HANDLE_ERROR(cudaFree(first->ptr));
+        first->ptr = nullptr;
+        for (Alloc *a = first, *nL = a->next; a; a = nL, nL = a->next) {
             delete a;
-            a = nL;
         }
     }
 
     public:
 
-    CudaCustomAllocator(size_t size, size_t alignmentSize):
-    totalSize(size), alignmentSize(alignmentSize), first(0), cache(true) {
-        _setup();
-
-        int mutex_error = pthread_mutex_init(&mutex, NULL);
-
-        if (mutex_error != 0) {
+    CudaCustomAllocator(size_t size, size_t alignment):
+        totalSize(size), alignmentSize(alignment),
+        first(new Alloc(size, true)), cache(size > 0), mutex()
+    {
+        if (cache)
+            HANDLE_ERROR(cudaMalloc((void**) &first->ptr, totalSize));
+        const int mutex_error = pthread_mutex_init(&mutex, nullptr);
+        if (mutex_error) {
             printf("ERROR: Mutex could not be created for alloactor. CODE: %d.\n", mutex_error);
             fflush(stdout);
             CRITICAL(ERR_CAMUX);
@@ -538,15 +489,17 @@ class CudaCustomAllocator {
     }
 
     void resize(size_t size) {
-        Lock ml(&mutex);
+        Lock ml (&mutex);
         _clear();
         totalSize = size;
-        _setup();
+        first = new Alloc(totalSize, true);
+        if (cache = totalSize > 0) {
+            HANDLE_ERROR(cudaMalloc((void**) &first->ptr, totalSize));
+        }
     }
 
-
     inline Alloc* alloc(size_t requestedSize) {
-        Lock ml(&mutex);
+        Lock ml (&mutex);
 
         _freeReadyAllocs();
 
@@ -564,19 +517,20 @@ class CudaCustomAllocator {
         fprintf(stderr, " %.4f", 100.0 * (float) size / (float) totalSize);
         #endif
 
-        Alloc *newAlloc(NULL);
+        Alloc *newAlloc = nullptr;
 
         if (cache) {
-            size = alignmentSize * ceilf((float) size / (float) alignmentSize); //To prevent miss-aligned memory
+            // To prevent misaligned memory
+            size = alignmentSize * ceilf((float) size / (float) alignmentSize);
 
             Alloc *curAlloc = _getFirstSuitedFree(size);
 
-            //If out of memory
+            // If out of memory
             if (!curAlloc) {
                 #ifdef DEBUG_CUDA
                 size_t spaceDiff = _getTotalFreeSpace();
                 #endif
-                //Try to recover before throwing error
+                // Try to recover before throwing error
                 for (int i = 0; i <= ALLOC_RETRY; i++) {
                     if (_syncReadyEvents() && _freeReadyAllocs()) {
                         curAlloc = _getFirstSuitedFree(size); //Is there space now?
@@ -608,19 +562,18 @@ class CudaCustomAllocator {
                 curAlloc->free = false;
                 newAlloc = curAlloc;
             } else {  // Or curAlloc->size is smaller than size
-                //Setup new pointer
-                newAlloc = new Alloc();
+                // Setup new pointer
+                newAlloc = new Alloc(size, false);
                 newAlloc->next = curAlloc;
                 newAlloc->ptr = curAlloc->ptr;
-                newAlloc->size = size;
-                newAlloc->free = false;
 
                 // Modify old pointer
-                curAlloc->ptr = &(curAlloc->ptr[size]);
+                curAlloc->ptr = curAlloc->ptr + size;
                 curAlloc->size -= size;
 
-                //Insert new allocation region into chain
-                if (!curAlloc->prev) { //If the first allocation region
+                // Insert new allocation region into chain
+                if (!curAlloc->prev) {
+                    // If the first allocation region
                     first = newAlloc;
                 } else {
                     curAlloc->prev->next = newAlloc;
@@ -630,9 +583,7 @@ class CudaCustomAllocator {
                 curAlloc->prev = newAlloc;
             }
         } else {
-            newAlloc = new Alloc();
-            newAlloc->size = size;
-            newAlloc->free = false;
+            newAlloc = new Alloc(size);
             DEBUG_HANDLE_ERROR(cudaMalloc((void**) &newAlloc->ptr, size));
 
             //Just add to start by replacing first
@@ -645,7 +596,7 @@ class CudaCustomAllocator {
         newAlloc->backtraceSize = backtrace(newAlloc->backtrace, 20);
         newAlloc->guardPtr = newAlloc->ptr + requestedSize;
         cudaStream_t stream = 0;
-        cudaMemInit<BYTE>(newAlloc->guardPtr, GUARD_VALUE, size - requestedSize, stream); //TODO switch to specialized stream
+        cudaMemInit<byte_t>(newAlloc->guardPtr, GUARD_VALUE, size - requestedSize, stream); //TODO switch to specialized stream
         DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
         #endif
 
@@ -654,7 +605,7 @@ class CudaCustomAllocator {
 
     ~CudaCustomAllocator() {
         {
-            Lock ml(&mutex);
+            Lock ml (&mutex);
             _clear();
         }
         pthread_mutex_destroy(&mutex);
@@ -663,48 +614,45 @@ class CudaCustomAllocator {
     // Thread-safe wrapper functions
 
     inline void free(Alloc* a) {
-        Lock ml(&mutex);
+        Lock ml (&mutex);
         _free(a);
     }
 
     inline void syncReadyEvents() {
-        Lock ml(&mutex);
+        Lock ml (&mutex);
         _syncReadyEvents();
     }
 
     inline void freeReadyAllocs() {
-        Lock ml(&mutex);
+        Lock ml (&mutex);
         _freeReadyAllocs();
     }
 
     size_t getTotalFreeSpace() {
-        Lock ml(&mutex);
-        size_t size = _getTotalFreeSpace();
-        return size;
+        Lock ml (&mutex);
+        return _getTotalFreeSpace();
     }
 
     size_t getTotalUsedSpace() {
-        Lock ml(&mutex);
-        size_t size = _getTotalUsedSpace();
-        return size;
+        Lock ml (&mutex);
+        return _getTotalUsedSpace();
     }
 
     size_t getNumberOfAllocs() {
-        Lock ml(&mutex);
-        size_t size = _getNumberOfAllocs();
-        return size;
+        Lock ml (&mutex);
+        return _getNumberOfAllocs();
     }
 
     size_t getLargestContinuousFreeSpace() {
-        Lock ml(&mutex);
-        size_t size = _getLargestContinuousFreeSpace();
-        return size;
+        Lock ml (&mutex);
+        return _getLargestContinuousFreeSpace();
     }
 
     void printState() {
-        Lock ml(&mutex);
+        Lock ml (&mutex);
         _printState();
     }
+
 };
 
 template <typename T, bool CustomAlloc=true>
@@ -933,7 +881,7 @@ class CudaGlobalPtr {
     inline void cp_to_device() {
         #ifdef DEBUG_CUDA
         if (d_ptr == 0) printf("DEBUG_WARNING: cp_to_device() called before allocation.\n");
-        if (h_ptr == 0) printf("DEBUG_WARNING: NULL host pointer in cp_to_device().\n");
+        if (h_ptr == 0) printf("DEBUG_WARNING: nullptr host pointer in cp_to_device().\n");
         #endif
         cudaCpyHostToDevice<T>(h_ptr, d_ptr, size, stream);
     }
@@ -994,7 +942,7 @@ class CudaGlobalPtr {
     inline void cp_to_host() {
         #ifdef DEBUG_CUDA
         if (!d_ptr) printf("DEBUG_WARNING: cp_to_host() called before device allocation.\n");
-        if (!h_ptr) printf("DEBUG_WARNING: NULL host pointer in cp_to_host().\n");
+        if (!h_ptr) printf("DEBUG_WARNING: nullptr host pointer in cp_to_host().\n");
         #endif
         cudaCpyDeviceToHost<T>(d_ptr, h_ptr, size, stream);
     }
@@ -1005,7 +953,7 @@ class CudaGlobalPtr {
     inline void cp_to_host(size_t thisSize) {
         #ifdef DEBUG_CUDA
         if (!d_ptr) printf("DEBUG_WARNING: cp_to_host(thisSize) called before device allocation.\n");
-        if (!h_ptr) printf("DEBUG_WARNING: NULL host pointer in cp_to_host(thisSize).\n");
+        if (!h_ptr) printf("DEBUG_WARNING: nullptr host pointer in cp_to_host(thisSize).\n");
         #endif
         cudaCpyDeviceToHost<T>(d_ptr, h_ptr, thisSize, stream);
     }
@@ -1016,7 +964,7 @@ class CudaGlobalPtr {
     inline void cp_to_host(T* hstPtr, size_t thisSize) {
         #ifdef DEBUG_CUDA
         if (!d_ptr) printf("DEBUG_WARNING: cp_to_host(hstPtr, thisSize) called before device allocation.\n");
-        if (!hstPtr) printf("DEBUG_WARNING: NULL host pointer in cp_to_host(hstPtr, thisSize).\n");
+        if (!hstPtr) printf("DEBUG_WARNING: nullptr host pointer in cp_to_host(hstPtr, thisSize).\n");
         #endif
         cudaCpyDeviceToHost<T>(d_ptr, hstPtr, thisSize, stream);
     }
@@ -1027,7 +975,7 @@ class CudaGlobalPtr {
     inline void cp_to_host_on_stream(cudaStream_t s) {
         #ifdef DEBUG_CUDA
         if (!d_ptr) printf("DEBUG_WARNING: cp_to_host_on_stream(s) called before device allocation.\n");
-        if (!h_ptr) printf("DEBUG_WARNING: NULL host pointer in cp_to_host_on_stream(s).\n");
+        if (!h_ptr) printf("DEBUG_WARNING: nullptr host pointer in cp_to_host_on_stream(s).\n");
         #endif
         cudaCpyDeviceToHost<T>(d_ptr, h_ptr, size, s);
     }
@@ -1104,7 +1052,7 @@ class CudaGlobalPtr {
     inline void free_device() {
         #ifdef DEBUG_CUDA
         if (d_ptr == 0)
-            printf("DEBUG_WARNING: Free device memory was called on NULL pointer in free_device().\n");
+            printf("DEBUG_WARNING: Free device memory was called on nullptr pointer in free_device().\n");
         #endif
         d_do_free = false;
         if (CustomAlloc) {
@@ -1112,7 +1060,7 @@ class CudaGlobalPtr {
                 alloc->markReadyEvent(stream);
             alloc->doFreeWhenReady();
 
-            alloc = NULL;
+            alloc = nullptr;
         } else {
             DEBUG_HANDLE_ERROR(cudaFree(d_ptr));
         }
@@ -1125,7 +1073,7 @@ class CudaGlobalPtr {
     inline void free_host() {
         #ifdef DEBUG_CUDA
         if (h_ptr == 0) {
-            printf("DEBUG_ERROR: free_host() called on NULL pointer.\n");
+            printf("DEBUG_ERROR: free_host() called on nullptr pointer.\n");
             exit(EXIT_FAILURE );
         }
         #endif
@@ -1160,6 +1108,7 @@ class CudaGlobalPtr {
     inline ~CudaGlobalPtr() {
         free_if_set();
     }
+
 };
 
 template <typename T>
@@ -1168,7 +1117,7 @@ class cudaStager {
     public:
 
     CudaGlobalPtr<T> AllData;
-    size_t size; // size of allocated host-space (AllData.size dictates the amount of memory copied to/from the device)
+    size_t size;  // size of allocated host-space (AllData.size dictates the amount of memory copied to/from the device)
 
     /*======================================================
                 CONSTRUCTORS WITH ALLOCATORS
@@ -1210,6 +1159,7 @@ class cudaStager {
         }
         AllData.size = temp_size;
     }
+
     void prepare_host(size_t alloc_size) {
         if (size == 0) {
             printf("trying to device-alloc a stager with size=0");
@@ -1282,8 +1232,6 @@ class cudaStager {
 
         AllData.size += input.size;
     }
-
-
 
     void cp_to_device() {
         AllData.cp_to_device();

@@ -33,7 +33,6 @@
 #define	GATHERGPUTIMINGS(timer)
 #endif
 
-#define CTICTOC(timer, timing, block) CTIC(timer, timing); { block; } CTOC(timer, timing);
 #define GTICTOC(timer, timing, block) GTIC(timer, timing); { block; } GTOC(timer, timing);
 
 class relion_timer {

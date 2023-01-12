@@ -36,9 +36,6 @@
 
 #include "src/acc/cuda/cuda_autopicker.h"
 
-#undef CTICTOC
-#define CTICTOC(s, block) CTIC(timer, s); block; CTOC(timer, s);
-
 // Z-score of x given mean mu and standard deviation sigma
 inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
     return (x - mu) / sigma;
@@ -125,7 +122,7 @@ void AutoPickerCuda::run() {
     }
 
     if (!basePckr->do_read_fom_maps) {
-        CTICTOC("setupProjectors", {
+        CTICTOC(timer, "setupProjectors", {
         for (int iref = 0; iref < basePckr->Mrefs.size(); iref++) {
             projectors[iref].setMdlDim(
                 basePckr->PPref[iref].data.xdim, basePckr->PPref[iref].data.ydim, basePckr->PPref[iref].data.zdim,
@@ -184,7 +181,7 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     d_Fcov.deviceAlloc();
 
     int Bsize;
-    CTICTOC("PRE-multi_0", ({
+    CTICTOC(timer, "PRE-multi_0", ({
     Bsize = ceilf((float) d_Fmic.getSize() / (float) BLOCK_SIZE);
     cuda_kernel_convol_B<<<Bsize, BLOCK_SIZE>>>(
         d_Fmic.getAccPtr(), d_Fmsk.getAccPtr(), d_Fcov.getAccPtr(), d_Fmic.getSize()
@@ -192,13 +189,13 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
     }));
 
-    CTICTOC("PRE-window_0", ({
+    CTICTOC(timer, "PRE-window_0", ({
     windowFourierTransform2(
         d_Fcov, cudaTransformer2.fouriers, x, y, 1, workSize / 2 + 1, workSize, 1
     );
     }));
 
-    CTICTOC("PRE-Transform_0", ({
+    CTICTOC(timer, "PRE-Transform_0", ({
     cudaTransformer2.backward();
     }));
 
@@ -209,16 +206,16 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     );
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
 
-    CTICTOC("PRE-multi_1", ({
+    CTICTOC(timer, "PRE-multi_1", ({
     cuda_kernel_multi<XFLOAT><<<Bsize, BLOCK_SIZE>>>(
         cudaTransformer2.reals.getAccPtr(), cudaTransformer2.reals.getAccPtr(),
         d_Mstddev.getAccPtr(), (XFLOAT) -1, cudaTransformer2.reals.getSize());
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
     }));
 
-    CTICTOC("PRE-CenterFFT_0", ({
+    CTICTOC(timer, "PRE-CenterFFT_0", ({
     runCenterFFT(
-        cudaTransformer2.reals, (int) cudaTransformer2.xSize, (int) cudaTransformer2.ySize,
+        cudaTransformer2.reals, (int) cudaTransformer2.sizer[0], (int) cudaTransformer2.sizer[1],
         false, 1
     );
     }));
@@ -226,7 +223,7 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     /// TODO: remove the need for this
     cudaTransformer2.reals.cpOnAcc(d_Mmean.getDevicePtr());
 
-    CTICTOC("PRE-multi_2", ({
+    CTICTOC(timer, "PRE-multi_2", ({
     Bsize = ((int) ceilf((float) d_Fmsk.getSize() / (float) BLOCK_SIZE));
     cuda_kernel_convol_A<<<Bsize, BLOCK_SIZE>>>(
         d_Fmsk.getAccPtr(), d_Fmic2.getAccPtr(), d_Fcov.getAccPtr(), d_Fmsk.getSize()
@@ -234,17 +231,17 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
     }));
 
-    CTICTOC("PRE-window_1", ({
+    CTICTOC(timer, "PRE-window_1", ({
     windowFourierTransform2(
         d_Fcov, cudaTransformer2.fouriers, x, y, 1, workSize / 2 + 1, workSize, 1
     );
     }));
 
-    CTICTOC("PRE-Transform_1", ({
+    CTICTOC(timer, "PRE-Transform_1", ({
     cudaTransformer2.backward();
     }));
 
-    CTICTOC("PRE-multi_3", ({
+    CTICTOC(timer, "PRE-multi_3", ({
     Bsize = ((int) ceilf((float) d_Mstddev.getSize() / (float) BLOCK_SIZE));
     cuda_kernel_finalizeMstddev<<<Bsize, BLOCK_SIZE>>>(
         d_Mstddev.getAccPtr(), cudaTransformer2.reals.getAccPtr(), normfft, d_Mstddev.getSize()
@@ -252,7 +249,7 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
     }));
 
-    CTICTOC("PRE-CenterFFT_1", ({
+    CTICTOC(timer, "PRE-CenterFFT_1", ({
     runCenterFFT(
         d_Mstddev, (int) workSize, (int) workSize, false, 1
     );
@@ -285,10 +282,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #ifdef TIMING
     basePckr->timer.tic(basePckr->TIMING_A6);
     #endif
-    CTICTOC("readMicrograph", {
+    CTICTOC(timer, "readMicrograph", {
     Imic.read(fn_mic);
     });
-    CTICTOC("setXmippOrigin_0", {
+    CTICTOC(timer, "setXmippOrigin_0", {
     Imic().setXmippOrigin();
     });
     #ifdef TIMING
@@ -314,11 +311,11 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     }
 
     if (!basePckr->do_read_fom_maps) {
-        CTICTOC("setSize_micTr", {
+        CTICTOC(timer, "setSize_micTr", {
         micTransformer.setSize(basePckr->micrograph_size, basePckr->micrograph_size, 1, 1);
         });
 
-        CTICTOC("setSize_cudaTr", {
+        CTICTOC(timer, "setSize_cudaTr", {
         cudaTransformer1.setSize(basePckr->workSize,basePckr->workSize, 1, Npsi, FFTW_BACKWARD);
         });
     }
@@ -342,12 +339,12 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     basePckr->timer.tic(basePckr->TIMING_A7);
     #endif
     const auto stats = [&] () -> Stats<RFLOAT> {
-        CTICTOC("computeStats", ({ return computeStats(Imic()); }));
+        CTICTOC(timer, "computeStats", ({ return computeStats(Imic()); }));
     }();
     #ifdef TIMING
     basePckr->timer.toc(basePckr->TIMING_A7);
     #endif
-    CTICTOC("middlePassFilter", ({
+    CTICTOC(timer, "middlePassFilter", ({
     for (long int n = 0; n < Imic().size(); n++) {
         // Remove pixel values that are too far away from the mean
         if (abs(Z(Imic()[n], stats.avg, stats.stddev)) > basePckr->outlier_removal_zscore)
@@ -361,11 +358,11 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         basePckr->micrograph_xsize != basePckr->micrograph_size ||
         basePckr->micrograph_ysize != basePckr->micrograph_size
     ) {
-        CTICTOC("rewindow", ({
+        CTICTOC(timer, "rewindow", ({
         // Window non-square micrographs to be a square with the largest side
         rewindow(Imic, basePckr->micrograph_size);
         }));
-        CTICTOC("gaussNoiseOutside", ({
+        CTICTOC(timer, "gaussNoiseOutside", ({
         // Fill region outside the original window with white Gaussian noise to prevent all-zeros in Mstddev
         FOR_ALL_ELEMENTS_IN_ARRAY2D(Imic(), i, j) {
             if (
@@ -382,7 +379,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #ifdef TIMING
     basePckr->timer.tic(basePckr->TIMING_A8);
     #endif
-    CTICTOC("CTFread", ({
+    CTICTOC(timer, "CTFread", ({
     // Read in the CTF information if needed
     if (basePckr->do_ctf) {
         // Search for this micrograph in the metadata table
@@ -409,10 +406,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #ifdef TIMING
     basePckr->timer.tic(basePckr->TIMING_A9);
     #endif
-    CTICTOC("mccfResize", ({
+    CTICTOC(timer, "mccfResize", ({
     Mccf_best.resize(basePckr->workSize,basePckr->workSize);
     }));
-    CTICTOC("mpsiResize", ({
+    CTICTOC(timer, "mpsiResize", ({
     Mpsi_best.resize(basePckr->workSize,basePckr->workSize);
     }));
     #ifdef TIMING
@@ -427,7 +424,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     #endif
     RFLOAT normfft = (RFLOAT) (basePckr->micrograph_size * basePckr->micrograph_size) / (RFLOAT) basePckr->nr_pixels_circular_mask;
     if (basePckr->do_read_fom_maps) {
-        CTICTOC("readFromFomMaps_0", {
+        CTICTOC(timer, "readFromFomMaps_0", {
         FileName fn_tmp = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_stddevNoise.spi";
         Image<RFLOAT> It;
         It.read(fn_tmp);
@@ -457,17 +454,17 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
          *
          */
 
-        CTICTOC("Imic_insert", ({
+        CTICTOC(timer, "Imic_insert", ({
         std::copy_n(Imic.data.begin(), Imic.data.size(), micTransformer.reals.getHostPtr());
         micTransformer.reals.cpToDevice();
         }));
 
-        CTICTOC("runCenterFFT_0", ({
-        runCenterFFT(micTransformer.reals, micTransformer.xSize, micTransformer.ySize, true, 1);
+        CTICTOC(timer, "runCenterFFT_0", ({
+        runCenterFFT(micTransformer.reals, micTransformer.sizer[0], micTransformer.sizer[1], true, 1);
         }));
 
         int FMultiBsize;
-        CTICTOC("FourierTransform_0", ({
+        CTICTOC(timer, "FourierTransform_0", ({
         micTransformer.forward();
         FMultiBsize = ((int) ceilf((float) micTransformer.fouriers.getSize() * 2 / (float) BLOCK_SIZE));
         CudaKernels::cuda_kernel_multi<XFLOAT><<<FMultiBsize, BLOCK_SIZE>>>(
@@ -479,11 +476,11 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }));
 
         if (basePckr->highpass > 0.0) {
-            CTICTOC("highpass", ({
+            CTICTOC(timer, "highpass", ({
             micTransformer.fouriers.streamSync();
             lowPassFilterMapGPU(
                 micTransformer.fouriers, (size_t) 1,
-                micTransformer.yFSize, micTransformer.xFSize,
+                micTransformer.sizef[1], micTransformer.sizef[0],
                 Xsize(Imic()),
                 basePckr->lowpass, basePckr->highpass, basePckr->angpix, 2, true
             ); //false = lowpass, true=highpass
@@ -494,21 +491,21 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }
 
         AccPtr<acc::Complex> Ftmp (allocator);
-        CTICTOC("F_cp", ({
+        CTICTOC(timer, "F_cp", ({
         Ftmp.setSize(micTransformer.fouriers.getSize());
         Ftmp.deviceAlloc();
         micTransformer.fouriers.cpOnAcc(Ftmp.getDevicePtr());
         }));
 
         // Also calculate the FFT of the squared micrograph
-        CTICTOC("SquareImic", ({
+        CTICTOC(timer, "SquareImic", ({
         cuda_kernel_square<<<FMultiBsize, BLOCK_SIZE>>>(
             micTransformer.reals.getAccPtr(), micTransformer.reals.getSize()
         );
         LAUNCH_HANDLE_ERROR(cudaGetLastError());
         }));
 
-        CTICTOC("FourierTransform_1", ({
+        CTICTOC(timer, "FourierTransform_1", ({
         micTransformer.forward();
         CudaKernels::cuda_kernel_multi<XFLOAT><<<FMultiBsize, BLOCK_SIZE>>>(
             (XFLOAT*) micTransformer.fouriers.getAccPtr(),
@@ -519,7 +516,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }));
 
         // The following calculate mu and sig under the solvent area at every position in the micrograph
-        CTICTOC("calculateStddevAndMeanUnderMask", ({
+        CTICTOC(timer, "calculateStddevAndMeanUnderMask", ({
 
         const size_t workSize2 = basePckr->workSize * basePckr->workSize;
         d_Mstddev.setSize(workSize2);
@@ -550,7 +547,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             calculateStddevAndMeanUnderMask(
                 Ftmp, micTransformer.fouriers, d_Fmsk2, basePckr->nr_pixels_avg_mask,
                 d_Mstddev2, d_Mavg,
-                micTransformer.xFSize, micTransformer.yFSize,
+                micTransformer.sizef[0], micTransformer.sizef[1],
                 basePckr->micrograph_size, basePckr->workSize
             );
 
@@ -582,7 +579,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         calculateStddevAndMeanUnderMask(
             Ftmp, micTransformer.fouriers, d_Fmsk,
             basePckr->nr_pixels_circular_invmask, d_Mstddev, d_Mmean,
-            micTransformer.xFSize, micTransformer.yFSize,
+            micTransformer.sizef[0], micTransformer.sizef[1],
             basePckr->micrograph_size, basePckr->workSize
         );
 
@@ -612,7 +609,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }));
 
         // From now on use downsized Fmic, as the cross-correlation with the references can be done at lower resolution
-        CTICTOC("windowFourierTransform_0", ({
+        CTICTOC(timer, "windowFourierTransform_0", ({
         d_Fmic.setSize((basePckr->workSize / 2 + 1) * basePckr->workSize);
         d_Fmic.deviceAlloc();
         windowFourierTransform2(
@@ -623,7 +620,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         }));
 
         if (basePckr->do_write_fom_maps) {
-            CTICTOC("writeToFomMaps", ({
+            CTICTOC(timer, "writeToFomMaps", ({
             // TMP output
             FileName fn_tmp = basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_stddevNoise.spi";
             Image<RFLOAT>(basePckr->autopick_helical_segments ? Mstddev2 : Mstddev).write(fn_tmp);
@@ -636,7 +633,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     // Now start looking for the peaks of all references
     // Clear the output vector with all peaks
     std::vector<Peak> peaks;
-    CTICTOC("initPeaks", ({
+    CTICTOC(timer, "initPeaks", ({
     peaks.clear();
     }));
     #ifdef TIMING
@@ -684,7 +681,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     for (int iref = 0; iref < basePckr->Mrefs.size(); iref++) {
 
-        CTICTOC("OneReference", ({
+        CTICTOC(timer, "OneReference", ({
 
         RFLOAT expected_Pratio; // the expectedFOM for this (ctf-corrected) reference
         if (basePckr->do_read_fom_maps) {
@@ -692,7 +689,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             basePckr->timer.tic(basePckr->TIMING_B2);
             #endif
             if (!basePckr->autopick_helical_segments) {
-                CTICTOC("readFromFomMaps", ({
+                CTICTOC(timer, "readFromFomMaps", ({
                 const FileName fn_mccf = FileName::compose(basePckr->getOutputRootName(fn_mic) + "_" + basePckr->fn_out + "_ref", iref, "_bestCCF.spi");
                 const auto image_best_ccf = Image<RFLOAT>::from_filename(fn_mccf);
                 // Retrieve expected_Pratio from the image's header
@@ -710,7 +707,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             #ifdef TIMING
             basePckr->timer.tic(basePckr->TIMING_B3);
             #endif
-            CTICTOC("mccfInit", ({
+            CTICTOC(timer, "mccfInit", ({
             deviceInitValue(d_Mccf_best, (XFLOAT) -LARGE_NUMBER);
             }));
             AccProjectorKernel projKernel = AccProjectorKernel::makeKernel(
@@ -725,7 +722,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             #ifdef TIMING
             basePckr->timer.tic(basePckr->TIMING_B4);
             #endif
-            CTICTOC("SingleProjection", ({
+            CTICTOC(timer, "SingleProjection", ({
             dim3 blocks((int) ceilf((float) FauxStride / (float) BLOCK_SIZE), 1);
             if (basePckr->do_ctf) {
                 cuda_kernel_rotateAndCtf<<<blocks, BLOCK_SIZE>>>(
@@ -746,13 +743,13 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
              *    -------------------------------------------------------------------
              */
 
-            CTICTOC("PREP_CALCS", ({
+            CTICTOC(timer, "PREP_CALCS", ({
 
             #ifdef TIMING
             basePckr->timer.tic(basePckr->TIMING_B5);
             #endif
             // Sjors 20 April 2016: The calculation for sum_ref_under_circ_mask, etc below needs to be done on original micrograph_size!
-            CTICTOC("windowFourierTransform_FP", ({
+            CTICTOC(timer, "windowFourierTransform_FP", ({
             windowFourierTransform2(
                 cudaTransformer1.fouriers, micTransformer.fouriers,
                 basePckr->workSize / 2 + 1,        basePckr->workSize,        1, // Input dimensions
@@ -760,14 +757,14 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             );
             }));
 
-            CTICTOC("inverseFourierTransform_FP", ({
+            CTICTOC(timer, "inverseFourierTransform_FP", ({
             micTransformer.backward();
             }));
 
-            CTICTOC("runCenterFFT_FP", ({
+            CTICTOC(timer, "runCenterFFT_FP", ({
             runCenterFFT(
                 micTransformer.reals,
-                (int) micTransformer.xSize, (int) micTransformer.ySize, false, 1
+                (int) micTransformer.sizer[0], (int) micTransformer.sizer[1], false, 1
             );
             }));
 
@@ -778,7 +775,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             micTransformer.reals.streamSync();
             std::copy_n(micTransformer.reals.getHostPtr(), micTransformer.reals.getSize(), Maux.begin());
 
-            CTICTOC("setXmippOrigin_FP_0", ({
+            CTICTOC(timer, "setXmippOrigin_FP_0", ({
             Maux.setXmippOrigin();
             }));
             // TODO: check whether I need CenterFFT(Maux, false)
@@ -789,10 +786,10 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             RFLOAT suma2 = 0.0;
             RFLOAT sumn = 1.0;
             MultidimArray<RFLOAT> Mctfref(basePckr->particle_size, basePckr->particle_size);
-            CTICTOC("setXmippOrigin_FP_1", ({
+            CTICTOC(timer, "setXmippOrigin_FP_1", ({
             Mctfref.setXmippOrigin();
             }));
-            CTICTOC("suma_FP", ({
+            CTICTOC(timer, "suma_FP", ({
             // only loop over smaller Mctfref, but take values from large Maux!
             FOR_ALL_ELEMENTS_IN_ARRAY2D(Mctfref, i, j) {
                 if (hypot2(i, j) < basePckr->particle_radius2) {
@@ -811,12 +808,12 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             }));
 
             // for all batches
-            CTICTOC("AllPsi", ({
+            CTICTOC(timer, "AllPsi", ({
             int startPsi(0);
             for (int psiIter = 0; psiIter < cudaTransformer1.batchIters; psiIter++) {
                 // psi-batches for possible memory-limits
 
-                CTICTOC("Projection", ({
+                CTICTOC(timer, "Projection", ({
                 dim3 blocks((int) ceilf((float) FauxStride / (float) BLOCK_SIZE), cudaTransformer1.batchSize[psiIter]);
                 if (basePckr->do_ctf) {
                     cuda_kernel_rotateAndCtf<<<blocks, BLOCK_SIZE>>>(
@@ -837,7 +834,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 LAUNCH_HANDLE_ERROR(cudaGetLastError());
                 }));
                 // Now multiply (convolve) template and micrograph to calculate the cross-correlation
-                CTICTOC("convol", ({
+                CTICTOC(timer, "convol", ({
                 dim3 blocks2((int) ceilf((float) FauxStride / (float) BLOCK_SIZE), cudaTransformer1.batchSize[psiIter]);
                 cuda_kernel_batch_convol_A<<<blocks2, BLOCK_SIZE>>>(
                     cudaTransformer1.fouriers.getAccPtr(), d_Fmic.getAccPtr(), FauxStride
@@ -845,15 +842,15 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 LAUNCH_HANDLE_ERROR(cudaGetLastError());
                 }));
 
-                CTICTOC("CudaInverseFourierTransform_1", ({
+                CTICTOC(timer, "CudaInverseFourierTransform_1", ({
                 cudaTransformer1.backward();
                 HANDLE_ERROR(cudaDeviceSynchronize());
                 }));
 
-                CTICTOC("runCenterFFT_1", ({
+                CTICTOC(timer, "runCenterFFT_1", ({
                 runCenterFFT(
                     cudaTransformer1.reals,
-                    (int) cudaTransformer1.xSize, (int) cudaTransformer1.ySize,
+                    (int) cudaTransformer1.sizer[0], (int) cudaTransformer1.sizer[1],
                     false, cudaTransformer1.batchSize[psiIter]
                 );
                 }));
@@ -862,7 +859,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
                 // ------------------------------------------------------------------
                 // So now we already had precalculated: Mdiff2 = 1/sig*Sum(X^2) - 2/sig*Sum(X) + mu^2/sig*Sum(1)
                 // Still to do (per reference): - 2/sig*Sum(AX) + 2*mu/sig*Sum(A) + Sum(A^2)
-                CTICTOC("probRatio", ({
+                CTICTOC(timer, "probRatio", ({
                 HANDLE_ERROR(cudaDeviceSynchronize());
                 dim3 PR_blocks(ceilf((float) (cudaTransformer1.reals.getSize() / cudaTransformer1.batchSize[psiIter]) / (float) PROBRATIO_BLOCK_SIZE));
                 cuda_kernel_probRatio<<<PR_blocks, PROBRATIO_BLOCK_SIZE>>>(
@@ -885,7 +882,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             #ifdef TIMING
             basePckr->timer.tic(basePckr->TIMING_B7);
             #endif
-            CTICTOC("output", ({
+            CTICTOC(timer, "output", ({
             d_Mccf_best.cpToHost();
             d_Mpsi_best.cpToHost();
             d_Mccf_best.streamSync();
@@ -898,7 +895,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             }));
 
             if (basePckr->do_write_fom_maps && !basePckr->autopick_helical_segments) {
-                CTICTOC("writeFomMaps", ({
+                CTICTOC(timer, "writeFomMaps", ({
                 Image<RFLOAT> IMccf_best (Mccf_best);
                 // Store expected_Pratio in the header of the image..
                 IMccf_best.header.setValue(EMDL::IMAGE_STATS_MAX, expected_Pratio, IMccf_best.header.size() - 1);  // Store expected_Pratio in the header of the image
@@ -941,22 +938,22 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
             #endif
             // Now that we have Mccf_best and Mpsi_best, get the peaks
             std::vector<Peak> my_ref_peaks;
-            CTICTOC("setXmippOriginX3", ({
+            CTICTOC(timer, "setXmippOriginX3", ({
             Mstddev.setXmippOrigin();
             Mmean.setXmippOrigin();
             Mccf_best.setXmippOrigin();
             Mpsi_best.setXmippOrigin();
             }));
 
-            CTICTOC("peakSearch", ({
+            CTICTOC(timer, "peakSearch", ({
             basePckr->peakSearch(Mccf_best, Mpsi_best, Mstddev, Mmean, iref, my_skip_side, my_ref_peaks, scale);
             }));
 
-            CTICTOC("peakPrune", ({
+            CTICTOC(timer, "peakPrune", ({
             basePckr->prunePeakClusters(my_ref_peaks, min_distance_pix, scale);
             }));
 
-            CTICTOC("peakInsert", ({
+            CTICTOC(timer, "peakInsert", ({
             // append the peaks of this reference to all the other peaks
             peaks.insert(peaks.end(), my_ref_peaks.begin(), my_ref_peaks.end());
             }));
@@ -1047,7 +1044,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
         basePckr->timer.tic(basePckr->TIMING_B9);
         #endif
         //Now that we have done all references, prune the list again...
-        CTICTOC("finalPeakPrune", {
+        CTICTOC(timer, "finalPeakPrune", {
         basePckr->prunePeakClusters(peaks, min_distance_pix, scale);
         });
 

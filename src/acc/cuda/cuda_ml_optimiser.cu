@@ -54,7 +54,7 @@ template __global__ void CudaKernels::cuda_kernel_translate3D<XFLOAT>(
 );
 
 template __global__ void cuda_kernel_multi<XFLOAT>(
-    XFLOAT*, XFLOAT*, XFLOAT, int
+    XFLOAT const*, XFLOAT*, XFLOAT, int
 );
 
 template __global__ void CudaKernels::cuda_kernel_multi<XFLOAT>(
@@ -99,8 +99,8 @@ void MlDeviceBundle::setupFixedSizedObjects() {
     // Can we pre-generate projector plan and corresponding euler matrices for all particles
     generateProjectionPlanOnTheFly = baseMLO->do_skip_align || baseMLO->do_skip_rotate || baseMLO->do_auto_refine || baseMLO->mymodel.orientational_prior_mode != NOPRIOR;
 
-    unsigned nr_proj = baseMLO->mymodel.PPref.size();
-    unsigned nr_bproj = baseMLO->wsum_model.BPref.size();
+    const unsigned nr_proj  = baseMLO->mymodel.PPref.size();
+    const unsigned nr_bproj = baseMLO->wsum_model.BPref.size();
 
     projectors.resize(nr_proj);
     backprojectors.resize(nr_bproj);
@@ -109,33 +109,24 @@ void MlDeviceBundle::setupFixedSizedObjects() {
                   PROJECTOR AND BACKPROJECTOR
     ======================================================*/
 
-    for (int imodel = 0; imodel < nr_proj; imodel++) {
-        projectors[imodel].setMdlDim(
-            baseMLO->mymodel.PPref[imodel].data.xdim,
-            baseMLO->mymodel.PPref[imodel].data.ydim,
-            baseMLO->mymodel.PPref[imodel].data.zdim,
-            baseMLO->mymodel.PPref[imodel].data.yinit,
-            baseMLO->mymodel.PPref[imodel].data.zinit,
-            baseMLO->mymodel.PPref[imodel].r_max,
-            baseMLO->mymodel.PPref[imodel].padding_factor
+    for (int i = 0; i < nr_proj; i++) {
+        const auto& pp = baseMLO->mymodel.PPref[i];
+        projectors[i].setMdlDim(
+            pp.data.xdim, pp.data.ydim, pp.data.zdim,
+            pp.data.yinit, pp.data.zinit,
+            pp.r_max, pp.padding_factor
         );
-
-        projectors[imodel].initMdl(baseMLO->mymodel.PPref[imodel].data.data);
-
+        projectors[i].initMdl(pp.data.data);
     }
 
-    for (int imodel = 0; imodel < nr_bproj; imodel++) {
-        backprojectors[imodel].setMdlDim(
-            baseMLO->wsum_model.BPref[imodel].data.xdim,
-            baseMLO->wsum_model.BPref[imodel].data.ydim,
-            baseMLO->wsum_model.BPref[imodel].data.zdim,
-            baseMLO->wsum_model.BPref[imodel].data.yinit,
-            baseMLO->wsum_model.BPref[imodel].data.zinit,
-            baseMLO->wsum_model.BPref[imodel].r_max,
-            baseMLO->wsum_model.BPref[imodel].padding_factor
+    for (int i = 0; i < nr_bproj; i++) {
+        const auto& bp = baseMLO->wsum_model.BPref[i];
+        backprojectors[i].setMdlDim(
+            bp.data.xdim, bp.data.ydim, bp.data.zdim,
+            bp.data.yinit, bp.data.zinit,
+            bp.r_max, bp.padding_factor
         );
-
-        backprojectors[imodel].initMdl();
+        backprojectors[i].initMdl();
     }
 
     /*======================================================
@@ -148,7 +139,6 @@ void MlDeviceBundle::setupFixedSizedObjects() {
 }
 
 void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize) {
-    unsigned nr_models = baseMLO->mymodel.nr_classes;
     int devCount;
     HANDLE_ERROR(cudaGetDeviceCount(&devCount));
     if (device_id >= devCount) {
@@ -168,52 +158,48 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize) {
     allocator->resize(allocationSize);
     #endif
 
-
     /*======================================================
                         PROJECTION PLAN
     ======================================================*/
 
+    const unsigned nr_models = baseMLO->mymodel.nr_classes;
     coarseProjectionPlans.resize(nr_models, allocator);
 
+    if (generateProjectionPlanOnTheFly) return;
+    // Otherwise, if doing predefined projector plan:
     for (int iclass = 0; iclass < nr_models; iclass++) {
-        //If doing predefined projector plan at all and is this class significant
-        if (!generateProjectionPlanOnTheFly && baseMLO->mymodel.pdf_class[iclass] > 0.0) {
-            std::vector<int> exp_pointer_dir_nonzeroprior;
-            std::vector<int> exp_pointer_psi_nonzeroprior;
-            std::vector<RFLOAT> exp_directions_prior;
-            std::vector<RFLOAT> exp_psi_prior;
+        // Skip insignificant classes
+        if (baseMLO->mymodel.pdf_class[iclass] <= 0.0) continue;
+        std::vector<int> exp_pointer_dir_nonzeroprior;
+        std::vector<int> exp_pointer_psi_nonzeroprior;
+        std::vector<RFLOAT> exp_directions_prior;
+        std::vector<RFLOAT> exp_psi_prior;
 
-            long unsigned itrans_max = baseMLO->sampling.NrTranslationalSamplings() - 1;
-            long unsigned nr_idir = baseMLO->sampling.NrDirections(0, &exp_pointer_dir_nonzeroprior);
-            long unsigned nr_ipsi = baseMLO->sampling.NrPsiSamplings(0, &exp_pointer_psi_nonzeroprior );
+        const long unsigned itrans_max = baseMLO->sampling.NrTranslationalSamplings() - 1;
+        const long unsigned nr_idir    = baseMLO->sampling.NrDirections();
+        const long unsigned nr_ipsi    = baseMLO->sampling.NrPsiSamplings();
 
-            coarseProjectionPlans[iclass].setup(
-                baseMLO->sampling,
-                exp_directions_prior,
-                exp_psi_prior,
-                exp_pointer_dir_nonzeroprior,
-                exp_pointer_psi_nonzeroprior,
-                NULL, //Mcoarse_significant
-                baseMLO->mymodel.pdf_class,
-                baseMLO->mymodel.pdf_direction,
-                nr_idir,
-                nr_ipsi,
-                0, //idir_min
-                nr_idir - 1, //idir_max
-                0, //ipsi_min
-                nr_ipsi - 1, //ipsi_max
-                0, //itrans_min
-                itrans_max,
-                0, //current_oversampling
-                1, //nr_oversampled_rot
-                iclass,
-                true, //coarse
-                !IS_NOT_INV,
-                baseMLO->do_skip_align,
-                baseMLO->do_skip_rotate,
-                baseMLO->mymodel.orientational_prior_mode
-            );
-        }
+        coarseProjectionPlans[iclass].setup(
+            baseMLO->sampling,
+            exp_directions_prior,
+            exp_psi_prior,
+            exp_pointer_dir_nonzeroprior,
+            exp_pointer_psi_nonzeroprior,
+            nullptr,  // Mcoarse_significant
+            baseMLO->mymodel.pdf_class,
+            baseMLO->mymodel.pdf_direction,
+            nr_idir, nr_ipsi,
+            0 /*idir_min*/, nr_idir - 1 /*idir_max*/,
+            0 /*ipsi_min*/, nr_ipsi - 1 /*ipsi_max*/,
+            0 /*itrans_min*/, itrans_max,
+            0 /*current_oversampling*/, 1 /*nr_oversampled_rot*/,
+            iclass,
+            true,  // coarse
+            !IS_NOT_INV,
+            baseMLO->do_skip_align,
+            baseMLO->do_skip_rotate,
+            baseMLO->mymodel.orientational_prior_mode
+        );
     }
 };
 
@@ -227,11 +213,10 @@ void MlOptimiserCuda::resetData() {
         HANDLE_ERROR(cudaSetDevice(device_id));
     }
 
-    unsigned nr_classes = baseMLO->mymodel.nr_classes;
-
-    classStreams.resize(nr_classes, 0);
-    for (int i = 0; i < nr_classes; i++) {
-        HANDLE_ERROR(cudaStreamCreate(&classStreams[i])); //HANDLE_ERROR(cudaStreamCreateWithFlags(&classStreams[i],cudaStreamNonBlocking));
+    classStreams.resize(baseMLO->mymodel.nr_classes, nullptr);
+    for (cudaStream_t& stream: classStreams) {
+        HANDLE_ERROR(cudaStreamCreate(&stream));
+        // HANDLE_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
     }
 
     transformer1.clear();
@@ -283,4 +268,3 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id) {
     baseMLO->timer.toc(baseMLO->TIMING_ESP_THR);
     #endif
 }
-

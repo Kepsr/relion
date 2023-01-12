@@ -1321,35 +1321,34 @@ RFLOAT HealpixSampling::getAngularSampling(int adaptive_oversampling) {
 
 
 long int HealpixSampling::NrDirections(
-    int oversampling_order, const std::vector<int> *pointer_dir_nonzeroprior
+    int oversampling_order, const std::vector<int> *dir_nonzeroprior
 ) {
-    long int mysize = pointer_dir_nonzeroprior != NULL && (*pointer_dir_nonzeroprior).size() > 0 ?
-        (*pointer_dir_nonzeroprior).size() : rot_angles.size();
-    if (oversampling_order == 0) return mysize;  // 1 << 0 is 1
-    return exp2(oversampling_order * 2) * mysize;
+    const long int size = dir_nonzeroprior && !dir_nonzeroprior->empty() ?
+        dir_nonzeroprior->size() : rot_angles.size();
+    return oversampling_order == 0 ? size : size * exp2(oversampling_order * 2);
 }
 
 long int HealpixSampling::NrPsiSamplings(
-    int oversampling_order, const std::vector<int> *pointer_psi_nonzeroprior
+    int oversampling_order, const std::vector<int> *psi_nonzeroprior
 ) {
-    long int mysize = pointer_psi_nonzeroprior != NULL && (*pointer_psi_nonzeroprior).size() > 0 ?
-        (*pointer_psi_nonzeroprior).size() : psi_angles.size();
-    if (oversampling_order == 0) return mysize;  // 1 << 0 is 1
-    return exp2(oversampling_order) * mysize;
+    const long int size = psi_nonzeroprior && !psi_nonzeroprior->empty() ?
+        psi_nonzeroprior->size() : psi_angles.size();
+    return oversampling_order == 0 ? size : size * exp2(oversampling_order);
 }
 
 long int HealpixSampling::NrTranslationalSamplings(int oversampling_order) {
-    if (oversampling_order == 0) return translations_x.size();  // 1 << 0 is 1
-    return exp2(oversampling_order * (is_3d_trans ? 3 : 2)) * translations_x.size();
+    const long int size = translations_x.size();
+    const int D = is_3d_trans ? 3 : 2;
+    return oversampling_order == 0 ? size : size * exp2(oversampling_order * D);
 }
 
 long int HealpixSampling::NrSamplingPoints(
     int oversampling_order,
-    const std::vector<int> *pointer_dir_nonzeroprior,
-    const std::vector<int> *pointer_psi_nonzeroprior
+    const std::vector<int> *dir_nonzeroprior,
+    const std::vector<int> *psi_nonzeroprior
 ) {
-    return NrDirections  (oversampling_order, pointer_dir_nonzeroprior)
-         * NrPsiSamplings(oversampling_order, pointer_psi_nonzeroprior) 
+    return NrDirections  (oversampling_order, dir_nonzeroprior)
+         * NrPsiSamplings(oversampling_order, psi_nonzeroprior) 
          * NrTranslationalSamplings(oversampling_order);
 }
 

@@ -40,27 +40,18 @@ class CudaFFT {
     cufftHandle cufftPlanForward, cufftPlanBackward;
     int direction;
     int dimension, idist, odist, istride, ostride;
-    int inembed[3];
-    int onembed[3];
-    size_t xSize, ySize, zSize, xFSize, yFSize, zFSize;
+    int inembed[3], onembed[3];
+    size_t sizer[3], sizef[3];
     std::vector<int> batchSize;
     CudaCustomAllocator *CFallocator;
     int batchSpace, batchIters, reqN;
 
     CudaFFT(cudaStream_t stream, CudaCustomAllocator *allocator, int transformDimension = 2):
-        reals(allocator, stream),
-        fouriers(allocator, stream),
-        cufftPlanForward(0),
-        cufftPlanBackward(0),
-        direction(0),
-        dimension((int) transformDimension),
-        idist(0),
-        odist(0),
-        istride(1),
-        ostride(1),
-        planSet(false),
-        xSize(0), ySize(0), zSize(0),
-        xFSize(0), yFSize(0), zFSize(0),
+        reals(allocator, stream), fouriers(allocator, stream),
+        cufftPlanForward(0), cufftPlanBackward(0), direction(0), planSet(false),
+        dimension(transformDimension),
+        idist(0), odist(0), istride(1), ostride(1),
+        sizer{0, 0, 0}, sizef{0, 0, 0},
         batchSize(1, 1),
         reqN(1),
         CFallocator(allocator)
@@ -130,7 +121,7 @@ class CudaFFT {
 
         direction = setDirection;
 
-        if (x == xSize && y == ySize && z == zSize && batch == reqN && planSet)
+        if (x == sizer[0] && y == sizer[1] && z == sizer[2] && batch == reqN && planSet)
             return;
 
         clear();
@@ -139,34 +130,34 @@ class CudaFFT {
         batchSize[0] = batch;
         reqN = batch;
 
-        xSize = x;
-        ySize = y;
-        zSize = z;
+        sizer[0] = x;
+        sizer[1] = y;
+        sizer[2] = z;
 
-        xFSize = x / 2 + 1;
-        yFSize = y;
-        zFSize = z;
+        sizef[0] = x / 2 + 1;
+        sizef[1] = y;
+        sizef[2] = z;
 
-        idist = zSize * ySize * xSize;
-        odist = zSize * ySize * (xSize / 2 + 1);
+        idist = sizer[2] * sizer[1] * sizer[0];
+        odist = sizer[2] * sizer[1] * (sizer[0] / 2 + 1);
         istride = 1;
         ostride = 1;
 
         if (dimension == 3) {
-            inembed[0] =  zSize;
-            inembed[1] =  ySize;
-            inembed[2] =  xSize;
-            onembed[0] =  zFSize;
-            onembed[1] =  yFSize;
-            onembed[2] =  xFSize;
+            inembed[0] =  sizer[2];
+            inembed[1] =  sizer[1];
+            inembed[2] =  sizer[0];
+            onembed[0] =  sizef[2];
+            onembed[1] =  sizef[1];
+            onembed[2] =  sizef[0];
         } else if (dimension == 2) {
-            inembed[0] =  ySize;
-            inembed[1] =  xSize;
-            onembed[0] =  yFSize;
-            onembed[1] =  xFSize;
+            inembed[0] =  sizer[1];
+            inembed[1] =  sizer[0];
+            onembed[0] =  sizef[1];
+            onembed[1] =  sizef[0];
         } else {
-            inembed[0] =  xSize;
-            onembed[0] =  xFSize;
+            inembed[0] =  sizer[0];
+            onembed[0] =  sizef[0];
         }
 
         size_t needed, avail, total;

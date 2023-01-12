@@ -30,7 +30,7 @@ public:
 
 	//Used for precalculations of projection setup
 	bool generateProjectionPlanOnTheFly;
-	std::vector< AccProjectorPlan > coarseProjectionPlans;
+	std::vector<AccProjectorPlan> coarseProjectionPlans;
 
 	MlOptimiser *baseMLO;
 
@@ -83,7 +83,7 @@ public:
 	FourierTransformer transformer;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
-	std::vector< cudaStream_t > classStreams;
+	std::vector<cudaStream_t> classStreams;
 	cudaError_t errorStatus;
 
 	CudaFFT transformer1;

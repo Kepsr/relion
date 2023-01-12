@@ -19,7 +19,7 @@ void dump_array(char *name, bool *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%d, ", ptr[i]);
         count++;
         if (count > 10) {
@@ -36,7 +36,7 @@ void dump_array(char *name, int *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%d, ", ptr[i]);
         count++;
         if (count > 10) {
@@ -53,7 +53,7 @@ void dump_array(char *name, size_t *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%zu, ", ptr[i]);
         count++;
         if (count > 10) {
@@ -70,7 +70,7 @@ void dump_array(char *name, float *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f, ", ptr[i]);
         count++;
         if (count > 10) {
@@ -87,7 +87,7 @@ void dump_complex_array(char *name, acc::Complex *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f,%f, ", ptr[i].x, ptr[i].y);
         count++;
         if (count > 10) {
@@ -104,7 +104,7 @@ void dump_complex_array(char *name, Complex *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f,%f, ", ptr[i].real, ptr[i].imag);
         count++;
         if (count > 10) {
@@ -121,7 +121,7 @@ void dump_double_array(char *name, float *ptr, float *ptr2, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f,%f, ", ptr[i], ptr2[i]);
         count++;
         if (count > 10) {
@@ -138,7 +138,7 @@ void dump_triple_array(char *name, float *ptr, float *ptr2, float *ptr3, size_t 
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f,%f,%f, ", ptr[i], ptr2[i], ptr3[i]);
         count++;
         if (count > 10) {
@@ -155,7 +155,7 @@ void dump_array(char *name, double *ptr, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f, ", ptr[i]);
         count++;
         if (count > 10) {
@@ -172,7 +172,7 @@ void dump_double_array(char *name, double *ptr, double *ptr2, size_t size) {
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f,%f, ", ptr[i], ptr2[i]);
             count++;
         if (count > 10) {
@@ -189,7 +189,7 @@ void dump_triple_array(char *name, double *ptr, double *ptr2, double *ptr3, size
     int count = 0;
     FILE *fp = fopen(name, "w");
     fprintf(fp, "Array size:  %ld\n", size);
-    for (size_t i=0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         fprintf(fp, "%f,%f,%f, ", ptr[i], ptr2[i], ptr3[i]);
         count++;
         if (count > 10) {
@@ -205,7 +205,8 @@ void dump_triple_array(char *name, double *ptr, double *ptr2, double *ptr3, size
 namespace AccUtilities {
 
 template<typename MlClass>
-void makeNoiseImage(XFLOAT sigmaFudgeFactor,
+void makeNoiseImage(
+    XFLOAT sigmaFudgeFactor,
     MultidimArray<RFLOAT> &sigmaNoiseSpectra,
     long int seed,
     MlClass *accMLO,
@@ -223,7 +224,7 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
     NoiseSpectra.allAlloc();
 
     for (int n = 0; n < sigmaNoiseSpectra.size(); n++)
-        NoiseSpectra.getHostPtr()[n] = (XFLOAT) sqrt(sigmaFudgeFactor * sigmaNoiseSpectra.data[n]);
+        NoiseSpectra.getHostPtr()[n] = sqrt(sigmaFudgeFactor * sigmaNoiseSpectra.data[n]);
 
     #ifdef CUDA
     // Set up states to seeda and run randomization on the GPU
@@ -246,14 +247,14 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
         cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
                                     accMLO->transformer1.fouriers.getAccPtr(),
                                     RandomStates.getAccPtr(),
-                                    accMLO->transformer1.xFSize,
-                                    accMLO->transformer1.yFSize,
+                                    accMLO->transformer1.sizef[0],
+                                    accMLO->transformer1.sizef[1],
                                     NoiseSpectra.getAccPtr());
     } else {
         cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
                                             accMLO->transformer1.fouriers.getAccPtr(),
                                             RandomStates.getAccPtr(),
-                                            accMLO->transformer1.xFSize,
+                                            accMLO->transformer1.sizef[0],
                                             NoiseSpectra.getAccPtr());
     }
     LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
@@ -272,12 +273,12 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
     if (is3D) {
         CpuKernels::RNDnormalDitributionComplexWithPowerModulation3D(
             accMLO->transformer1.fouriers.getAccPtr(),
-            accMLO->transformer1.xFSize, accMLO->transformer1.yFSize,
+            accMLO->transformer1.sizef[0], accMLO->transformer1.sizef[1],
             NoiseSpectra.getAccPtr());
     } else {
         CpuKernels::RNDnormalDitributionComplexWithPowerModulation2D(
             accMLO->transformer1.fouriers.getAccPtr(),
-            accMLO->transformer1.xFSize,
+            accMLO->transformer1.sizef[0],
             NoiseSpectra.getAccPtr());
     }
 
@@ -287,8 +288,9 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
 
     // Copy the randomized image to A separate device-array, so that the
     // transformer can be used to set up the actual particle image
-    for (size_t i = 0; i < RandomImage.getSize(); i++)
-        RandomImage.getHostPtr()[i] = accMLO->transformer1.reals.getHostPtr()[i];
+    std::copy_n(accMLO->transformer1.reals.getHostPtr(),
+                RandomImage.getSize(),
+                RandomImage.getHostPtr());
 
     #endif
 }
@@ -328,9 +330,15 @@ static void TranslateAndNormCorrect(
     // LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
     #else
     if (DATA3D)
-        CpuKernels::cpu_translate3D<XFLOAT>(temp.getAccPtr(), img_out.getAccPtr(), img_in.xdim * img_in.ydim * img_in.zdim, img_in.xdim, img_in.ydim, img_in.zdim, xOff, yOff, zOff);
+        CpuKernels::cpu_translate3D<XFLOAT>(
+            temp.getAccPtr(), img_out.getAccPtr(),
+            img_in.xdim * img_in.ydim * img_in.zdim,
+            img_in.xdim, img_in.ydim, img_in.zdim, xOff, yOff, zOff);
     else
-        CpuKernels::cpu_translate2D<XFLOAT>(temp.getAccPtr(), img_out.getAccPtr(), img_in.xdim * img_in.ydim * img_in.zdim, img_in.xdim, img_in.ydim, xOff, yOff);
+        CpuKernels::cpu_translate2D<XFLOAT>(
+            temp.getAccPtr(), img_out.getAccPtr(),
+            img_in.xdim * img_in.ydim * img_in.zdim,
+            img_in.xdim, img_in.ydim, xOff, yOff);
     #endif
 }
 template<typename MlClass>
@@ -344,9 +352,9 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
             img_in.cpOnAcc(accMLO->transformer1.reals.getDevicePtr());
             runCenterFFT(
                 accMLO->transformer1.reals,
-                (int) accMLO->transformer1.xSize,
-                (int) accMLO->transformer1.ySize,
-                (int) accMLO->transformer1.zSize,
+                (int) accMLO->transformer1.sizer[0],
+                (int) accMLO->transformer1.sizer[1],
+                (int) accMLO->transformer1.sizer[2],
                 false
             );
             accMLO->transformer1.reals.streamSync();
@@ -368,7 +376,7 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
             windowFourierTransform2(
                 accMLO->transformer1.fouriers,
                 d_Fimg,
-                accMLO->transformer1.xFSize,accMLO->transformer1.yFSize, accMLO->transformer1.zFSize, //Input dimensions
+                accMLO->transformer1.sizef[0], accMLO->transformer1.sizef[1], accMLO->transformer1.sizef[2], //Input dimensions
                 xSize, ySize, zSize  //Output dimensions
             );
             accMLO->transformer1.fouriers.streamSync();

@@ -3,7 +3,6 @@ static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "src/ml_optimiser_mpi.h"
 #include "src/jaz/ctf_helper.h"
 
-// #define CTICTOC(timer, timing, block) CTIC(timer, timing); block; CTOC(timer, timing);
 #define EQUAL(a, b) ((a) > (b) - 0.01 && (a) < (b) + 0.01)
 
 // ----------------------------------------------------------------------------
@@ -305,7 +304,7 @@ void getFourierTransformsAndCtfs(
                 }));
             }
         }
-        }))
+        }));
 
         // ------------------------------------------------------------------------------------------
 
@@ -624,9 +623,9 @@ void getFourierTransformsAndCtfs(
                     spectrumAndXi2.getAccPtr(),
                     accMLO->transformer1.fouriers.getSize(),
                     spectrumAndXi2.getSize() - 1,
-                    accMLO->transformer1.xFSize,
-                    accMLO->transformer1.yFSize,
-                    accMLO->transformer1.zFSize,
+                    accMLO->transformer1.sizef[0],
+                    accMLO->transformer1.sizef[1],
+                    accMLO->transformer1.sizef[2],
                     baseMLO->image_current_size[optics_group] / 2 + 1, // note: NOT baseMLO->image_full_size[optics_group] / 2 + 1
                     spectrumAndXi2.getAccPtr() + spectrumAndXi2.getSize() - 1
                 ); // last element is the highres_Xi2
@@ -637,9 +636,9 @@ void getFourierTransformsAndCtfs(
                     spectrumAndXi2.getAccPtr(),
                     accMLO->transformer1.fouriers.getSize(),
                     spectrumAndXi2.getSize() - 1,
-                    accMLO->transformer1.xFSize,
-                    accMLO->transformer1.yFSize,
-                    accMLO->transformer1.zFSize,
+                    accMLO->transformer1.sizef[0],
+                    accMLO->transformer1.sizef[1],
+                    accMLO->transformer1.sizef[2],
                     baseMLO->image_current_size[optics_group] / 2 + 1, // note: NOT baseMLO->image_full_size[optics_group] / 2 + 1
                     spectrumAndXi2.getAccPtr() + spectrumAndXi2.getSize() - 1
                 ); // last element is the highres_Xi2
@@ -1650,7 +1649,7 @@ void convertAllSquaredDifferencesToWeights(
                 for (int ihidden = 0; ihidden < Xsize(op.Mcoarse_significant); ihidden++)
                     direct::elem(op.Mcoarse_significant, img_id, ihidden) = direct::elem(op.Mweight, img_id, ihidden) >= my_significant_weight;
             } else {
-                std::pair<size_t, XFLOAT> max_pair = AccUtilities::getArgMaxOnDevice<XFLOAT>(weights);
+                const auto max_pair = AccUtilities::getArgMaxOnDevice<XFLOAT>(weights);
                 op.max_index[img_id].fineIdx = PassWeights[img_id].ihidden_overs.getHostPtr()[max_pair.first];
                 op.max_weight[img_id] = max_pair.second;
             }
@@ -1666,7 +1665,7 @@ void convertAllSquaredDifferencesToWeights(
             CTICTOC(accMLO->timer, "get_offset_priors", ({
 
             for (unsigned long exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++) {
-                RFLOAT myprior_x, myprior_y, myprior_z;
+                RFLOAT myprior_x = 0.0, myprior_y = 0.0, myprior_z = 0.0;
                 if (baseMLO->mymodel.nr_bodies > 1) {
                     myprior_x = myprior_y = myprior_z = 0.0;
                 } else if (baseMLO->mymodel.ref_dim == 2 && !baseMLO->do_helical_refine) {
@@ -1683,11 +1682,7 @@ void convertAllSquaredDifferencesToWeights(
 
                     // If it is doing helical refinement AND Cartesian vector myprior has a length > 0, transform the vector to its helical coordinates
                     if (baseMLO->do_helical_refine && !baseMLO->ignore_helical_symmetry) {
-                        RFLOAT mypriors_len2 = myprior_x * myprior_x + myprior_y * myprior_y;
-                        if (accMLO->dataIs3D) {
-                            mypriors_len2 += myprior_z * myprior_z;
-                        }
-
+                        const RFLOAT mypriors_len2 = myprior_x * myprior_x + myprior_y * myprior_y + myprior_z * myprior_z;
                         if (mypriors_len2 > 0.00001) {
                             RFLOAT rot_deg  = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_ROT);
                             RFLOAT tilt_deg = direct::elem(baseMLO->exp_metadata, my_metadata_offset, METADATA_TILT);
@@ -1781,16 +1776,12 @@ void convertAllSquaredDifferencesToWeights(
                 size_t offset = img_id * op.Mweight.xdim + sp.nr_dir * sp.nr_psi * sp.nr_trans * sp.iclass_min;
 
                 if (ipart_length > 1) {
-                    size_t filteredSize;
                     AccPtr<XFLOAT> cumulative_sum;
                     AccPtr<XFLOAT> sorted;
-                    AccPtr<XFLOAT> unsorted_ipart;
-                    AccPtr<XFLOAT> filtered;
-                    CTICTOC(accMLO->timer, "sort", ({
                     // Wrap the current ipart data in a new pointer
-                    unsorted_ipart = AccPtr<XFLOAT>(Mweight, offset, ipart_length);
-
-                    filtered = ptrFactory.template make<XFLOAT>((size_t) unsorted_ipart.getSize());
+                    AccPtr<XFLOAT> unsorted_ipart = AccPtr<XFLOAT>(Mweight, offset, ipart_length);
+                    AccPtr<XFLOAT> filtered = ptrFactory.template make<XFLOAT>((size_t) unsorted_ipart.getSize());
+                    CTICTOC(accMLO->timer, "sort", ({
 
                     CUSTOM_ALLOCATOR_REGION_NAME("CASDTW_SORTSUM");
 
@@ -1798,47 +1789,44 @@ void convertAllSquaredDifferencesToWeights(
 
                     #ifdef DEBUG_CUDA
                     if (unsorted_ipart.getSize() == 0)
-                    ACC_PTR_DEBUG_FATAL("Unsorted array size zero.\n");  // Hopefully impossible
+                        unsorted_ipart.HandleDebugFatal("Unsorted array size zero.\n", __FILE__, __LINE__);  // Hopefully impossible
                     #endif
-                    filteredSize = AccUtilities::filterGreaterZeroOnDevice<XFLOAT>(unsorted_ipart, filtered);
+                    AccUtilities::filterGreaterZeroOnDevice<XFLOAT>(unsorted_ipart, filtered);
 
-                    if (filteredSize == 0) {
+                    if (filtered.getSize() == 0) {
                         std::cerr << std::endl;
                         std::cerr << " fn_img= " << sp.current_img << std::endl;
                         std::cerr << " img_id= " << img_id << " adaptive_fraction= " << baseMLO->adaptive_fraction << std::endl;
                         std::cerr << " min_diff2= " << op.min_diff2[img_id] << std::endl;
 
                         pdf_orientation.dumpAccToFile("error_dump_pdf_orientation");
-                        pdf_offset.dumpAccToFile("error_dump_pdf_offset");
-                        unsorted_ipart.dumpAccToFile("error_dump_filtered");
+                        pdf_offset     .dumpAccToFile("error_dump_pdf_offset");
+                        unsorted_ipart .dumpAccToFile("error_dump_filtered");
 
                         std::cerr << "Dumped data: error_dump_pdf_orientation, error_dump_pdf_orientation and error_dump_unsorted." << std::endl;
 
                         CRITICAL(ERRFILTEREDZERO); // "filteredSize == 0"
                     }
-                    filtered.setSize(filteredSize);
 
-                    sorted         = ptrFactory.template make<XFLOAT>((size_t) filteredSize);
-                    cumulative_sum = ptrFactory.template make<XFLOAT>((size_t) filteredSize);
+                    sorted         = ptrFactory.template make<XFLOAT>(filtered.getSize());
+                    cumulative_sum = ptrFactory.template make<XFLOAT>(filtered.getSize());
 
                     sorted.accAlloc();
                     cumulative_sum.accAlloc();
 
-                    AccUtilities::sortOnDevice<XFLOAT>(filtered, sorted);
-                    AccUtilities::scanOnDevice<XFLOAT>(sorted, cumulative_sum);
+                    AccUtilities::sortOnDevice(filtered, sorted);
+                    AccUtilities::scanOnDevice(sorted, cumulative_sum);
 
                     }));
 
                     op.sum_weight[img_id] = cumulative_sum.getAccValueAt(cumulative_sum.getSize() - 1);
 
-                    long int my_nr_significant_coarse_samples;
                     size_t thresholdIdx = findThresholdIdxInCumulativeSum<XFLOAT>(
                         cumulative_sum,
                         (1 - baseMLO->adaptive_fraction) * op.sum_weight[img_id]
                     );
 
-                    my_nr_significant_coarse_samples = filteredSize - thresholdIdx;
-
+                    long int my_nr_significant_coarse_samples = filtered.getSize() - thresholdIdx;
                     if (my_nr_significant_coarse_samples == 0) {
                         std::cerr << std::endl;
                         std::cerr << " fn_img= " << sp.current_img << std::endl;
@@ -1862,7 +1850,7 @@ void convertAllSquaredDifferencesToWeights(
                         my_nr_significant_coarse_samples > baseMLO->maximum_significants
                     ) {
                         my_nr_significant_coarse_samples = baseMLO->maximum_significants;
-                        thresholdIdx = filteredSize - my_nr_significant_coarse_samples;
+                        thresholdIdx = filtered.getSize() - my_nr_significant_coarse_samples;
                     }
 
                     XFLOAT significant_weight = sorted.getAccValueAt(thresholdIdx);

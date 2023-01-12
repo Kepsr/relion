@@ -49,6 +49,8 @@
 #define ifdefTIMING(statement)
 #endif
 
+#define CTICTOC( timer, id, block ) CTIC( timer, id ); block; CTOC( timer, id );
+
 /** @name Time managing
  *
  * These functions are used to make time measures of the algorithms. If you know

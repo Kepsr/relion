@@ -332,19 +332,14 @@ struct NearestNeighbour {
         const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp, RFLOAT zp,
         Complex fallback
     ) {
-        int x0 = round(xp);
-        int y0 = round(yp);
-        int z0 = round(zp);
-
+        int x0 = round(xp), y0 = round(yp), z0 = round(zp);
         const bool is_neg_x = x0 < 0;
-
         if (is_neg_x) {
             // Get complex conjugate hermitian symmetry pair
             x0 = -x0;
             y0 = -y0;
             z0 = -z0;
         }
-
         const int xr = x0 - Xinit(src);
         const int yr = y0 - Yinit(src);
         const int zr = z0 - Zinit(src);
@@ -360,31 +355,25 @@ struct NearestNeighbour {
     }
 
     static Complex interpolate(
-        const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp, RFLOAT zp
+        const MultidimArray<Complex> &src, RFLOAT x, RFLOAT y, RFLOAT z
         // No fallback
     ) {
-        int x0 = round(xp);
-        int y0 = round(yp);
-        int z0 = round(zp);
-
-        const bool is_neg_x = x0 < 0;
+        int i = round(x), j = round(y), k = round(z);
+        const bool is_neg_x = i < 0;
         if (is_neg_x) {
             // Get complex conjugate hermitian symmetry pair
-            x0 = -x0;
-            y0 = -y0;
-            z0 = -z0;
+            i = -i;
+            j = -j;
+            k = -k;
         }
-
-        const auto w = direct::elem(src, x0, y0, z0);
+        const auto w = direct::elem(src, i, j, k);
         return is_neg_x ? conj(w) : w;
     }
 
-    static Complex interpolate(const MultidimArray<Complex> &src, RFLOAT xp, RFLOAT yp) {
-        const int x0 = round(xp);
-        const int y0 = round(yp);
-
-        const auto w = src.elem(x0, y0);
-        return x0 < 0 ? conj(w) : w;
+    static Complex interpolate(const MultidimArray<Complex> &src, RFLOAT x, RFLOAT y) {
+        const int i = round(x), j = round(y);
+        const auto w = src.elem(i, j);
+        return i < 0 ? conj(w) : w;
     }
 
 };

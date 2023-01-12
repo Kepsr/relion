@@ -10,6 +10,8 @@
 #include "src/acc/cpu/cpu_kernels/cpu_utils.h"
 #include "src/acc/cpu/cpu_kernels/helper.h"
 
+#ifndef CUDA
+
 namespace CpuKernels
 {
 
@@ -389,5 +391,7 @@ void wavg_3D(
 }
 
 } // end of namespace CpuKernels
+
+#endif
 
 #endif /* WAVG_KERNEL_H_ */

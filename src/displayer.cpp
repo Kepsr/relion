@@ -147,8 +147,8 @@ void DisplayBox::setData(
         } else {
             for (dy = ysize_data, sy = 0, yerr = ysize_data, n = 0; dy > 0; dy --) {
                 for (dx = xsize_data, xerr = xsize_data, old_ptr = img.data + sy * line_d; dx > 0; dx --, n++) {
-                    unsigned char val = floor((*old_ptr - minval) / step);
-                    rgb_t rgb = colour_scheme.greyToRGB(val);
+                    ColourScheme::grey_t val = floor((*old_ptr - minval) / step);
+                    ColourScheme::rgb_t rgb = colour_scheme.greyToRGB(val);
                     img_data[3 * n    ] = rgb.r;
                     img_data[3 * n + 1] = rgb.g;
                     img_data[3 * n + 2] = rgb.b;
@@ -176,8 +176,8 @@ void DisplayBox::setData(
             }
         } else {
             for (RFLOAT *old_ptr = img.begin(); old_ptr != img.end(); ++old_ptr, ++img_data_ptr) {
-                unsigned char val = floor((*old_ptr - minval) / step);
-                rgb_t rgb = colour_scheme.greyToRGB(val);
+                ColourScheme::grey_t val = floor((*old_ptr - minval) / step);
+                ColourScheme::rgb_t rgb = colour_scheme.greyToRGB(val);
                 img_data[3 * n    ] = rgb.r;
                 img_data[3 * n + 1] = rgb.g;
                 img_data[3 * n + 2] = rgb.b;

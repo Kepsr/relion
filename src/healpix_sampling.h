@@ -34,7 +34,7 @@
 #define NOPRIOR 0
 #define PRIOR_ROTTILT_PSI 1
 
-inline int exp2(int n) { return 1 << (n); }  // Bitshifts are fast
+inline int exp2(int n) { return 1 << n; }  // Bitshifts are fast
 
 struct Direction {
     RFLOAT rot, tilt;
@@ -301,11 +301,11 @@ class HealpixSampling {
      * Note that because of symmetry-equivalence removal this number is not the number of original HEALPix pixels
      * In the case of orientational priors, the number of directions with non-zero prior probability is returned
      */
-    long int NrDirections(int oversampling_order = 0, const std::vector<int> *pointer_dir_nonzeroprior = NULL);
+    long int NrDirections(int oversampling_order = 0, const std::vector<int> *pointer_dir_nonzeroprior = nullptr);
 
     /* Get the number of in-plane (psi-angle) sampling points
      */
-    long int NrPsiSamplings(int oversampling_order = 0, const std::vector<int> *pointer_psi_nonzeroprior = NULL);
+    long int NrPsiSamplings(int oversampling_order = 0, const std::vector<int> *pointer_psi_nonzeroprior = nullptr);
 
     /* Get the number of in-plane translational sampling points
      */
@@ -315,8 +315,8 @@ class HealpixSampling {
     */
     long int NrSamplingPoints(
         int oversampling_order = 0,
-        const std::vector<int> *pointer_dir_nonzeroprior = NULL,
-        const std::vector<int> *pointer_psi_nonzeroprior = NULL
+        const std::vector<int> *pointer_dir_nonzeroprior = nullptr,
+        const std::vector<int> *pointer_psi_nonzeroprior = nullptr
     );
 
     /* How often is each orientation oversampled? */
@@ -404,7 +404,7 @@ class HealpixSampling {
      * */
     void writeBildFileOrientationalDistribution(MultidimArray<RFLOAT> &pdf_direction,
             FileName &fn_bild, RFLOAT R, RFLOAT offset = 0.0,
-            const Matrix<RFLOAT> *Aorient = NULL, const Vector<RFLOAT> *Acom = NULL,
+            const Matrix<RFLOAT> *Aorient = nullptr, const Vector<RFLOAT> *Acom = nullptr,
             RFLOAT Rmax_frac = 0.3, RFLOAT width_frac = 0.5);
 
     private:

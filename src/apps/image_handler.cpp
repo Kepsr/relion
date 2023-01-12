@@ -580,8 +580,8 @@ class image_handler_parameters {
             pngOut.fill(gravis::bRGB(0));
 
             for (long int n = 0; n < Iout().size(); n++) {
-                const unsigned char val = floor((Iout()[n] - minmax.first) / step);
-                rgb_t rgb = color_scheme.greyToRGB(val);
+                ColourScheme::grey_t val = floor((Iout()[n] - minmax.first) / step);
+                ColourScheme::rgb_t rgb = color_scheme.greyToRGB(val);
                 pngOut[n] = gravis::bRGB(rgb.r, rgb.g, rgb.b);
             }
             pngOut.writePNG(my_fn_out);

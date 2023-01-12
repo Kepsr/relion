@@ -169,7 +169,7 @@ ALWAYS_INLINE_GCC void cpu_translate2D(
 ) {
     #ifdef DEBUG_CUDA
     if (image_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("cpu_translate2D: image_size > std::numeric_limits<int>::max()");
+        AccPtr<T>::HandleDebugInformational("cpu_translate2D: image_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     #endif
     for (size_t i = 0; i < image_size; i++) {
         const int x = i % xdim;
@@ -191,7 +191,7 @@ ALWAYS_INLINE_GCC void cpu_translate3D(
 ) {
     #ifdef DEBUG_CUDA
     if (image_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("cpu_translate3D: image_size > std::numeric_limits<int>::max()");
+        AccPtr<T>::HandleDebugInformational("cpu_translate3D: image_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     #endif
     const int xydim = xdim * ydim;
     for (size_t i = 0; i < image_size; i++) {
@@ -217,11 +217,11 @@ ALWAYS_INLINE_GCC void centerFFT_2D(
 ) {
     #ifdef DEBUG_CUDA
     if (image_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("centerFFT_2D: image_size > std::numeric_limits<int>::max()");
+        AccPtr<T>::HandleDebugInformational("centerFFT_2D: image_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     if (image_size * batch_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("centerFFT_2D: image_size*batch_size > std::numeric_limits<int>::max()");
+        AccPtr<T>::HandleDebugInformational("centerFFT_2D: image_size*batch_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     if (pixel_end > image_size)
-        ACC_PTR_DEBUG_INFO("centerFFT_2D: pixel_end > image_size");
+        AccPtr<T>::HandleDebugInformational("centerFFT_2D: pixel_end > image_size", __FILE__, __LINE__);
     #endif
     for (int batch = 0; batch < batch_size; batch++) {
         const size_t image_offset = image_size * batch;
@@ -254,11 +254,11 @@ ALWAYS_INLINE_GCC void centerFFT_3D(
 ) {
     #ifdef DEBUG_CUDA
     if (image_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("centerFFT_3D: image_size > std::numeric_limits<int>::max()");
+        AccPtr<T>::HandleDebugInformational("centerFFT_3D: image_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     if (image_size * batch_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("centerFFT_3D: image_size*batch_size > std::numeric_limits<int>::max()");
+        AccPtr<T>::HandleDebugInformational("centerFFT_3D: image_size*batch_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     if (pixel_end > image_size)
-        ACC_PTR_DEBUG_INFO("centerFFT_3D: pixel_end > image_size");
+        AccPtr<T>::HandleDebugInformational("centerFFT_3D: pixel_end > image_size", __FILE__, __LINE__);
     #endif
     const int xydim = xdim * ydim;
     for (int batch = 0; batch < batch_size; batch++) {
@@ -573,7 +573,7 @@ template <typename T>
 void cpu_kernel_multi(T *A, T *OUT, T  S, size_t     image_size) {
     #ifdef DEBUG_CUDA
     if (image_size < 0)
-        ACC_PTR_DEBUG_INFO("cpu_kernel_multi:  image_size < 0");
+        AccPtr<T>::HandleDebugInformational("cpu_kernel_multi:  image_size < 0", __FILE__, __LINE__);
     #endif
     for (size_t i = 0; i < image_size; i ++)
         OUT[i] = A[i] * S;
@@ -583,7 +583,7 @@ template <typename T>
 void cpu_kernel_multi( T *A, T  S, size_t     image_size) {
     #ifdef DEBUG_CUDA
     if (image_size < 0)
-        ACC_PTR_DEBUG_INFO("cpu_kernel_multi2:  image_size < 0");
+        AccPtr<T>::HandleDebugInformational("cpu_kernel_multi2:  image_size < 0", __FILE__, __LINE__);
     #endif
     for (size_t i = 0; i < image_size; i ++)
         A[i] *= S;
@@ -595,7 +595,7 @@ void cpu_kernel_multi(
 ) {
     #ifdef DEBUG_CUDA
     if (image_size < 0)
-        ACC_PTR_DEBUG_INFO("cpu_kernel_multi3:  image_size < 0");
+        AccPtr<T>::HandleDebugInformational("cpu_kernel_multi3:  image_size < 0", __FILE__, __LINE__);
     #endif
     for (size_t i = 0; i < image_size; i ++)
         OUT[i] = A[i] * B[i] * S;
@@ -651,7 +651,7 @@ ALWAYS_INLINE_GCC void cpu_kernel_make_eulers_2D(
 ) {
     #ifdef DEBUG_CUDA
     if (grid_size * block_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("cpu_kernel_make_eulers_2D: grid_size*block_size > std::numeric_limits<int>::max()");
+        AccPtr<XFLOAT>::HandleDebugInformational("cpu_kernel_make_eulers_2D: grid_size*block_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     #endif
     for (size_t blockIdx_x = 0;  blockIdx_x  < grid_size;  blockIdx_x++)
     for (size_t threadIdx_x = 0; threadIdx_x < block_size; threadIdx_x++) {
@@ -682,7 +682,7 @@ ALWAYS_INLINE_GCC void cpu_kernel_make_eulers_3D(
 ) {
     #ifdef DEBUG_CUDA
     if (grid_size * block_size > std::numeric_limits<int>::max())
-        ACC_PTR_DEBUG_INFO("cpu_kernel_make_eulers_3D: grid_size*block_size > std::numeric_limits<int>::max()");
+        AccPtr<XFLOAT>::HandleDebugInformational("cpu_kernel_make_eulers_3D: grid_size*block_size > std::numeric_limits<int>::max()", __FILE__, __LINE__);
     #endif
     for (size_t blockIdx_x  = 0; blockIdx_x  < grid_size;  blockIdx_x++)
     for (size_t threadIdx_x = 0; threadIdx_x < block_size; threadIdx_x++) {

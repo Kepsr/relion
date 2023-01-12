@@ -1,12 +1,11 @@
 #pragma once
 
-struct rgb_t {
-    unsigned char r, g, b;
-};
 
 struct ColourScheme {
 
     using grey_t = unsigned char;
+
+    struct rgb_t { grey_t r, g, b; };
 
     typedef grey_t (*grey_ft)(const rgb_t);
 

@@ -3,13 +3,13 @@
 
 #include "src/acc/settings.h"
 
-
 // GENERAL -----------------------------
 #define MAX_RESOL_SHARED_MEM 		32
 #define BLOCK_SIZE  				128
 // -------------------------------------
 
 
+#ifndef D2C_BLOCK_SIZE_2D
 // COARSE DIFF -------------------------
 #define D2C_BLOCK_SIZE_2D 			256
 #define D2C_EULERS_PER_BLOCK_2D 	16
@@ -38,6 +38,7 @@
 #define WAVG_BLOCK_SIZE_DATA3D	 	512
 #define WAVG_BLOCK_SIZE 	 		256
 // -------------------------------------
+#endif
 
 
 // MISC --------------------------------
@@ -69,7 +70,7 @@
 									// memory usage by allocating
 									// ( 6*REF_GROUP_SIZE + 4 ) * BLOCK_SIZE XFLOATS. // DEPRECATED
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) && not defined(CUDA)
 #  include <mathimf.h>
 #  define RESTRICT __restrict__
 #else

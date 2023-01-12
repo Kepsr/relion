@@ -370,8 +370,6 @@ ALWAYS_INLINE_GCC void kernel_frequencyPass(
     #ifdef DEBUG_CUDA
     if (grid_size * block_size > std::numeric_limits<int>::max())
         CHECK_INDEX_DEBUG_FATAL("kernel_frequencyPass:  grid_size*(size_t)block_size > (size_t)std::numeric_limits<int>::max()");
-    if (image_size < 0)
-        CHECK_INDEX_DEBUG_FATAL("kernel_frequencyPass:  image_size < 0");
     #endif
     // TODO - why not a single loop over image_size pixels?
     for (size_t blk = 0; blk < grid_size; blk++)
@@ -431,8 +429,6 @@ ALWAYS_INLINE_GCC void powerClass(
     #ifdef DEBUG_CUDA
     if (gridSize * POWERCLASS_BLOCK_SIZE > std::numeric_limits<int>::max())
         CHECK_INDEX_DEBUG_FATAL("kernel_frequencyPass:  gridSize*(size_t)POWERCLASS_BLOCK_SIZE > (size_t)std::numeric_limits<int>::max()");
-    if (image_size < 0)
-        CHECK_INDEX_DEBUG_FATAL("kernel_frequencyPass:  image_size < 0");
     #endif
     for (size_t bid = 0; bid < gridSize; bid++) {
 

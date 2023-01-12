@@ -20,11 +20,11 @@ public:
 
 	PROJECTOR_PTR_TYPE mdlReal;
 	PROJECTOR_PTR_TYPE mdlImag;
-#ifdef CUDA
+	#ifdef CUDA
 	PROJECTOR_PTR_TYPE mdlComplex;
-#else
+	#else
 	std::complex<XFLOAT> *mdlComplex;
-#endif
+	#endif
 
 	AccProjectorKernel(
 			int mdlX, int mdlY, int mdlZ,

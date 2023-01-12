@@ -17,8 +17,10 @@
 #include <signal.h>
 #include "src/complex.h"
 #include "src/parallel.h"
+#ifdef ALTCPU
 #include <tbb/parallel_for.h>
 #include <tbb/queuing_mutex.h>
+#endif
 
 namespace CpuKernels
 {
@@ -78,7 +80,7 @@ void window_fourier_transform(
 
 // may need to change to parallel reduce if it becomes the bottle neck.
 template <typename T>
-static T getMin(T *data, size_t size)
+T getMin(T *data, size_t size)
 {
 	T min = data[0];
 	for(size_t i=1; i<size; i++)
@@ -89,7 +91,7 @@ static T getMin(T *data, size_t size)
 
 // may need to change to parallel reduce if it becomes the bottle neck.
 template <typename T>
-static T getMax(T *data, size_t size)
+T getMax(T *data, size_t size)
 {
 	T max = data[0];
 	for(size_t i=1; i<size; i++)
@@ -99,7 +101,7 @@ static T getMax(T *data, size_t size)
 }
 
 template <typename T>
-static T getSum(T *data, size_t size)
+T getSum(T *data, size_t size)
 {
 	T sum = data[0];
 	for(size_t i=1; i<size; i++)
@@ -109,7 +111,7 @@ static T getSum(T *data, size_t size)
 }
 
 template <typename T>
-static std::pair<size_t, T> getArgMin(T *data, size_t size)
+std::pair<size_t, T> getArgMin(T *data, size_t size)
 {
 	std::pair<size_t, T> pair;
 	pair.first = 0;
@@ -125,19 +127,9 @@ static std::pair<size_t, T> getArgMin(T *data, size_t size)
 }
 
 template <typename T>
-static std::pair<size_t, T> getArgMax(T *data, size_t size)
-{
-	std::pair<size_t, T> pair;
-	pair.first = 0;
-	pair.second = data[0];
-	
-	for(size_t i=1; i<size; i++)
-		if( data[i] > pair.second) {
-			pair.first = i;
-			pair.second = data[i];
-		}
-		
-	return pair;
+std::pair<size_t, T> getArgMax(T const* data, size_t size) {
+	T const* const it = std::max_element(data, data + size);
+	return {it - data, *it};
 }
 
 } // Namespace CpuKernels

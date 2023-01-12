@@ -13,7 +13,9 @@
 #include "src/acc/acc_projector_plan.h"
 #include "src/acc/acc_projector.h"
 #include "src/acc/acc_backprojector.h"
+#ifdef ALTCPU
 #include "src/acc/cpu/mkl_fft.h"
+#endif
 #include "src/acc/cpu/cpu_benchmark_utils.h"
 #include <stack>
 
@@ -36,6 +38,7 @@ public:
 	}
 };
 
+#ifdef ALTCPU
 class MlOptimiserCpu
 {
 public:
@@ -97,6 +100,7 @@ public:
 	{}
 
 };
+#endif
 
 /*
 class ApplyFoo {

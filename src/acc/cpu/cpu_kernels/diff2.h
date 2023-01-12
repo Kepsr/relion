@@ -326,6 +326,8 @@ void diff2_coarse_3D(
 }
 */
 
+#ifdef ALTCPU
+
 template<bool REF3D, bool DATA3D, int block_sz, int eulers_per_block, int prefetch_fraction>
 #ifndef __INTEL_COMPILER
 __attribute__((always_inline))
@@ -798,7 +800,7 @@ inline void diff2_fine_3D(
 	// Now do calculations
 	for (unsigned long bid = 0; bid < grid_size; bid++) {
 		unsigned long trans_num        = (unsigned long)d_job_num[bid];     
-		unsigned long int iy_part = d_trans_idx[d_job_idx[bid]];  
+		// unsigned long int iy_part = d_trans_idx[d_job_idx[bid]];  
 
 		size_t offset = d_rot_idx[d_job_idx[bid]] * 9;
 		XFLOAT e1 = g_eulers[offset  ], e2 = g_eulers[offset+1];
@@ -1574,6 +1576,8 @@ inline void diff2_CC_fine_3D(
 		}		
 	} // for bid
 }
+
+#endif
 
 } // end of namespace CpuKernels
 

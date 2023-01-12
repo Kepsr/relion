@@ -34,7 +34,7 @@ template<typename T>
 __global__ void cuda_kernel_exponentiate(
     T *g_array, T add, size_t size
 ) {
-    const int i = threadIdx.x + blockIdx.x * BLOCK_SIZE;
+    const int i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i >= size) return;
     T a = g_array[i] + add;
     #ifdef ACC_DOUBLE_PRECISION
@@ -192,7 +192,7 @@ __global__ void cuda_kernel_translate2D(
     T const * g_image_in, T * g_image_out,
     int image_size, int xdim, int ydim, int dx, int dy
 ) {
-    const int i = threadIdx.x + blockIdx.x * BLOCK_SIZE;
+    const int i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i >= image_size) return;
     const int x = i % xdim;
     const int xp = x + dx;
@@ -210,7 +210,7 @@ __global__ void cuda_kernel_translate3D(
     int image_size, int xdim, int ydim, int zdim,
     int dx, int dy, int dz
 ) {
-    const int i = threadIdx.x + blockIdx.x * BLOCK_SIZE;
+    const int i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i >= image_size) return;
     const int xydim = xdim * ydim;
     const int xy = i % xydim;
@@ -315,7 +315,7 @@ __global__ void cuda_kernel_batch_convol_B(acc::Complex * d_A, acc::Complex cons
  *  OUT[i] = A[i]*S
  */
 template <typename T>
-__global__ void cuda_kernel_multi(T *A, T *OUT, T S, int image_size) {
+__global__ void cuda_kernel_multi(T const* A, T *OUT, T S, int image_size) {
     const int i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i < image_size) OUT[i] = A[i] * S;
 }
@@ -355,7 +355,7 @@ __global__ void cuda_kernel_square(XFLOAT *A, int image_size);
  */
 template <typename T1, typename T2 >
 __global__ void cuda_kernel_cast(T1 const* IN, T2 *OUT, int size) {
-    const int i = threadIdx.x + blockIdx.x * BLOCK_SIZE;
+    const int i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i < size) OUT[i] = IN[i];
 }
 
@@ -366,7 +366,7 @@ __global__ void cuda_kernel_frequencyPass(
     XFLOAT edge_low, XFLOAT edge_width, XFLOAT edge_high,
     XFLOAT angpix, int image_size
 ) {
-    const int i = threadIdx.x + blockIdx.x * BLOCK_SIZE;
+    const int i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i >= image_size) return;
 
     const int z = i / (Xdim * Ydim);
