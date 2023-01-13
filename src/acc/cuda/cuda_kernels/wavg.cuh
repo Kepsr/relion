@@ -10,8 +10,9 @@
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_kernels/cuda_device_utils.cuh"
 
-template<bool CTFPREMULTIPLIED, bool REFCTF, bool REF3D, bool DATA3D, int block_sz>
+template<bool CTFPREMULTIPLIED, bool REFCTF, bool REF3D, bool DATA3D>
 __global__ void cuda_kernel_wavg(
+		int block_sz,
 		XFLOAT *g_eulers,
 		AccProjectorKernel projector,
 		unsigned image_size,

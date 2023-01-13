@@ -645,9 +645,10 @@ void square(int     blockIdx_x,
 }
 */
 
-template<bool invert>
+template <bool invert>
 ALWAYS_INLINE_GCC void cpu_kernel_make_eulers_2D(
-    size_t grid_size, size_t block_size, XFLOAT *alphas, XFLOAT *eulers, unsigned long orientation_num
+    size_t grid_size, size_t block_size, XFLOAT *alphas, XFLOAT *eulers,
+    unsigned long orientation_num
 ) {
     #ifdef DEBUG_CUDA
     if (grid_size * block_size > std::numeric_limits<int>::max())

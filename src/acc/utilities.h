@@ -3,7 +3,6 @@
 
 #include "src/acc/cpu/cpu_kernels/wavg.h"
 #include "src/acc/cpu/cpu_kernels/helper.h"
-// #include <tbb/spin_mutex.h>
 #include "src/acc/cpu/cpu_helper_functions.h"
 
 #include "src/acc/acc_ptr.h"
@@ -108,13 +107,6 @@ static T getSumOnDevice(AccPtr<T, acc::cpu> &ptr) {
     return std::accumulate(ptr.getHostPtr(), ptr.getHostPtr() + ptr.getSize(), T(0));
 }
 
-#ifdef CUDA
-template <typename T>
-static T getSumOnDevice(AccPtr<T, acc::cuda> &ptr) {
-    return CudaKernels::getSumOnDevice<T>(ptr);
-}
-#endif
-
 template <typename T>
 static T getMinOnDevice(AccPtr<T, acc::cpu> &ptr) {
     #ifdef DEBUG_CUDA
@@ -125,13 +117,6 @@ static T getMinOnDevice(AccPtr<T, acc::cpu> &ptr) {
     #endif
     return CpuKernels::getMin<T>(ptr.getAccPtr(), ptr.getSize());
 }
-
-#ifdef CUDA
-template <typename T>
-static T getMinOnDevice(AccPtr<T, acc::cuda> &ptr) {
-    return CudaKernels::getMinOnDevice<T>(ptr);
-}
-#endif
 
 template <typename T>
 static T getMaxOnDevice(AccPtr<T, acc::cpu> &ptr) {
@@ -144,18 +129,8 @@ static T getMaxOnDevice(AccPtr<T, acc::cpu> &ptr) {
     return CpuKernels::getMax<T>(ptr.getAccPtr(), ptr.getSize());
 }
 
-#ifdef CUDA
 template <typename T>
-static T getMaxOnDevice(AccPtr<T, acc::cuda> &ptr) {
-    return CudaKernels::getMaxOnDevice<T>(ptr);
-}
-#endif
-
-template <typename T>
-static std::pair<size_t, T> getArgMinOnDevice(AccPtr<T> &ptr) {
-    #ifdef CUDA
-    return CudaKernels::getArgMinOnDevice<T>(ptr);
-    #else
+static std::pair<size_t, T> getArgMinOnDevice(AccPtr<T, acc::cpu> &ptr) {
     #ifdef DEBUG_CUDA
     if (ptr.getSize() == 0)
         printf("DEBUG_ERROR: getArgMinOnDevice called with pointer of zero size.\n");
@@ -163,14 +138,10 @@ static std::pair<size_t, T> getArgMinOnDevice(AccPtr<T> &ptr) {
         printf("DEBUG_ERROR: getArgMinOnDevice called with null device pointer.\n");
     #endif
     return CpuKernels::getArgMin<T>(ptr.getAccPtr(), ptr.getSize());
-    #endif
 }
 
 template <typename T>
-static std::pair<size_t, T> getArgMaxOnDevice(AccPtr<T> &ptr) {
-    #ifdef CUDA
-    return CudaKernels::getArgMaxOnDevice<T>(ptr);
-    #else
+static std::pair<size_t, T> getArgMaxOnDevice(AccPtr<T, acc::cpu> &ptr) {
     #ifdef DEBUG_CUDA
     if (ptr.getSize() == 0)
         printf("DEBUG_ERROR: getArgMaxOnDevice called with pointer of zero size.\n");
@@ -178,24 +149,20 @@ static std::pair<size_t, T> getArgMaxOnDevice(AccPtr<T> &ptr) {
         printf("DEBUG_ERROR: getArgMaxOnDevice called with null device pointer.\n");
     #endif
     return CpuKernels::getArgMax<T>(ptr.getAccPtr(), ptr.getSize());
-    #endif
 }
 
 template <typename T>
 static void filterGreaterZeroOnDevice(AccPtr<T, acc::cpu> &in, AccPtr<T, acc::cpu> &out) {
-    // Find how many entries the output array will have
-    size_t filt_size = 0;
-    const auto end = in.getHostPtr() + in.getSize();
-    for (auto it = in.getHostPtr(); it != end; ++it) {
-        if (*it > 0.0)
-            filt_size++;
-    }
+    // Determine size of output array
+    const size_t filt_size = std::count_if(
+        in.getHostPtr(), in.getHostPtr() + in.getSize(),
+        [] (const T& x) -> bool { return x > 0.0; });
     #ifdef DEBUG_CUDA
     if (filt_size == 0)
         in.HandleDebugFatal("filterGreaterZeroOnDevice - No filtered values greater than 0.\n", __FILE__, __LINE__);
     #endif
     out.resizeHost(filt_size);
-    // Now populate output array
+    // Populate output array
     for (size_t i = 0, j = 0; i < in.getSize(); i++)
         if (in.getHostPtr()[i] > (T) 0.0)
             out.getHostPtr()[j++] = in.getHostPtr()[i];
@@ -222,10 +189,34 @@ static void scanOnDevice(AccPtr<T, acc::cpu> &in, AccPtr<T, acc::cpu> &out) {
 #ifdef CUDA
 
 template <typename T>
+static T getSumOnDevice(AccPtr<T, acc::cuda> &ptr) {
+    return CudaKernels::getSumOnDevice<T>(ptr);
+}
+
+template <typename T>
+static T getMinOnDevice(AccPtr<T, acc::cuda> &ptr) {
+    return CudaKernels::getMinOnDevice<T>(ptr);
+}
+
+template <typename T>
+static T getMaxOnDevice(AccPtr<T, acc::cuda> &ptr) {
+    return CudaKernels::getMaxOnDevice<T>(ptr);
+}
+
+template <typename T>
+static std::pair<size_t, T> getArgMinOnDevice(AccPtr<T, acc::cuda> &ptr) {
+    return CudaKernels::getArgMinOnDevice<T>(ptr);
+}
+
+template <typename T>
+static std::pair<size_t, T> getArgMaxOnDevice(AccPtr<T, acc::cuda> &ptr) {
+    return CudaKernels::getArgMaxOnDevice<T>(ptr);
+}
+
+template <typename T>
 static void filterGreaterZeroOnDevice(AccPtr<T, acc::cuda> &in, AccPtr<T, acc::cuda> &out) {
-    CudaKernels::MoreThanCubOpt<T> moreThanOpt(0.0);
-    CudaKernels::filterOnDevice(in, out, moreThanOpt);
-    return;
+    CudaKernels::device_greater_than<T> closure (0);
+    CudaKernels::filterOnDevice(in, out, closure);
 }
 
 template <typename T>
@@ -249,10 +240,9 @@ static void TranslateAndNormCorrect(
 static void softMaskBackgroundValue(
     int inblock_dim, int inblock_size,
     XFLOAT *vol, Image<RFLOAT> &img,
-    XFLOAT   radius, XFLOAT   radius_p, XFLOAT   cosine_width,
-    XFLOAT  *g_sum, XFLOAT  *g_sum_bg
+    XFLOAT radius, XFLOAT radius_p, XFLOAT cosine_width,
+    XFLOAT *g_sum, XFLOAT *g_sum_bg
 );
-
 
 static void cosineFilter(
     int inblock_dim, int inblock_size,
@@ -263,100 +253,198 @@ static void cosineFilter(
     XFLOAT radius, XFLOAT radius_p, XFLOAT cosine_width, XFLOAT sum_bg_total
 );
 
-template <bool DATA3D>
+template <acc::Type>
 void powerClass(
     int grid_dimensions, int block_dimensions,
-    acc::Complex  *g_image,
-    XFLOAT      *g_spectrum,
-    size_t       image_size,
-    size_t       spectrum_size,
-    int          xdim, int          ydim, int          zdim,
-    int          res_limit,
-    XFLOAT      *g_highres_Xi2
+    acc::Complex *g_image, XFLOAT *g_spectrum,
+    size_t image_size, size_t spectrum_size,
+    int xdim, int ydim, int zdim,
+    int res_limit, XFLOAT *g_highres_Xi2, bool DATA3D
+);
+
+template <>
+inline void powerClass<acc::cpu>(
+    int grid_dimensions, int block_dimensions,
+    acc::Complex *g_image, XFLOAT *g_spectrum,
+    size_t image_size, size_t spectrum_size,
+    int xdim, int ydim, int zdim,
+    int res_limit, XFLOAT *g_highres_Xi2, bool DATA3D
 ) {
-    #ifdef CUDA
-    cuda_kernel_powerClass<DATA3D><<<dim3(grid_dimensions), block_dimensions, 0, 0>>>(
-        g_image, g_spectrum, image_size, spectrum_size,
-        xdim, ydim, zdim,
-        res_limit, g_highres_Xi2
-    );
-    #else
-    CpuKernels::powerClass<DATA3D>(
-        grid_dimensions, g_image, g_spectrum,
-        image_size, spectrum_size,
-        xdim, ydim, zdim,
-        res_limit, g_highres_Xi2
-    );
-    #endif
+    if (DATA3D)
+        CpuKernels::powerClass<1>(
+            grid_dimensions, g_image, g_spectrum,
+            image_size, spectrum_size,
+            xdim, ydim, zdim,
+            res_limit, g_highres_Xi2
+        );
+    else
+        CpuKernels::powerClass<0>(
+            grid_dimensions, g_image, g_spectrum,
+            image_size, spectrum_size,
+            xdim, ydim, zdim,
+            res_limit, g_highres_Xi2
+        );
 }
 
-template <bool invert>
+#ifdef CUDA
+template <>
+inline void powerClass<acc::cuda>(
+    int grid_dimensions, int block_dimensions,
+    acc::Complex *g_image, XFLOAT *g_spectrum,
+    size_t image_size, size_t spectrum_size,
+    int xdim, int ydim, int zdim,
+    int res_limit, XFLOAT *g_highres_Xi2, bool DATA3D
+) {
+    if (DATA3D)
+        cuda_kernel_powerClass<1>
+        <<<dim3(grid_dimensions), block_dimensions, 0, 0>>>(
+            g_image, g_spectrum, image_size, spectrum_size,
+            xdim, ydim, zdim,
+            res_limit, g_highres_Xi2
+        );
+    else
+        cuda_kernel_powerClass<0>
+        <<<dim3(grid_dimensions), block_dimensions, 0, 0>>>(
+            g_image, g_spectrum, image_size, spectrum_size,
+            xdim, ydim, zdim,
+            res_limit, g_highres_Xi2
+        );
+}
+#endif
+
+template <acc::Type accType>
 void acc_make_eulers_2D(
     int grid_size, int block_size, cudaStream_t stream,
     XFLOAT *alphas, XFLOAT *eulers,
-    unsigned long orientation_num
+    unsigned long orientation_num, bool invert
+);
+
+template <>
+inline void acc_make_eulers_2D<acc::cpu>(
+    int grid_size, int block_size, cudaStream_t stream,
+    XFLOAT *alphas, XFLOAT *eulers,
+    unsigned long orientation_num, bool invert
 ) {
-    #ifdef CUDA
-    cuda_kernel_make_eulers_2D<invert><<<grid_size, block_size, 0, stream>>>(
-        alphas, eulers, orientation_num
-    );
-    #else
-    CpuKernels::cpu_kernel_make_eulers_2D<invert>(
-        grid_size, block_size, alphas, eulers, orientation_num
-    );
-    #endif
+    if (invert)
+        CpuKernels::cpu_kernel_make_eulers_2D<1>
+            (grid_size, block_size, alphas, eulers, orientation_num);
+    else
+        CpuKernels::cpu_kernel_make_eulers_2D<0>
+            (grid_size, block_size, alphas, eulers, orientation_num);
 }
 
-template <bool invert, bool doL, bool doR>
+template <acc::Type>
 void acc_make_eulers_3D(
     int grid_size, int block_size, cudaStream_t stream,
     XFLOAT *alphas, XFLOAT *betas, XFLOAT *gammas, XFLOAT *eulers,
     unsigned long orientation_num,
-    XFLOAT *L, XFLOAT *R
+    XFLOAT *L, XFLOAT *R, bool doL, bool doR, bool invert
+);
+
+template <>
+inline void acc_make_eulers_3D<acc::cpu>(
+    int grid_size, int block_size, cudaStream_t stream,
+    XFLOAT *alphas, XFLOAT *betas, XFLOAT *gammas, XFLOAT *eulers,
+    unsigned long orientation_num,
+    XFLOAT *L, XFLOAT *R, bool doL, bool doR, bool invert
 ) {
-    #ifdef CUDA
-    cuda_kernel_make_eulers_3D<invert, doL, doR>
-    <<<grid_size, block_size, 0, stream>>>
-        (alphas, betas, gammas, eulers, orientation_num, L, R);
-    #else
-    CpuKernels::cpu_kernel_make_eulers_3D<invert, doL, doR>
+    #define MAKE_EULERS( A, B, C ) \
+        CpuKernels::cpu_kernel_make_eulers_3D<A, B, C> \
         (grid_size, block_size, alphas, betas, gammas, eulers, orientation_num, L, R);
-    #endif
+    const int bits = (int) doL << 2 | (int) doR << 1 | (int) invert;
+    switch (bits) {
+        case 0: MAKE_EULERS( 0, 0, 0 ); break;
+        case 1: MAKE_EULERS( 0, 0, 1 ); break;
+        case 2: MAKE_EULERS( 0, 1, 0 ); break;
+        case 3: MAKE_EULERS( 0, 1, 1 ); break;
+        case 4: MAKE_EULERS( 1, 0, 0 ); break;
+        case 5: MAKE_EULERS( 1, 0, 1 ); break;
+        case 6: MAKE_EULERS( 1, 1, 0 ); break;
+        case 7: MAKE_EULERS( 1, 1, 1 ); break;
+    }
+    #undef MAKE_EULERS
 }
+
+#ifdef CUDA
+
+template <>
+inline void acc_make_eulers_2D<acc::cuda>(
+    int grid_size, int block_size, cudaStream_t stream,
+    XFLOAT *alphas, XFLOAT *eulers,
+    unsigned long orientation_num, bool invert
+) {
+    if (invert)
+        cuda_kernel_make_eulers_2D<1><<<grid_size, block_size, 0, stream>>>
+            (alphas, eulers, orientation_num);
+    else 
+        cuda_kernel_make_eulers_2D<0><<<grid_size, block_size, 0, stream>>>
+            (alphas, eulers, orientation_num);
+}
+
+template <>
+inline void acc_make_eulers_3D<acc::cuda>(
+    int grid_size, int block_size, cudaStream_t stream,
+    XFLOAT *alphas, XFLOAT *betas, XFLOAT *gammas, XFLOAT *eulers,
+    unsigned long orientation_num,
+    XFLOAT *L, XFLOAT *R, bool doL, bool doR, bool invert
+) {
+    #define MAKE_EULERS( A, B, C ) \
+        cuda_kernel_make_eulers_3D<A, B, C> \
+        <<<grid_size, block_size, 0, stream>>> \
+        (alphas, betas, gammas, eulers, orientation_num, L, R)
+    const int bits = (int) doL << 2 | (int) doR << 1 | (int) invert;
+    switch (bits) {
+        case 0: MAKE_EULERS( 0, 0, 0 ); break;
+        case 1: MAKE_EULERS( 0, 0, 1 ); break;
+        case 2: MAKE_EULERS( 0, 1, 0 ); break;
+        case 3: MAKE_EULERS( 0, 1, 1 ); break;
+        case 4: MAKE_EULERS( 1, 0, 0 ); break;
+        case 5: MAKE_EULERS( 1, 0, 1 ); break;
+        case 6: MAKE_EULERS( 1, 1, 0 ); break;
+        case 7: MAKE_EULERS( 1, 1, 1 ); break;
+    }
+    #undef MAKE_EULERS
+}
+#endif
 
 #ifdef CUDA
 #define INIT_VALUE_BLOCK_SIZE 512
 #endif
 
 template <typename T>
-void InitComplexValue(AccPtr<T> &data, XFLOAT value) {
-    #ifdef CUDA
-    const int grid_size = ceil((float) data.getSize() / (float) INIT_VALUE_BLOCK_SIZE);
-    cuda_kernel_init_complex_value<T><<<grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream()>>>(
-        data.getAccPtr(), value, data.getSize(), INIT_VALUE_BLOCK_SIZE
-    );
-    #else
+void InitComplexValue(AccPtr<T, acc::cpu> &data, XFLOAT value) {
     for (size_t i = 0; i < data.getSize(); i++) {
         data.getHostPtr()[i].x = value;
         data.getHostPtr()[i].y = value;
     }
-    #endif
 }
 
 template <typename T>
-void InitValue(AccPtr<T> &data, T value, size_t Size) {
-    #ifdef CUDA
-    const int grid_size = ceil((float) Size / (float) INIT_VALUE_BLOCK_SIZE);
+void InitValue(AccPtr<T, acc::cpu> &data, T value, size_t size) {
+    std::fill_n(data.getHostPtr(), size, value);
+}
+
+#ifdef CUDA
+
+template <typename T>
+void InitComplexValue(AccPtr<T, acc::cuda> &data, XFLOAT value) {
+    const int grid_size = ceil((float) data.getSize() / (float) INIT_VALUE_BLOCK_SIZE);
+    cuda_kernel_init_complex_value<T><<<grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream()>>>(
+        data.getAccPtr(), value, data.getSize(), INIT_VALUE_BLOCK_SIZE
+    );
+}
+
+template <typename T>
+void InitValue(AccPtr<T, acc::cuda> &data, T value, size_t size) {
+    const int grid_size = ceil((float) size / (float) INIT_VALUE_BLOCK_SIZE);
     cuda_kernel_init_value<T><<<grid_size, INIT_VALUE_BLOCK_SIZE, 0, data.getStream()>>>(
-        data.getAccPtr(), value, Size, INIT_VALUE_BLOCK_SIZE);
+        data.getAccPtr(), value, size, INIT_VALUE_BLOCK_SIZE);
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
-    #else
-    std::fill_n(data.getHostPtr(), Size, value);
-    #endif
 }
+#endif
 
-template <typename T>
-void InitValue(AccPtr<T> &data, T value) {
+template <typename T, acc::Type accType>
+void InitValue(AccPtr<T, accType> &data, T value) {
     InitValue(data, value, data.getSize());
 }
 
@@ -381,34 +469,68 @@ void centerFFT_3D(
 );
 
 
-template <bool do_highpass>
+template <acc::Type>
 void frequencyPass(int grid_size, int block_size,
     cudaStream_t stream,
     acc::Complex *A, long int ori_size,
     size_t Xdim, size_t Ydim, size_t Zdim,
     XFLOAT edge_low, XFLOAT edge_width, XFLOAT edge_high,
-    XFLOAT angpix, size_t image_size
+    XFLOAT angpix, size_t image_size, bool do_highpass
+);
+
+template <>
+inline void frequencyPass<acc::cpu>(
+    int grid_size, int block_size,
+    cudaStream_t stream,
+    acc::Complex *A, long int ori_size,
+    size_t Xdim, size_t Ydim, size_t Zdim,
+    XFLOAT edge_low, XFLOAT edge_width, XFLOAT edge_high,
+    XFLOAT angpix, size_t image_size, bool do_highpass
 ) {
-    #ifdef CUDA
-    const dim3 blocks (grid_size);
-    cuda_kernel_frequencyPass<do_highpass><<<blocks, block_size, 0, stream>>>(
-        A, ori_size, Xdim, Ydim, Zdim,
-        edge_low, edge_width, edge_high,
-        angpix, image_size
-    );
-    #else
-    CpuKernels::kernel_frequencyPass<do_highpass>(
-        grid_size, block_size,
-        A, ori_size, Xdim, Ydim, Zdim,
-        edge_low, edge_width, edge_high,
-        angpix, image_size
-    );
-    #endif
+    if (do_highpass)
+        CpuKernels::kernel_frequencyPass<1>(
+            grid_size, block_size,
+            A, ori_size, Xdim, Ydim, Zdim,
+            edge_low, edge_width, edge_high,
+            angpix, image_size
+        );
+    else
+        CpuKernels::kernel_frequencyPass<0>(
+            grid_size, block_size,
+            A, ori_size, Xdim, Ydim, Zdim,
+            edge_low, edge_width, edge_high,
+            angpix, image_size
+        );
 }
 
-template <bool CTFPREMULTIPLIED, bool REFCTF, bool REF3D, bool DATA3D, int block_sz>
+#ifdef CUDA
+template <>
+inline void frequencyPass<acc::cuda>(
+    int grid_size, int block_size,
+    cudaStream_t stream,
+    acc::Complex *A, long int ori_size,
+    size_t Xdim, size_t Ydim, size_t Zdim,
+    XFLOAT edge_low, XFLOAT edge_width, XFLOAT edge_high,
+    XFLOAT angpix, size_t image_size, bool do_highpass
+) {
+    if (do_highpass) 
+        cuda_kernel_frequencyPass
+        <<<dim3(grid_size), block_size, 0, stream>>>(
+            A, ori_size, Xdim, Ydim, Zdim,
+            angpix, image_size, device_high_pass(edge_low, edge_high, edge_width)
+        );
+    else
+        cuda_kernel_frequencyPass
+        <<<dim3(grid_size), block_size, 0, stream>>>(
+            A, ori_size, Xdim, Ydim, Zdim,
+            angpix, image_size, device_low_pass(edge_low, edge_high, edge_width)
+        );
+}
+#endif
+
+template <acc::Type>
 void kernel_wavg(
-    XFLOAT *g_eulers,
+    int block_sz, XFLOAT *g_eulers,
     AccProjectorKernel &projector,
     unsigned long image_size, unsigned long orientation_num,
     XFLOAT *g_img_real, XFLOAT *g_img_imag,
@@ -417,23 +539,25 @@ void kernel_wavg(
     XFLOAT *g_wdiff2s_parts, XFLOAT *g_wdiff2s_AA, XFLOAT *g_wdiff2s_XA,
     unsigned long translation_num,
     XFLOAT weight_norm, XFLOAT significant_weight, XFLOAT part_scale,
-    cudaStream_t stream
+    cudaStream_t stream,
+    bool CTFPREMULTIPLIED, bool REFCTF, bool REF3D, bool DATA3D
+);
+
+#ifdef ALTCPU
+template <>
+inline void kernel_wavg<acc::cpu>(
+    int block_sz, XFLOAT *g_eulers,
+    AccProjectorKernel &projector,
+    unsigned long image_size, unsigned long orientation_num,
+    XFLOAT *g_img_real, XFLOAT *g_img_imag,
+    XFLOAT *g_trans_x, XFLOAT *g_trans_y, XFLOAT *g_trans_z,
+    XFLOAT* g_weights, XFLOAT* g_ctfs,
+    XFLOAT *g_wdiff2s_parts, XFLOAT *g_wdiff2s_AA, XFLOAT *g_wdiff2s_XA,
+    unsigned long translation_num,
+    XFLOAT weight_norm, XFLOAT significant_weight, XFLOAT part_scale,
+    cudaStream_t stream,
+    bool CTFPREMULTIPLIED, bool REFCTF, bool REF3D, bool DATA3D
 ) {
-    #ifdef CUDA
-    //We only want as many blocks as there are chunks of orientations to be treated
-    //within the same block (this is done to reduce memory loads in the kernel).
-    const dim3 block_dim = orientation_num;
-    // ceil((float) orientation_num / (float) REF_GROUP_SIZE);
-    cuda_kernel_wavg<CTFPREMULTIPLIED, REFCTF, REF3D, DATA3D, block_sz>
-    <<<block_dim,block_sz,(3 * block_sz + 9) * sizeof(XFLOAT), stream>>>(
-        g_eulers, projector, image_size, orientation_num,
-        g_img_real, g_img_imag,
-        g_trans_x, g_trans_y, g_trans_z,
-        g_weights, g_ctfs,
-        g_wdiff2s_parts, g_wdiff2s_AA, g_wdiff2s_XA,
-        translation_num, weight_norm, significant_weight, part_scale
-    );
-    #else
     if (DATA3D) {
         CpuKernels::wavg_3D<CTFPREMULTIPLIED, REFCTF>(
             g_eulers, projector, image_size, orientation_num,
@@ -453,8 +577,58 @@ void kernel_wavg(
             translation_num, weight_norm, significant_weight, part_scale
         );
     }
-    #endif
 }
+#endif
+
+#ifdef CUDA
+template <>
+inline void kernel_wavg<acc::cuda>(
+    int block_sz, XFLOAT *g_eulers,
+    AccProjectorKernel &projector,
+    unsigned long image_size, unsigned long orientation_num,
+    XFLOAT *g_img_real, XFLOAT *g_img_imag,
+    XFLOAT *g_trans_x, XFLOAT *g_trans_y, XFLOAT *g_trans_z,
+    XFLOAT* g_weights, XFLOAT* g_ctfs,
+    XFLOAT *g_wdiff2s_parts, XFLOAT *g_wdiff2s_AA, XFLOAT *g_wdiff2s_XA,
+    unsigned long translation_num,
+    XFLOAT weight_norm, XFLOAT significant_weight, XFLOAT part_scale,
+    cudaStream_t stream,
+    bool CTFPREMULTIPLIED, bool REFCTF, bool REF3D, bool DATA3D
+) {
+    // We only want as many blocks as there are chunks of orientations to be treated
+    // within the same block (this is done to reduce memory loads in the kernel).
+    // ceil((float) orientation_num / (float) REF_GROUP_SIZE);
+    #define KERNEL( A, B, C, D ) cuda_kernel_wavg<A, B, C, D> \
+    <<<dim3(orientation_num), block_sz, (3 * block_sz + 9) * sizeof(XFLOAT), stream>>>( \
+        block_sz, g_eulers, projector, image_size, orientation_num, \
+        g_img_real, g_img_imag, \
+        g_trans_x, g_trans_y, g_trans_z, \
+        g_weights, g_ctfs, \
+        g_wdiff2s_parts, g_wdiff2s_AA, g_wdiff2s_XA, \
+        translation_num, weight_norm, significant_weight, part_scale \
+    )
+    const int bits = (int) CTFPREMULTIPLIED << 3 | (int) REFCTF << 2 | (int) REF3D << 1 | (int) DATA3D << 0;
+    switch (bits) {
+        case  0: KERNEL( 0, 0, 0, 0 ); break;
+        case  1: KERNEL( 0, 0, 0, 1 ); break;
+        case  2: KERNEL( 0, 0, 1, 0 ); break;
+        case  3: KERNEL( 0, 0, 1, 1 ); break;
+        case  4: KERNEL( 0, 1, 0, 0 ); break;
+        case  5: KERNEL( 0, 1, 0, 1 ); break;
+        case  6: KERNEL( 0, 1, 1, 0 ); break;
+        case  7: KERNEL( 0, 1, 1, 1 ); break;
+        case  8: KERNEL( 1, 0, 0, 0 ); break;
+        case  9: KERNEL( 1, 0, 0, 1 ); break;
+        case 10: KERNEL( 1, 0, 1, 0 ); break;
+        case 11: KERNEL( 1, 0, 1, 1 ); break;
+        case 12: KERNEL( 1, 1, 0, 0 ); break;
+        case 13: KERNEL( 1, 1, 0, 1 ); break;
+        case 14: KERNEL( 1, 1, 1, 0 ); break;
+        case 15: KERNEL( 1, 1, 1, 1 ); break;
+    }
+    #undef KERNEL
+}
+#endif
 
 template <bool REF3D, bool DATA3D, int block_sz, int eulers_per_block, int prefetch_fraction>
 void diff2_coarse(
@@ -678,15 +852,34 @@ void diff2_CC_fine(
 template <typename T>
 void kernel_weights_exponent_coarse(
     size_t num_classes,
-    AccPtr<T> &g_pdf_orientation, AccPtr<bool> &g_pdf_orientation_zeros,
-    AccPtr<T> &g_pdf_offset, AccPtr<bool> &g_pdf_offset_zeros,
-    AccPtr<T> &g_Mweight,
+    AccPtr<T, acc::cpu> &g_pdf_orientation, AccPtr<bool, acc::cpu> &g_pdf_orientation_zeros,
+    AccPtr<T, acc::cpu> &g_pdf_offset, AccPtr<bool, acc::cpu> &g_pdf_offset_zeros,
+    AccPtr<T, acc::cpu> &g_Mweight,
     T g_min_diff2,
     size_t nr_coarse_orient, size_t  nr_coarse_trans
 ) {
-    long int block_num = ceilf(((double) nr_coarse_orient * nr_coarse_trans * num_classes) / (double) SUMW_BLOCK_SIZE);
+    const size_t block_num = ceilf(((double) nr_coarse_orient * nr_coarse_trans * num_classes) / (double) SUMW_BLOCK_SIZE);
+    CpuKernels::weights_exponent_coarse(
+        g_pdf_orientation.getAccPtr(), g_pdf_orientation_zeros.getAccPtr(),
+        g_pdf_offset.getAccPtr(), g_pdf_offset_zeros.getAccPtr(),
+        g_Mweight.getAccPtr(),
+        g_min_diff2,
+        nr_coarse_orient, nr_coarse_trans,
+        nr_coarse_orient * nr_coarse_trans * num_classes
+    );
+}
 
 #ifdef CUDA
+template <typename T>
+void kernel_weights_exponent_coarse(
+    size_t num_classes,
+    AccPtr<T, acc::cuda> &g_pdf_orientation, AccPtr<bool, acc::cuda> &g_pdf_orientation_zeros,
+    AccPtr<T, acc::cuda> &g_pdf_offset, AccPtr<bool, acc::cuda> &g_pdf_offset_zeros,
+    AccPtr<T, acc::cuda> &g_Mweight,
+    T g_min_diff2,
+    size_t nr_coarse_orient, size_t  nr_coarse_trans
+) {
+    const size_t block_num = ceilf(((double) nr_coarse_orient * nr_coarse_trans * num_classes) / (double) SUMW_BLOCK_SIZE);
     cuda_kernel_weights_exponent_coarse<T>
     <<<block_num, SUMW_BLOCK_SIZE, 0, g_Mweight.getStream()>>>(
         g_pdf_orientation.getAccPtr(), g_pdf_orientation_zeros.getAccPtr(),
@@ -696,30 +889,25 @@ void kernel_weights_exponent_coarse(
         nr_coarse_orient, nr_coarse_trans,
         nr_coarse_orient * nr_coarse_trans * num_classes
     );
-    #else
-    CpuKernels::weights_exponent_coarse(
-        g_pdf_orientation.getAccPtr(), g_pdf_orientation_zeros.getAccPtr(),
-        g_pdf_offset.getAccPtr(), g_pdf_offset_zeros.getAccPtr(),
-        g_Mweight.getAccPtr(),
-        g_min_diff2,
-        nr_coarse_orient, nr_coarse_trans,
-        nr_coarse_orient * nr_coarse_trans * num_classes
-    );
-    #endif
 }
+#endif
 
 template <typename T>
-void kernel_exponentiate(AccPtr<T> &array, T add) {
+void kernel_exponentiate(AccPtr<T, acc::cpu> &array, T add) {
     const int Dg = ceilf((float) array.getSize() / BLOCK_SIZE);
-    #ifdef CUDA
+    CpuKernels::exponentiate<T>
+        (array.getAccPtr(), add, array.getSize());
+}
+
+#ifdef CUDA
+template <typename T>
+void kernel_exponentiate(AccPtr<T, acc::cuda> &array, T add) {
+    const int Dg = ceilf((float) array.getSize() / BLOCK_SIZE);
     cuda_kernel_exponentiate<T>
     <<<Dg, BLOCK_SIZE, 0, array.getStream()>>>
-    (array.getAccPtr(), add, array.getSize());
-    #else
-    CpuKernels::exponentiate<T>
-    (array.getAccPtr(), add, array.getSize());
-    #endif
+        (array.getAccPtr(), add, array.getSize());
 }
+#endif
 
 void kernel_exponentiate_weights_fine(
     int grid_size, int block_size,

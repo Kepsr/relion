@@ -528,33 +528,17 @@ void lowPassFilterMapGPU(
     XFLOAT edge_high = std::min((double) Xdim, (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size); // in 1/pix
     XFLOAT edge_width = edge_high - edge_low;
 
-    int blocks = ceilf(
+    const int blocks = ceilf(
         (float) ((size_t) Xdim * (size_t) Ydim * (size_t) Zdim) /
         (float) CFTT_BLOCK_SIZE
     );
 
-    // It's a shame do_highpass isn't const
-    if (do_highpass) {
-        AccUtilities::frequencyPass<true>(
-            blocks, CFTT_BLOCK_SIZE, img_in.getStream(),
-            img_in.getAccPtr(),
-            ori_size,
-            Xdim, Ydim, Zdim,
-            edge_low, edge_width, edge_high,
-            (XFLOAT) angpix,
-            (size_t) Xdim * (size_t) Ydim * (size_t) Zdim
-        );
-    } else {
-        AccUtilities::frequencyPass<false>(
-            blocks, CFTT_BLOCK_SIZE, img_in.getStream(),
-            img_in.getAccPtr(),
-            ori_size,
-            Xdim, Ydim, Zdim,
-            edge_low, edge_width, edge_high,
-            (XFLOAT) angpix,
-            (size_t) Xdim * (size_t) Ydim * (size_t) Zdim
-        );
-    }
+    AccUtilities::frequencyPass<acc::type>(
+        blocks, CFTT_BLOCK_SIZE, img_in.getStream(),
+        img_in.getAccPtr(), ori_size, Xdim, Ydim, Zdim,
+        edge_low, edge_width, edge_high, (XFLOAT) angpix,
+        (size_t) Xdim * (size_t) Ydim * (size_t) Zdim, do_highpass
+    );
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
 }
 

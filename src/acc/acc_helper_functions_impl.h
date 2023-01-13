@@ -310,164 +310,18 @@ void runWavgKernel(
     cudaStream_t stream
 ) {
     // cudaFuncSetCacheConfig(cuda_kernel_wavg_fast, cudaFuncCachePreferShared);
-
-    if (ctf_premultiplied) {
-        if (refs_are_ctf_corrected) {
-            if (data_is_3D) {
-                AccUtilities::kernel_wavg<true, true, true, true, WAVG_BLOCK_SIZE_DATA3D>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else if (projector.mdlZ != 0) {
-                AccUtilities::kernel_wavg<true, true, true, false, WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else {
-                AccUtilities::kernel_wavg<true, true, false, false, WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            }
-        } else {
-            if (data_is_3D) {
-                AccUtilities::kernel_wavg<true, false, true, true, WAVG_BLOCK_SIZE_DATA3D>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else if (projector.mdlZ != 0) {
-                AccUtilities::kernel_wavg<true, false, true, false,WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else {
-                AccUtilities::kernel_wavg<true, false, false, false, WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            }
-        }
-    } else {  // if (!ctf_premultiplied)
-        if (refs_are_ctf_corrected) {
-            if (data_is_3D) {
-                AccUtilities::kernel_wavg<false, true, true, true, WAVG_BLOCK_SIZE_DATA3D>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else if (projector.mdlZ != 0) {
-                AccUtilities::kernel_wavg<false, true, true, false, WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else {
-                AccUtilities::kernel_wavg<false, true, false, false, WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            }
-        } else {
-            if (data_is_3D) {
-                AccUtilities::kernel_wavg<false, false, true, true, WAVG_BLOCK_SIZE_DATA3D>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else if (projector.mdlZ != 0) {
-                AccUtilities::kernel_wavg<false, false, true, false, WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            } else {
-                AccUtilities::kernel_wavg<false, false, false, false, WAVG_BLOCK_SIZE>(
-                    eulers, projector, image_size, orientation_num,
-                    Fimg_real, Fimg_imag,
-                    trans_x, trans_y, trans_z,
-                    sorted_weights, ctfs,
-                    wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
-                    translation_num,
-                    (XFLOAT) op.sum_weight[img_id],
-                    (XFLOAT) op.significant_weight[img_id],
-                    part_scale, stream
-                );
-            }
-        }
-    }
+    AccUtilities::kernel_wavg<acc::type>(
+        data_is_3D ? WAVG_BLOCK_SIZE_DATA3D : WAVG_BLOCK_SIZE,
+        eulers, projector, image_size, orientation_num,
+        Fimg_real, Fimg_imag, trans_x, trans_y, trans_z,
+        sorted_weights, ctfs,
+        wdiff2s_parts, wdiff2s_AA, wdiff2s_XA,
+        translation_num,
+        (XFLOAT) op.sum_weight[img_id],
+        (XFLOAT) op.significant_weight[img_id],
+        part_scale, stream,
+        ctf_premultiplied, refs_are_ctf_corrected, data_is_3D || projector.mdlZ != 0, data_is_3D
+    );
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
 }
 

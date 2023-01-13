@@ -22,19 +22,13 @@
  */
 template<bool REF3D, bool DATA3D, int block_sz, int eulers_per_block, int prefetch_fraction>
 __global__ void cuda_kernel_diff2_coarse(
-		XFLOAT *g_eulers,
-		XFLOAT *trans_x,
-		XFLOAT *trans_y,
-		XFLOAT *trans_z,
-		XFLOAT *g_real,
-		XFLOAT *g_imag,
-		AccProjectorKernel projector,
-		XFLOAT *g_corr,
-		XFLOAT *g_diff2s,
-		int translation_num,
-		int image_size
-		)
-{
+	XFLOAT *g_eulers,
+	XFLOAT *trans_x, XFLOAT *trans_y, XFLOAT *trans_z,
+	XFLOAT *g_real, XFLOAT *g_imag,
+	AccProjectorKernel projector,
+	XFLOAT *g_corr, XFLOAT *g_diff2s,
+	int translation_num, int image_size
+) {
 	int tid = threadIdx.x;
 
 	//Prefetch euler matrices

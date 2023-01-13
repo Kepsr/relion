@@ -615,34 +615,20 @@ void getFourierTransformsAndCtfs(
             spectrumAndXi2.accInit(0);
             spectrumAndXi2.streamSync();
 
-            int gridSize = ceil((float) accMLO->transformer1.fouriers.getSize() / (float) POWERCLASS_BLOCK_SIZE);
-            if (accMLO->dataIs3D) {
-                AccUtilities::powerClass<true>(
-                    gridSize, POWERCLASS_BLOCK_SIZE,
-                    accMLO->transformer1.fouriers.getAccPtr(),
-                    spectrumAndXi2.getAccPtr(),
-                    accMLO->transformer1.fouriers.getSize(),
-                    spectrumAndXi2.getSize() - 1,
-                    accMLO->transformer1.sizef[0],
-                    accMLO->transformer1.sizef[1],
-                    accMLO->transformer1.sizef[2],
-                    baseMLO->image_current_size[optics_group] / 2 + 1, // note: NOT baseMLO->image_full_size[optics_group] / 2 + 1
-                    spectrumAndXi2.getAccPtr() + spectrumAndXi2.getSize() - 1
-                ); // last element is the highres_Xi2
-            } else {
-                AccUtilities::powerClass<false>(
-                    gridSize, POWERCLASS_BLOCK_SIZE,
-                    accMLO->transformer1.fouriers.getAccPtr(),
-                    spectrumAndXi2.getAccPtr(),
-                    accMLO->transformer1.fouriers.getSize(),
-                    spectrumAndXi2.getSize() - 1,
-                    accMLO->transformer1.sizef[0],
-                    accMLO->transformer1.sizef[1],
-                    accMLO->transformer1.sizef[2],
-                    baseMLO->image_current_size[optics_group] / 2 + 1, // note: NOT baseMLO->image_full_size[optics_group] / 2 + 1
-                    spectrumAndXi2.getAccPtr() + spectrumAndXi2.getSize() - 1
-                ); // last element is the highres_Xi2
-            }
+            const int gridSize = ceil((float) accMLO->transformer1.fouriers.getSize() / (float) POWERCLASS_BLOCK_SIZE);
+            AccUtilities::powerClass<acc::type>(
+                gridSize, POWERCLASS_BLOCK_SIZE,
+                accMLO->transformer1.fouriers.getAccPtr(),
+                spectrumAndXi2.getAccPtr(),
+                accMLO->transformer1.fouriers.getSize(),
+                spectrumAndXi2.getSize() - 1,
+                accMLO->transformer1.sizef[0],
+                accMLO->transformer1.sizef[1],
+                accMLO->transformer1.sizef[2],
+                baseMLO->image_current_size[optics_group] / 2 + 1,  // note: NOT baseMLO->image_full_size[optics_group] / 2 + 1
+                spectrumAndXi2.getAccPtr() + spectrumAndXi2.getSize() - 1,  // highres_Xi2
+                accMLO->dataIs3D
+            );
             LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
 
             spectrumAndXi2.streamSync();

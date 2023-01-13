@@ -263,14 +263,15 @@ public:
 };
 
 template <typename T>
-struct MoreThanCubOpt
-{
-    T compare;
-    MoreThanCubOpt(T compare) : compare(compare) {}
+struct device_greater_than {
+
+    T infimum;
+
+    device_greater_than(T infimum): infimum (infimum) {}
+
     __device__ __forceinline__
-    bool operator()(const T &a) const {
-        return (a > compare);
-    }
+    bool operator () (const T &x) const { return x > infimum; }
+
 };
 
 template <typename T, typename SelectOp>

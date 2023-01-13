@@ -12,7 +12,7 @@
 #include "src/acc/acc_projector.h"
 #include "src/acc/acc_projectorkernel_impl.h"
 
-template<typename T>
+template <typename T>
 __global__ void cuda_kernel_weights_exponent_coarse(
     T *g_pdf_orientation, bool *g_pdf_orientation_zeros,
     T *g_pdf_offset, bool *g_pdf_offset_zeros,
@@ -30,7 +30,7 @@ __global__ void cuda_kernel_weights_exponent_coarse(
         g_weights[i] = g_pdf_orientation[iorient] + g_pdf_offset[itrans] + g_min_diff2 - diff2;
 }
 
-template<typename T>
+template <typename T>
 __global__ void cuda_kernel_exponentiate(
     T *g_array, T add, size_t size
 ) {
@@ -359,12 +359,53 @@ __global__ void cuda_kernel_cast(T1 const* IN, T2 *OUT, int size) {
     if (i < size) OUT[i] = IN[i];
 }
 
-template<bool do_highpass>
+struct device_high_pass {
+
+    XFLOAT lo, hi, width_factor;
+
+    device_high_pass(XFLOAT lo, XFLOAT hi, XFLOAT w):
+        lo (lo), hi (hi), width_factor (PI / w) {}
+
+    __device__
+    inline void operator () (RFLOAT res, acc::Complex& x) const {
+        if (res < lo) {
+            x.x = 0.0;
+            x.y = 0.0;
+        } else if (res < hi) {
+            const XFLOAT factor = 0.5 * (1.0 - cos((res - lo) * width_factor));
+            x.x *= factor;
+            x.y *= factor;
+        }
+    }
+
+};
+
+struct device_low_pass {
+
+    XFLOAT lo, hi, width_factor;
+
+    device_low_pass(XFLOAT lo, XFLOAT hi, XFLOAT w):
+        lo (lo), hi (hi), width_factor (PI / w) {}
+
+    __device__
+    inline void operator () (RFLOAT res, acc::Complex& x) const {
+        if (res > hi) {
+            x.x = 0.0;
+            x.y = 0.0;
+        } else if (res > lo) {
+            const XFLOAT factor = 0.5 * (1.0 + cos((res - lo) * width_factor));
+            x.x *= factor;
+            x.y *= factor;
+        }
+    }
+
+};
+
+template <typename FilterT>
 __global__ void cuda_kernel_frequencyPass(
     acc::Complex *A, long int ori_size,
     size_t Xdim, size_t Ydim, size_t Zdim,
-    XFLOAT edge_low, XFLOAT edge_width, XFLOAT edge_high,
-    XFLOAT angpix, int image_size
+    XFLOAT angpix, int image_size, const FilterT& filter
 ) {
     const int i = threadIdx.x + blockIdx.x * blockDim.x;
     if (i >= image_size) return;
@@ -379,29 +420,7 @@ __global__ void cuda_kernel_frequencyPass(
 
     const RFLOAT r2 = xp * xp + yp * yp + zp * zp;
     const RFLOAT res = sqrt(r2) / ori_size;
-    if (do_highpass) {
-        if (res < edge_low) {
-            // highpass => lows are dead
-            A[i].x = 0.0;
-            A[i].y = 0.0;
-        } else if (res < edge_high) {
-            // highpass => medium lows are almost dead
-            const XFLOAT factor = 0.5 * (1.0 - cos((res - edge_low) * PI / edge_width));
-            A[i].x *= factor;
-            A[i].y *= factor;
-        }
-    } else {  // lowpass
-        if (res > edge_high) {
-            // lowpass => highs are dead
-            A[i].x = 0.0;
-            A[i].y = 0.0;
-        } else if (res > edge_low) {
-            //lowpass => medium highs are almost dead
-            const XFLOAT factor = 0.5 + (1.0 + cos((res - edge_low) * PI / edge_width));
-            A[i].x *= factor;
-            A[i].y *= factor;
-        }
-    }
+    filter(res, A[i]);
 }
 
 template<bool DATA3D>
