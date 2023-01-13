@@ -316,7 +316,7 @@ void getFourierTransformsAndCtfs(
 
         // ------------------------------------------------------------------------------------------
 
-        AccDataTypes::Image<XFLOAT> RandomImage(img(), ptrFactory);
+        AccDataTypes::Image<XFLOAT> RandomImage(ptrFactory, (int) img().xdim, (int) img().ydim, (int) img().zdim);
         CTICTOC(accMLO->timer, "makeNoiseMask", ({
         // Either mask with zeros or noise. Here, make a noise-image that will be optional in the softMask-kernel.
 
@@ -326,7 +326,7 @@ void getFourierTransformsAndCtfs(
                     CRITICAL("Noise-masking not supported with acceleration and 3D input: Noise-kernel(s) is hard-coded 2D");
 
                 // Make a F-space image to hold generate and modulate noise
-                RandomImage.accAlloc();
+                RandomImage.ptr.accAlloc();
 
                 // Set up scalar adjustment factor and random seed
                 XFLOAT temp_sigmaFudgeFactor = baseMLO->sigma2_fudge;
@@ -343,14 +343,13 @@ void getFourierTransformsAndCtfs(
                     }
                 }
 
-
                 LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
                 // construct the noise-image
                 AccUtilities::makeNoiseImage<MlClass>(
                     temp_sigmaFudgeFactor,
                     remapped_sigma2_noise,
                     seed, accMLO,
-                    RandomImage, RandomImage.is3D()
+                    RandomImage.ptr, RandomImage.is3D()
                 );
                 LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
         }
@@ -406,18 +405,18 @@ void getFourierTransformsAndCtfs(
 
         // ------------------------------------------------------------------------------------------
 
-        AccDataTypes::Image<XFLOAT> d_img(img.data, ptrFactory);
-        AccDataTypes::Image<XFLOAT> d_rec_img(img.data, ptrFactory);
+        AccDataTypes::Image<XFLOAT> d_img     (ptrFactory, (int) img.data.xdim, (int) img.data.ydim, (int) img.data.zdim);
+        AccDataTypes::Image<XFLOAT> d_rec_img (ptrFactory, (int) img.data.xdim, (int) img.data.ydim, (int) img.data.zdim);
         XFLOAT normcorr_val;
         CTICTOC(accMLO->timer, "TranslateAndNormCorrect", ({
 
-        d_img.allAlloc();
-        d_img.allInit(0);
+        d_img.ptr.allAlloc();
+        d_img.ptr.allInit(0);
 
         normcorr_val = baseMLO->do_norm_correction ? (XFLOAT) (baseMLO->mymodel.avg_norm_correction / normcorr) : 1;
         AccUtilities::TranslateAndNormCorrect(
-            img.data,	// input   	host-side 	MultidimArray
-            d_img,		// output  	acc-side  	Array
+            img.data,   // input   	host-side 	MultidimArray
+            d_img.ptr,  // output  	acc-side  	Array
             normcorr_val,
             my_old_offset[0], my_old_offset[1],
             accMLO->dataIs3D ? my_old_offset[2] : 0.0,
@@ -433,11 +432,11 @@ void getFourierTransformsAndCtfs(
         //
         if (baseMLO->has_converged && baseMLO->do_use_reconstruct_images) {
             CTICTOC(accMLO->timer, "TranslateAndNormCorrect_recImg", ({
-            d_rec_img.allAlloc();
-            d_rec_img.allInit(0);
+            d_rec_img.ptr.allAlloc();
+            d_rec_img.ptr.allInit(0);
             AccUtilities::TranslateAndNormCorrect(
-                rec_img.data,	// input   	host-side 	MultidimArray
-                d_rec_img,		// output  	acc-side  	Array
+                rec_img.data,   // input   	host-side 	MultidimArray
+                d_rec_img.ptr,  // output  	acc-side  	Array
                 normcorr_val,
                 my_old_offset[0], my_old_offset[1],
                 accMLO->dataIs3D ? my_old_offset[2] : 0.0,
@@ -449,8 +448,8 @@ void getFourierTransformsAndCtfs(
             CTICTOC(accMLO->timer, "normalizeAndTransform_recImg", ({
             // The image used to reconstruct is not masked, so we transform and beam-tilt it
             AccUtilities::normalizeAndTransformImage<MlClass>(
-                d_rec_img,		// input  acc-side  Array
-                Fimg,			// output host-side MultidimArray
+                d_rec_img.ptr,  // input  acc-side  Array
+                Fimg,           // output host-side MultidimArray
                 accMLO,
                 current_size_x, current_size_y, current_size_z
             );
@@ -461,8 +460,8 @@ void getFourierTransformsAndCtfs(
             CTICTOC(accMLO->timer, "normalizeAndTransform_recImg", ({
             // The image used to reconstruct is not masked, so we transform and beam-tilt it
             AccUtilities::normalizeAndTransformImage<MlClass>(
-                d_img,		// input  acc-side  Array
-                Fimg,		// output host-side MultidimArray
+                d_img.ptr,  // input  acc-side  Array
+                Fimg,       // output host-side MultidimArray
                 accMLO,
                 current_size_x, current_size_y, current_size_z
             );
@@ -513,8 +512,8 @@ void getFourierTransformsAndCtfs(
             CTICTOC(accMLO->timer, "applyHelicalMask", ({
 
             // download img...
-            d_img.cpToHost();
-            d_img.streamSync();
+            d_img.ptr.cpToHost();
+            d_img.ptr.streamSync();
             d_img.getHost(img());
 
             // ...modify img...
@@ -526,9 +525,9 @@ void getFourierTransformsAndCtfs(
                 );
             } else {
                 MultidimArray<RFLOAT> Mnoise;
-                RandomImage.hostAlloc();
-                RandomImage.cpToHost();
                 Mnoise.resize(img());
+                RandomImage.ptr.hostAlloc();
+                RandomImage.ptr.cpToHost();
                 RandomImage.getHost(Mnoise);
                 softMaskOutsideMapForHelix(
                     img(), psi_deg, tilt_deg, my_mask_radius,
@@ -540,7 +539,7 @@ void getFourierTransformsAndCtfs(
 
             // ... and re-upload img
             d_img.setHost(img());
-            d_img.cpToDevice();
+            d_img.ptr.cpToDevice();
             }));
         } else {
             // this is not a helical segment
@@ -579,7 +578,7 @@ void getFourierTransformsAndCtfs(
 
             // Avoid kernel calls warning about nullptr for RandomImage
             if (baseMLO->do_zero_mask)
-                RandomImage.setAccPtr(d_img.getHostPtr());
+                RandomImage.ptr.setAccPtr(d_img.ptr.getHostPtr());
 
             // Apply a cosine-softened mask, using either the background value or the noise-image outside of the radius
             AccUtilities::cosineFilter(
@@ -597,8 +596,8 @@ void getFourierTransformsAndCtfs(
 
         CTICTOC(accMLO->timer, "normalizeAndTransform", ({
         AccUtilities::normalizeAndTransformImage<MlClass>(
-            d_img,		// input
-            Fimg,		// output
+            d_img.ptr,  // input
+            Fimg,       // output
             accMLO,
             current_size_x, current_size_y, current_size_z
         );
@@ -2204,9 +2203,6 @@ void storeWeightedSums(
                         );
                     }
 
-                    if (!baseMLO->do_helical_refine || baseMLO->ignore_helical_symmetry) {
-                        RFLOAT diffx = myprior_x - oo_otrans.getHostPtr()[otrans_x + fake_class * nr_transes + iitrans];
-                    }
                     RFLOAT diffx = myprior_x - oo_otrans.getHostPtr()[otrans_x + fake_class * nr_transes + iitrans];
                     RFLOAT diffy = myprior_y - oo_otrans.getHostPtr()[otrans_y + fake_class * nr_transes + iitrans];
                     RFLOAT diffz = 0;

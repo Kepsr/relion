@@ -6,8 +6,11 @@
 
 namespace AccDataTypes {
 
-template<typename T>
-class Image: public AccPtr<T> {
+template<typename T, acc::Type accType = acc::type>
+class Image {
+
+    using ptr_t = AccPtr<T, accType>;
+    using factory_t = AccPtrFactory<accType>;
 
     private:
 
@@ -16,53 +19,35 @@ class Image: public AccPtr<T> {
 
     public:
 
+    ptr_t ptr;
+
     /*======================================================
                          CONSTRUCTORS
     ======================================================*/
 
-    template <acc::Type accType>
-    Image(AccPtrFactory<accType> &f):
-        AccPtr<T>(f.template make<T>()),
-        x(0), y(0), z(0), fourier(false) {}
+    Image(factory_t &f):
+        x(0), y(0), z(0), fourier(false),
+        ptr(f.template make<T>()) {}
 
-    template <acc::Type accType>
-    Image(int xdim, AccPtrFactory<accType> &f):
-        AccPtr<T>(f.template make<T>(xdim)),
-        x(xdim), y(1), z(1), fourier(false) {}
+    Image(factory_t &f, int xdim, int ydim = 1, int zdim = 1):
+        x(xdim), y(ydim), z(zdim), fourier(false),
+        ptr(f.template make<T>(xdim * ydim * zdim)) {}
 
-    template <acc::Type accType>
-    Image(int xdim, int ydim, AccPtrFactory<accType> &f):
-        AccPtr<T>(f.template make<T>(xdim * ydim)),
-        x(xdim), y(ydim), z(1), fourier(false) {}
-
-    template <acc::Type accType>
-    Image(int xdim, int ydim, int zdim, AccPtrFactory<accType> &f):
-        AccPtr<T>(f.template make<T>(xdim * ydim * zdim)),
-        x(xdim), y(ydim), z(zdim), fourier(false) {}
-
-    template<typename T1, acc::Type accType>
-    Image(MultidimArray<T1> img, AccPtrFactory<accType> &f):
-        AccPtr<T>(f.template make<T>(img.size())),
-        x(img.xdim), y(img.ydim), z(img.zdim),
-        fourier(false) {}
-
-    template <acc::Type accType>
-    Image(int box_dim, bool is_fourier, bool is3D, AccPtrFactory<accType> &f) {
+    Image(factory_t &f, int box_dim, bool is_fourier, bool is3D) {
         setSize(box_dim, is_fourier, is3D);
-        AccPtr<T>(f.template make<T>(x * y * z));
+        ptr(f.template make<T>(x * y * z));
     }
 
     /*======================================================
                            METHODS
     ======================================================*/
 
-    int getx() { return x; }
-    int gety() { return y; }
-    int getz() { return z; }
-    int getxy()  { return x * y; }
-    int getxyz() { return AccPtr<T>::getSize(); }
-
-    bool is3D() { return z > 1; }
+    int getx() const { return x; }
+    int gety() const { return y; }
+    int getz() const { return z; }
+    int getxy() const { return x * y; }
+    int getxyz() const { return ptr.getSize(); }
+    bool is3D() const { return z > 1; }
 
     void setSize(int box_dim, bool is_fourier, bool is3D) {
         if (fourier = is_fourier) {
@@ -70,59 +55,57 @@ class Image: public AccPtr<T> {
             y = box_dim;
             z = is3D ? box_dim : 1;
         }
-        AccPtr<T>::setSize(x * y * z);
+        ptr.setSize(x * y * z);
     }
 
     void setSize(int xdim, int ydim = 1, int zdim = 1) {
-        AccPtr<T>::setSize(xdim * ydim * zdim);
+        ptr.setSize(xdim * ydim * zdim);
     }
 
     template <typename T1>
     void setSize(MultidimArray<T1> img) {
-        AccPtr<T>::setSize(img.xdim * img.xdim * img.xdim);
+        ptr.setSize(img.xdim * img.xdim * img.xdim);
     }
 
     template <typename T1>
     void setHost(MultidimArray<T1> &img) {
         if (img.xdim != x || img.ydim != y || img.zdim != z) {
-            if (img.size() > AccPtr<T>::getSize()) {
-                AccPtr<T>::free();
+            if (img.size() > this->ptr.getSize()) {
+                this->ptr.free();
                 setSize(img);
-                AccPtr<T>::hostAlloc();
+                this->ptr.hostAlloc();
             } else {
                 setSize(img);
             }
         }
 
-        if (!AccPtr<T>::getHostPtr()) AccPtr<T>::hostAlloc();
+        if (!this->ptr.getHostPtr()) this->ptr.hostAlloc();
 
-        T *ptr = AccPtr<T>::getHostPtr();
+        T *ptr = this->ptr.getHostPtr();
 
         if (sizeof(T) == sizeof(T1)) {
             memcpy(ptr, img.data, sizeof(T) * img.size());
         } else {
-            for (unsigned long i = 0; i < img.size(); i++)
-                ptr[i] = (T) img.data[i];
+            std::copy_n(img.data, img.size(), ptr);
         }
     }
 
-    template <typename T1>
-    void getHost(MultidimArray<T1> &img) {
+    template <typename U>
+    void getHost(MultidimArray<U> &img) {
 
-        if (img.size() != AccPtr<T>::getSize()) {
+        if (img.size() != this->ptr.getSize()) {
             if (img.size() == 0) {
                 img.resize(x, y, z);
             } else {
                 CRITICAL("Trying to fill host-array with data from an array with different size!")
             }
         }
-        T *ptr = AccPtr<T>::getHostPtr();
+        T *ptr = this->ptr.getHostPtr();
 
-        if (sizeof(T) == sizeof(T1)) {
+        if (sizeof(T) == sizeof(U)) {
             memcpy(img.data, ptr, sizeof(T) * img.size());
         } else {
-            for (unsigned long i = 0; i < img.size(); i++)
-                img.data[i] = (T1) ptr[i];
+            std::copy_n(ptr, img.size(), img.data);
         }
     }
 

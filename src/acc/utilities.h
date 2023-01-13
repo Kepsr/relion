@@ -40,8 +40,8 @@ namespace CpuKernels {
 
 namespace AccUtilities {
 
-template <typename T>
-static void multiply(int block_dimensions, AccDataTypes::Image<T> &ptr, T value) {
+template <typename T, acc::Type accType>
+static void multiply(int block_dimensions, AccDataTypes::Image<T, accType> &ptr, T value) {
     #ifdef CUDA
     const int grid_dimensions = ceilf((float) ptr.getSize() / (float) block_dimensions);
     CudaKernels::cuda_kernel_multi<T><<<grid_dimensions, block_dimensions, 0, ptr.getStream()>>>
@@ -65,9 +65,9 @@ static void multiply(
     #endif
 }
 
-template <typename T>
+template <typename T, acc::Type accType>
 static void translate(
-    int block_size, AccDataTypes::Image<T> &in, AccDataTypes::Image<T> &out,
+    int block_size, AccDataTypes::Image<T, accType> &in, AccDataTypes::Image<T, accType> &out,
     int dx, int dy, int dz = 0
 ) {
     if (in.getAccPtr() == out.getAccPtr())

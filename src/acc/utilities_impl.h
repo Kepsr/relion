@@ -391,15 +391,17 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
 
 }
 
+template <acc::Type accType>
 static void softMaskBackgroundValue(
-    AccDataTypes::Image<XFLOAT> &vol,
+    AccDataTypes::Image<XFLOAT, accType> &vol,
     XFLOAT radius, XFLOAT radius_p, XFLOAT cosine_width,
     AccPtr<XFLOAT> &g_sum, AccPtr<XFLOAT> &g_sum_bg
 ) {
     const int block_dim = 128; // TODO: set balanced (hardware-dep?)
     #ifdef CUDA
-    cuda_kernel_softMaskBackgroundValue<<<block_dim, SOFTMASK_BLOCK_SIZE, 0, vol.getStream()>>>(
-        {vol.getAccPtr(), vol.getxyz(),
+    cuda_kernel_softMaskBackgroundValue
+    <<<block_dim, SOFTMASK_BLOCK_SIZE, 0, vol.ptr.getStream()>>>(
+        {vol.ptr.getAccPtr(), vol.getxyz(),
          vol.getx(),     vol.gety(),     vol.getz(),
          vol.getx() / 2, vol.gety() / 2, vol.getz() / 2},
         radius, radius_p, cosine_width, g_sum.getAccPtr(), g_sum_bg.getAccPtr()
@@ -416,21 +418,23 @@ static void softMaskBackgroundValue(
     #endif
 }
 
+template <acc::Type accType>
 static void cosineFilter(
-    AccDataTypes::Image<XFLOAT> &vol,
+    AccDataTypes::Image<XFLOAT, accType> &vol,
     bool do_Mnoise,
-    AccDataTypes::Image<XFLOAT> Noise,
+    AccDataTypes::Image<XFLOAT, accType> Noise,
     XFLOAT radius, XFLOAT radius_p,
     XFLOAT cosine_width,
     XFLOAT sum_bg_total
 ) {
     const int block_dim = 128; // TODO: set balanced (hardware-dep?)
     #ifdef CUDA
-    cuda_kernel_cosineFilter<<<block_dim, SOFTMASK_BLOCK_SIZE, 0, vol.getStream()>>>(
-        {vol.getAccPtr(), vol.getxyz(),
+    cuda_kernel_cosineFilter
+    <<<block_dim, SOFTMASK_BLOCK_SIZE, 0, vol.ptr.getStream()>>>(
+        {vol.ptr.getAccPtr(), vol.getxyz(),
          vol.getx(),     vol.gety(),     vol.getz(),
          vol.getx() / 2, vol.gety() / 2, vol.getz() / 2},
-        !do_Mnoise, Noise.getAccPtr(),
+        !do_Mnoise, Noise.ptr.getAccPtr(),
         radius, radius_p,
         cosine_width, sum_bg_total
     );
