@@ -2,7 +2,7 @@
 #define CUDA_PROJECTOR_PLAN_H_
 
 #include <vector>
-#include "src/gpu_utils/cuda_settings.h"
+#include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_mem_utils.h"
 #include "src/healpix_sampling.h"
 #include <iostream>

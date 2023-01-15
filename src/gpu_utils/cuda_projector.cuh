@@ -3,7 +3,7 @@
 
 #include <cuda_runtime.h>
 #include "src/gpu_utils/cuda_projector.h"
-#include "src/gpu_utils/cuda_device_utils.cuh"
+#include "src/acc/cuda/cuda_kernels/cuda_device_utils.cuh"
 
 
 

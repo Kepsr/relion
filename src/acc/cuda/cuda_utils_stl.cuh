@@ -2,7 +2,7 @@
 #define CUDA_UTILS_STL_CUH_
 
 #include <cuda_runtime.h>
-#include "src/gpu_utils/cuda_settings.h"
+#include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_mem_utils.h"
 #include <stdio.h>
 #include <signal.h>
