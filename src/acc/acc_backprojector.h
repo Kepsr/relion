@@ -15,8 +15,7 @@
 #include <tbb/spin_mutex.h>
 #endif
 
-class AccBackprojector
-{
+class AccBackprojector {
 
 public:
 	int mdlX, mdlY, mdlZ,
@@ -46,9 +45,9 @@ public:
 				allocaton_size(0), voxelCount(0),
 				d_mdlReal(NULL), d_mdlImag(NULL), d_mdlWeight(NULL),
 				stream(0)
-#ifndef CUDA
+				#ifndef CUDA
 				, mutexes(0)
-#endif
+				#endif
 	{}
 
 	size_t setMdlDim(

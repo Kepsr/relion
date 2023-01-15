@@ -5,7 +5,7 @@
 #include "src/acc/cuda/cuda_mem_utils.h"
 #include "src/gpu_utils/cuda_projector_plan.h"
 #include "src/gpu_utils/cuda_projector.h"
-#include "src/gpu_utils/cuda_backprojector.h"
+#include "src/acc/cuda/cuda_backprojector.h"
 #include "src/gpu_utils/cuda_fft.h"
 #include "src/gpu_utils/cuda_benchmark_utils.h"
 #include <stack>

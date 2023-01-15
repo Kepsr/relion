@@ -14,6 +14,7 @@
 #include "src/acc/acc_ptr.h"
 #include "src/acc/acc_projector.h"
 #include "src/acc/acc_backprojector.h"
+#include "src/acc/acc_backprojector_impl.h"
 #include "src/acc/acc_projector_plan.h"
 #include "src/acc/cuda/cuda_benchmark_utils.h"
 #include "src/acc/cuda/cuda_kernels/helper.cuh"

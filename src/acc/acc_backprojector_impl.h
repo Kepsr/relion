@@ -1,9 +1,13 @@
-//#include <signal.h>
-//#include <cuda_runtime.h>
-//#include "src/acc/settings.h"
-//#include "src/acc/acc_backprojector.h"
-//#include "src/acc/cuda/cuda_kernels/cuda_device_utils.cuh"
-//#include "src/acc/acc_projector.h"
+#include <signal.h>
+#ifdef CUDA
+#include <cuda_runtime.h>
+#endif
+#include "src/acc/settings.h"
+#include "src/acc/acc_backprojector.h"
+#ifdef CUDA
+#include "src/acc/cuda/cuda_kernels/cuda_device_utils.cuh"
+#endif
+#include "src/acc/acc_projector.h"
 
 size_t AccBackprojector::setMdlDim(
 			int xdim, int ydim, int zdim,

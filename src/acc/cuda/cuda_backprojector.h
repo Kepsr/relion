@@ -3,11 +3,11 @@
 
 #include <cuda_runtime.h>
 #include "src/complex.h"
-#include "src/gpu_utils/cuda_settings.h"
+#include "src/acc/settings.h"
+#include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_mem_utils.h"
 
-class CudaBackprojector
-{
+class CudaBackprojector {
 
 public:
 	int mdlX, mdlY, mdlZ, mdlXYZ,
