@@ -2,7 +2,7 @@
 #define CUDA_ML_OPTIMISER_H_
 #include "src/mpi.h"
 #include "src/ml_optimiser.h"
-#include "src/gpu_utils/cuda_mem_utils.h"
+#include "src/acc/cuda/cuda_mem_utils.h"
 #include "src/gpu_utils/cuda_projector_plan.h"
 #include "src/gpu_utils/cuda_projector.h"
 #include "src/gpu_utils/cuda_backprojector.h"

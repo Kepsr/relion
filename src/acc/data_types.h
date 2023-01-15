@@ -12,8 +12,6 @@ class Image {
     using ptr_t = AccPtr<T, accType>;
     using factory_t = AccPtrFactory<accType>;
 
-    private:
-
     int x, y, z;
     bool fourier; // Is this a Fourier space data array?
 

@@ -17,7 +17,7 @@
 #include "src/gpu_utils/cuda_kernels/diff2.cuh"
 #include "src/gpu_utils/cuda_kernels/wavg.cuh"
 #include "src/gpu_utils/cuda_helper_functions.cuh"
-#include "src/gpu_utils/cuda_mem_utils.h"
+#include "src/acc/cuda/cuda_mem_utils.h"
 #include "src/complex.h"
 #include "src/helix.h"
 #include "src/error.h"

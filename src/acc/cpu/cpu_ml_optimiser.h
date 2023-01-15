@@ -56,7 +56,7 @@ public:
 	int thread_id;
 
 	MlDataBundle *bundle;
-	std::vector< int > classStreams;
+	std::vector< StreamType > classStreams;
 
 
 #ifdef TIMING_FILES

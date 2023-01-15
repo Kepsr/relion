@@ -256,6 +256,11 @@ void selfApplyBeamTilt2(
 
 template <typename T>
 void runCenterFFT(MultidimArray<T>& v, bool forward, CudaCustomAllocator *allocator) {
+    #ifdef CUDA
+    using AccUtilities::GpuKernels::centerFFT_3D;
+    #else
+    using AccUtilities::CpuKernels::centerFFT_3D;
+    #endif
     AccPtr<XFLOAT> img_in (v.size(), allocator);   // with original data pointer
 	// AccPtr<XFLOAT>  img_aux (v.size(), allocator);   // temporary holder
 
@@ -302,7 +307,7 @@ void runCenterFFT(MultidimArray<T>& v, bool forward, CudaCustomAllocator *alloca
         }
 
         int dim = ceilf((float) (v.size() / (float) (2 * CFTT_BLOCK_SIZE)));
-        AccUtilities::centerFFT_2D(
+        centerFFT_2D(
             dim, 0, CFTT_BLOCK_SIZE,
             #ifdef CUDA
             img_in.getAccPtr(),
@@ -413,14 +418,15 @@ void runCenterFFT(MultidimArray<T>& v, bool forward, CudaCustomAllocator *alloca
 
 template <typename T>
 void runCenterFFT(
-    AccPtr<T> &img_in,
-    int xSize,
-    int ySize,
-    bool forward,
-    int batchSize = 1
+    AccPtr<T> &img_in, int xSize, int ySize, bool forward, int batchSize = 1
 ) {
-//	AccPtr<XFLOAT >  img_aux(img_in.h_ptr, img_in.getSize(), allocator);   // temporary holder
-//	img_aux.deviceAlloc();
+	// AccPtr<XFLOAT> img_aux (img_in.h_ptr, img_in.getSize(), allocator);   // temporary holder
+	// img_aux.deviceAlloc();
+    #ifdef CUDA
+    using AccUtilities::GpuKernels::centerFFT_2D;
+    #else
+    using AccUtilities::CpuKernels::centerFFT_2D;
+    #endif
 
     int xshift = xSize / 2;
     int yshift = ySize / 2;
@@ -430,8 +436,8 @@ void runCenterFFT(
         yshift = -yshift;
     }
 
-    int blocks = ceilf((float) ((xSize * ySize) / (float) (2 * CFTT_BLOCK_SIZE)));
-    AccUtilities::centerFFT_2D(
+    const int blocks = ceilf((float) ((xSize * ySize) / (float) (2 * CFTT_BLOCK_SIZE)));
+    centerFFT_2D(
         blocks, batchSize, CFTT_BLOCK_SIZE,
         img_in.getStream(),
         img_in.getAccPtr(),
@@ -444,23 +450,23 @@ void runCenterFFT(
 
 //	HANDLE_ERROR(cudaStreamSynchronize(0));
 //	img_aux.cpOnDevice(img_in.d_ptr); //update input image with centered kernel-output.
-
-
 }
 
 template <typename T>
 void runCenterFFT(
-    AccPtr<T> &img_in,
-    int xSize,
-    int ySize,
-    int zSize,
-    bool forward,
-    int batchSize = 1
+    AccPtr<T> &img_in, int xSize, int ySize, int zSize, bool forward, int batchSize = 1
 ) {
-//	AccPtr<XFLOAT >  img_aux(img_in.h_ptr, img_in.getSize(), allocator);   // temporary holder
-//	img_aux.deviceAlloc();
+	// AccPtr<XFLOAT> img_aux (img_in.h_ptr, img_in.getSize(), allocator);   // temporary holder
+	// img_aux.deviceAlloc();
+    #ifdef CUDA
+    using AccUtilities::GpuKernels::centerFFT_2D;
+    using AccUtilities::GpuKernels::centerFFT_3D;
+    #else
+    using AccUtilities::CpuKernels::centerFFT_2D;
+    using AccUtilities::CpuKernels::centerFFT_3D;
+    #endif
 
-    if(zSize > 1) {
+    if (zSize > 1) {
         int xshift = xSize / 2;
         int yshift = ySize / 2;
         int zshift = ySize / 2;
@@ -473,7 +479,7 @@ void runCenterFFT(
 
         int grid_size = ceilf((float) (((size_t) xSize * (size_t) ySize * (size_t) zSize) /
             (float) (2 * CFTT_BLOCK_SIZE)));
-        AccUtilities::centerFFT_3D(
+        centerFFT_3D(
             grid_size, batchSize, CFTT_BLOCK_SIZE,
             img_in.getStream(),
             img_in.getAccPtr(),
@@ -494,7 +500,7 @@ void runCenterFFT(
         }
 
         int blocks = ceilf((float) ((xSize * ySize) / (float) (2 * CFTT_BLOCK_SIZE)));
-        AccUtilities::centerFFT_2D(
+        centerFFT_2D(
             blocks, batchSize, CFTT_BLOCK_SIZE,
             img_in.getStream(),
             img_in.getAccPtr(),

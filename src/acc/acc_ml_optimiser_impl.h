@@ -345,7 +345,7 @@ void getFourierTransformsAndCtfs(
 
                 LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
                 // construct the noise-image
-                AccUtilities::makeNoiseImage<MlClass>(
+                AccUtilities::makeNoiseImage(
                     temp_sigmaFudgeFactor,
                     remapped_sigma2_noise,
                     seed, accMLO,
@@ -445,28 +445,28 @@ void getFourierTransformsAndCtfs(
             LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
             }));
 
-            CTICTOC(accMLO->timer, "normalizeAndTransform_recImg", ({
+            // CTICTOC(accMLO->timer, "normalizeAndTransform_recImg", ({
             // The image used to reconstruct is not masked, so we transform and beam-tilt it
-            AccUtilities::normalizeAndTransformImage<MlClass>(
+            AccUtilities::normalizeAndTransformImage(
                 d_rec_img.ptr,  // input  acc-side  Array
                 Fimg,           // output host-side MultidimArray
                 accMLO,
                 current_size_x, current_size_y, current_size_z
             );
             LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
-            }));
+            // }));
         } else {
             // if we don't have special images, just use the same as for alignment. But do it here, *before masking*
-            CTICTOC(accMLO->timer, "normalizeAndTransform_recImg", ({
+            // CTICTOC(accMLO->timer, "normalizeAndTransform_recImg", ({
             // The image used to reconstruct is not masked, so we transform and beam-tilt it
-            AccUtilities::normalizeAndTransformImage<MlClass>(
+            AccUtilities::normalizeAndTransformImage(
                 d_img.ptr,  // input  acc-side  Array
                 Fimg,       // output host-side MultidimArray
                 accMLO,
                 current_size_x, current_size_y, current_size_z
             );
             LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
-            }));
+            // }));
         }
 
         // ------------------------------------------------------------------------------------------
@@ -594,15 +594,15 @@ void getFourierTransformsAndCtfs(
 
         // ------------------------------------------------------------------------------------------
 
-        CTICTOC(accMLO->timer, "normalizeAndTransform", ({
-        AccUtilities::normalizeAndTransformImage<MlClass>(
+        // CTICTOC(accMLO->timer, "normalizeAndTransform", ({
+        AccUtilities::normalizeAndTransformImage(
             d_img.ptr,  // input
             Fimg,       // output
             accMLO,
             current_size_x, current_size_y, current_size_z
         );
         LAUNCH_PRIVATE_ERROR(cudaGetLastError(), accMLO->errorStatus);
-        }));
+        // }));
 
         // ------------------------------------------------------------------------------------------
 
@@ -1882,45 +1882,50 @@ void convertAllSquaredDifferencesToWeights(
 
                 // TODO could use classStreams
                 for (unsigned long exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++) {
-                    if (baseMLO->mymodel.pdf_class[exp_iclass] > 0.0 && FPCMasks[img_id][exp_iclass].weightNum > 0) {
-                        // Use the constructed mask to build a partial (class-specific) input
-                        // (until now, PassWeights has been an empty placeholder. We now create class-partials pointing at it, and start to fill it with stuff)
+                    if (baseMLO->mymodel.pdf_class[exp_iclass] <= 0.0 || FPCMasks[img_id][exp_iclass].weightNum <= 0) continue;
+                    // Use the constructed mask to build a partial (class-specific) input
+                    // (until now, PassWeights has been an empty placeholder. We now create class-partials pointing at it, and start to fill it with stuff)
 
-                        IndexedDataArray thisClassPassWeights(PassWeights[img_id],FPCMasks[img_id][exp_iclass]);
+                    IndexedDataArray thisClassPassWeights(PassWeights[img_id],FPCMasks[img_id][exp_iclass]);
 
-                        AccPtr<XFLOAT> pdf_orientation_class =       ptrFactory.template make<XFLOAT>(sp.nr_dir * sp.nr_psi),
-                                       pdf_offset_class =            ptrFactory.template make<XFLOAT>(sp.nr_trans);
-                        AccPtr<bool>   pdf_orientation_zeros_class = ptrFactory.template make<bool>  (sp.nr_dir * sp.nr_psi),
-                                       pdf_offset_zeros_class =      ptrFactory.template make<bool>  (sp.nr_trans);
+                    AccPtr<XFLOAT> pdf_orientation_class =       ptrFactory.template make<XFLOAT>(sp.nr_dir * sp.nr_psi),
+                                    pdf_offset_class =            ptrFactory.template make<XFLOAT>(sp.nr_trans);
+                    AccPtr<bool>   pdf_orientation_zeros_class = ptrFactory.template make<bool>  (sp.nr_dir * sp.nr_psi),
+                                    pdf_offset_zeros_class =      ptrFactory.template make<bool>  (sp.nr_trans);
 
-                        pdf_orientation_class      .setAccPtr(pdf_orientation      .getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi);
-                        pdf_orientation_zeros_class.setAccPtr(pdf_orientation_zeros.getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi);
+                    pdf_orientation_class      .setAccPtr(pdf_orientation      .getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi);
+                    pdf_orientation_zeros_class.setAccPtr(pdf_orientation_zeros.getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_dir * sp.nr_psi);
 
-                        pdf_offset_class      .setAccPtr(pdf_offset      .getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_trans);
-                        pdf_offset_zeros_class.setAccPtr(pdf_offset_zeros.getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_trans);
+                    pdf_offset_class      .setAccPtr(pdf_offset      .getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_trans);
+                    pdf_offset_zeros_class.setAccPtr(pdf_offset_zeros.getAccPtr() + (exp_iclass - sp.iclass_min) * sp.nr_trans);
 
-                        thisClassPassWeights.weights.setStream(accMLO->classStreams[exp_iclass]);
+                    thisClassPassWeights.weights.setStream(accMLO->classStreams[exp_iclass]);
 
-                        AccUtilities::kernel_exponentiate_weights_fine(
-                            pdf_orientation_class.getAccPtr(),
-                            pdf_orientation_zeros_class.getAccPtr(),
-                            pdf_offset_class.getAccPtr(),
-                            pdf_offset_zeros_class.getAccPtr(),
-                            thisClassPassWeights.weights.getAccPtr(),
-                            (XFLOAT) op.min_diff2[img_id],
-                            sp.nr_oversampled_rot,
-                            sp.nr_oversampled_trans,
-                            thisClassPassWeights.rot_id.getAccPtr(),
-                            thisClassPassWeights.trans_idx.getAccPtr(),
-                            FPCMasks[img_id][exp_iclass].jobOrigin.getAccPtr(),
-                            FPCMasks[img_id][exp_iclass].jobExtent.getAccPtr(),
-                            FPCMasks[img_id][exp_iclass].jobNum,
-                            accMLO->classStreams[exp_iclass]
-                        );
+                    #ifdef CUDA
+                    using AccUtilities::GpuKernels::kernel_exponentiate_weights_fine;
+                    #else
+                    using AccUtilities::CpuKernels::kernel_exponentiate_weights_fine;
+                    #endif
 
-                        XFLOAT m = AccUtilities::getMaxOnDevice<XFLOAT>(thisClassPassWeights.weights);
-                        if (weights_max < m) { weights_max = m; }
-                    }
+                    kernel_exponentiate_weights_fine(
+                        pdf_orientation_class.getAccPtr(),
+                        pdf_orientation_zeros_class.getAccPtr(),
+                        pdf_offset_class.getAccPtr(),
+                        pdf_offset_zeros_class.getAccPtr(),
+                        thisClassPassWeights.weights.getAccPtr(),
+                        (XFLOAT) op.min_diff2[img_id],
+                        sp.nr_oversampled_rot,
+                        sp.nr_oversampled_trans,
+                        thisClassPassWeights.rot_id.getAccPtr(),
+                        thisClassPassWeights.trans_idx.getAccPtr(),
+                        FPCMasks[img_id][exp_iclass].jobOrigin.getAccPtr(),
+                        FPCMasks[img_id][exp_iclass].jobExtent.getAccPtr(),
+                        FPCMasks[img_id][exp_iclass].jobNum,
+                        accMLO->classStreams[exp_iclass]
+                    );
+
+                    XFLOAT m = AccUtilities::getMaxOnDevice<XFLOAT>(thisClassPassWeights.weights);
+                    if (weights_max < m) weights_max = m;
                 }
 
                 // TODO could use classStreams
@@ -2961,7 +2966,7 @@ void accDoExpectationOneParticle(MlClass *accMLO, unsigned long part_id_sorted, 
     SamplingParameters sp;
     MlOptimiser *baseMLO = accMLO->baseMLO;
 
-    CTICTOC(accMLO->timer, "oneParticle", ({
+    // CTICTOC(accMLO->timer, "oneParticle", ({
     #ifdef TIMING
     // Only time one thread
     if (thread_id == 0)
@@ -3072,7 +3077,7 @@ void accDoExpectationOneParticle(MlClass *accMLO, unsigned long part_id_sorted, 
         std::vector<AccPtrBundle> bundleSWS(sp.nr_images, ptrFactory.makeBundle());
 
         for (int ipass = 0; ipass < nr_sampling_passes; ipass++) {
-            CTICTOC(accMLO->timer, "weightPass", ({
+            // CTICTOC(accMLO->timer, "weightPass", ({
             #ifdef TIMING
             // Only time one thread
             if (thread_id == 0)
@@ -3112,9 +3117,9 @@ void accDoExpectationOneParticle(MlClass *accMLO, unsigned long part_id_sorted, 
                 getAllSquaredDifferencesCoarse<MlClass>(ipass, op, sp, baseMLO, accMLO, Mweight, ptrFactory, ibody);
                 }));
 
-                CTICTOC(accMLO->timer, "convertAllSquaredDifferencesToWeightsCoarse", ({
+                // CTICTOC(accMLO->timer, "convertAllSquaredDifferencesToWeightsCoarse", ({
                 convertAllSquaredDifferencesToWeights<MlClass>(ipass, op, sp, baseMLO, accMLO, CoarsePassWeights, FinePassClassMasks, Mweight, ptrFactory, ibody);
-                }));
+                // }));
             } else {
                 #ifdef TIMING
                 // Only time one thread
@@ -3169,7 +3174,7 @@ void accDoExpectationOneParticle(MlClass *accMLO, unsigned long part_id_sorted, 
 
             }
 
-            }));
+            // }));
         }
         #ifdef TIMING
         // Only time one thread
@@ -3200,7 +3205,7 @@ void accDoExpectationOneParticle(MlClass *accMLO, unsigned long part_id_sorted, 
         }
     }
 
-    }));
+    // }));
 }
 
 #undef EQUAL

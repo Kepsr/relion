@@ -722,11 +722,16 @@ void runDiff2KernelCoarse(
     long unsigned orientation_num, long unsigned translation_num,
     long unsigned image_size,
     cudaStream_t stream,
-    bool do_CC,
-    bool data_is_3D
+    bool do_CC, bool data_is_3D
 ) {
     const long unsigned blocks3D = data_is_3D ? D2C_BLOCK_SIZE_DATA3D : D2C_BLOCK_SIZE_REF3D;
-
+    #ifdef CUDA
+    using AccUtilities::GpuKernels::diff2_coarse;
+    using AccUtilities::GpuKernels::diff2_CC_coarse;
+    #else
+    using AccUtilities::CpuKernels::diff2_coarse;
+    using AccUtilities::CpuKernels::diff2_CC_coarse;
+    #endif
     if (!do_CC) {
         if (projector.mdlZ != 0) {
 
@@ -740,8 +745,7 @@ void runDiff2KernelCoarse(
             if (translation_num <= blocks3D) {
                 if (even_orientation_num != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D, D2C_EULERS_PER_BLOCK_DATA3D, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D, D2C_EULERS_PER_BLOCK_DATA3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_DATA3D,
                             D2C_BLOCK_SIZE_DATA3D, d_eulers,
@@ -752,8 +756,7 @@ void runDiff2KernelCoarse(
                             image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D, D2C_EULERS_PER_BLOCK_REF3D, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D, D2C_EULERS_PER_BLOCK_REF3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_REF3D,
                             D2C_BLOCK_SIZE_REF3D, d_eulers,
@@ -768,8 +771,7 @@ void runDiff2KernelCoarse(
 
                 if (rest != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D, 1, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_DATA3D,
@@ -781,8 +783,7 @@ void runDiff2KernelCoarse(
                             translation_num, image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D, 1, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_REF3D,
@@ -798,8 +799,7 @@ void runDiff2KernelCoarse(
             } else if (translation_num <= blocks3D * 2) {
                 if (even_orientation_num != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D * 2, D2C_EULERS_PER_BLOCK_DATA3D, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D * 2, D2C_EULERS_PER_BLOCK_DATA3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_DATA3D,
                             D2C_BLOCK_SIZE_DATA3D * 2,
@@ -811,8 +811,7 @@ void runDiff2KernelCoarse(
                             translation_num, image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D * 2, D2C_EULERS_PER_BLOCK_REF3D, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D * 2, D2C_EULERS_PER_BLOCK_REF3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_REF3D,
                             D2C_BLOCK_SIZE_REF3D * 2,
@@ -828,8 +827,7 @@ void runDiff2KernelCoarse(
 
                 if (rest != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D * 2, 1, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D * 2, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_DATA3D * 2,
@@ -841,8 +839,7 @@ void runDiff2KernelCoarse(
                             translation_num, image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D * 2, 1, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D * 2, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_REF3D * 2,
@@ -858,8 +855,7 @@ void runDiff2KernelCoarse(
             } else if (translation_num <= blocks3D * 4) {
                 if (even_orientation_num != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D * 4, D2C_EULERS_PER_BLOCK_DATA3D, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D * 4, D2C_EULERS_PER_BLOCK_DATA3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_DATA3D,
                             D2C_BLOCK_SIZE_DATA3D * 4,
@@ -871,8 +867,7 @@ void runDiff2KernelCoarse(
                             translation_num, image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D * 4, D2C_EULERS_PER_BLOCK_REF3D, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D * 4, D2C_EULERS_PER_BLOCK_REF3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_REF3D,
                             D2C_BLOCK_SIZE_REF3D * 4,
@@ -888,8 +883,7 @@ void runDiff2KernelCoarse(
 
                 if (rest != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D * 4, 1, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D * 4, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_DATA3D * 4,
@@ -901,8 +895,7 @@ void runDiff2KernelCoarse(
                             translation_num, image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D * 4, 1, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D * 4, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_REF3D * 4,
@@ -919,8 +912,7 @@ void runDiff2KernelCoarse(
             } else {
                 if (even_orientation_num != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D * 8, D2C_EULERS_PER_BLOCK_DATA3D, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D * 8, D2C_EULERS_PER_BLOCK_DATA3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_DATA3D,
                             D2C_BLOCK_SIZE_DATA3D * 8,
@@ -932,8 +924,7 @@ void runDiff2KernelCoarse(
                             translation_num, image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D * 8, D2C_EULERS_PER_BLOCK_REF3D, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D * 8, D2C_EULERS_PER_BLOCK_REF3D, 4>
                         (
                             even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_REF3D,
                             D2C_BLOCK_SIZE_REF3D * 8,
@@ -949,8 +940,7 @@ void runDiff2KernelCoarse(
 
                 if (rest != 0) {
                     if (data_is_3D) {
-                        AccUtilities::diff2_coarse
-                        <true, true, D2C_BLOCK_SIZE_DATA3D * 8, 1, 4>
+                        diff2_coarse<true, true, D2C_BLOCK_SIZE_DATA3D * 8, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_DATA3D * 8,
@@ -962,8 +952,7 @@ void runDiff2KernelCoarse(
                             translation_num, image_size, stream
                         );
                     } else {
-                        AccUtilities::diff2_coarse
-                        <true, false, D2C_BLOCK_SIZE_REF3D * 8, 1, 4>
+                        diff2_coarse<true, false, D2C_BLOCK_SIZE_REF3D * 8, 1, 4>
                         (
                             rest,
                             D2C_BLOCK_SIZE_REF3D * 8,
@@ -992,7 +981,7 @@ void runDiff2KernelCoarse(
 
             if (even_orientation_num != 0) {
                 if (data_is_3D) {
-                    AccUtilities::diff2_coarse
+                    diff2_coarse
                     <false, true, D2C_BLOCK_SIZE_2D, D2C_EULERS_PER_BLOCK_2D, 2>
                     (
                         even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_2D,
@@ -1005,7 +994,7 @@ void runDiff2KernelCoarse(
                         image_size, stream
                     );
                 } else {
-                    AccUtilities::diff2_coarse
+                    diff2_coarse
                     <false, false, D2C_BLOCK_SIZE_2D, D2C_EULERS_PER_BLOCK_2D, 2>
                     (
                         even_orientation_num / (unsigned long) D2C_EULERS_PER_BLOCK_2D,
@@ -1023,7 +1012,7 @@ void runDiff2KernelCoarse(
 
             if (rest != 0) {
                 if (data_is_3D) {
-                    AccUtilities::diff2_coarse
+                    diff2_coarse
                     <false, true, D2C_BLOCK_SIZE_2D, 1, 2>
                     (
                         rest,
@@ -1036,7 +1025,7 @@ void runDiff2KernelCoarse(
                         translation_num, image_size, stream
                     );
                 } else {
-                    AccUtilities::diff2_coarse
+                    diff2_coarse
                     <false, false, D2C_BLOCK_SIZE_2D, 1, 2>
                     (
                         rest,
@@ -1058,7 +1047,7 @@ void runDiff2KernelCoarse(
         // a single call to diff2_CC_course?
         // dim3 CCblocks(orientation_num,translation_num);
         if (data_is_3D) {
-            AccUtilities::diff2_CC_coarse<true, true, D2C_BLOCK_SIZE_DATA3D>(
+            diff2_CC_coarse<true, true, D2C_BLOCK_SIZE_DATA3D>(
                 orientation_num,
                 D2C_BLOCK_SIZE_DATA3D,
                 d_eulers,
@@ -1069,7 +1058,7 @@ void runDiff2KernelCoarse(
                 image_size, local_sqrtXi2, stream
             );
         } else if (projector.mdlZ != 0) {
-            AccUtilities::diff2_CC_coarse<true, false, D2C_BLOCK_SIZE_REF3D>(
+            diff2_CC_coarse<true, false, D2C_BLOCK_SIZE_REF3D>(
                 orientation_num,
                 D2C_BLOCK_SIZE_REF3D,
                 d_eulers,
@@ -1080,7 +1069,7 @@ void runDiff2KernelCoarse(
                 image_size, local_sqrtXi2, stream
             );
         } else {
-            AccUtilities::diff2_CC_coarse<false, false, D2C_BLOCK_SIZE_2D>(
+            diff2_CC_coarse<false, false, D2C_BLOCK_SIZE_2D>(
                 orientation_num,
                 D2C_BLOCK_SIZE_2D,
                 d_eulers,
@@ -1115,14 +1104,20 @@ void runDiff2KernelFine(
     long unsigned job_num_count,
     bool do_CC, bool data_is_3D
 ) {
+    #ifdef CUDA
+    using AccUtilities::GpuKernels::diff2_fine;
+    using AccUtilities::GpuKernels::diff2_CC_fine;
+    #else
+    using AccUtilities::CpuKernels::diff2_fine;
+    using AccUtilities::CpuKernels::diff2_CC_fine;
+    #endif
     long unsigned block_dim = job_num_count;
 
     if (!do_CC) {
         // TODO - find a more compact way to represent these combinations resulting in
         // a single call to diff2_fine?
             if (data_is_3D) {
-                AccUtilities::diff2_fine
-                <true, true, D2F_BLOCK_SIZE_DATA3D, D2F_CHUNK_DATA3D>
+                diff2_fine<true, true, D2F_BLOCK_SIZE_DATA3D, D2F_CHUNK_DATA3D>
                 (
                     block_dim,
                     D2F_BLOCK_SIZE_DATA3D,
@@ -1136,8 +1131,7 @@ void runDiff2KernelFine(
                     rot_idx, trans_idx, job_idx, job_num, stream
                 );
             } else if (projector.mdlZ != 0) {
-                AccUtilities::diff2_fine
-                <true, false, D2F_BLOCK_SIZE_REF3D, D2F_CHUNK_REF3D>
+                diff2_fine<true, false, D2F_BLOCK_SIZE_REF3D, D2F_CHUNK_REF3D>
                 (
                     block_dim,
                     D2F_BLOCK_SIZE_REF3D,
@@ -1151,8 +1145,7 @@ void runDiff2KernelFine(
                     rot_idx, trans_idx, job_idx, job_num, stream
                 );
             } else {
-                AccUtilities::diff2_fine<false, false, D2F_BLOCK_SIZE_2D, D2F_CHUNK_2D>(
-                    block_dim,
+                diff2_fine<false, false, D2F_BLOCK_SIZE_2D, D2F_CHUNK_2D>(    block_dim,
                     D2F_BLOCK_SIZE_2D,
                     eulers,
                     Fimgs_real, Fimgs_imag,
@@ -1169,7 +1162,7 @@ void runDiff2KernelFine(
         // TODO - find a more compact way to represent these combinations resulting in
         // a single call to diff2_CC_fine?
         if (data_is_3D) {
-            AccUtilities::diff2_CC_fine<true, true, D2F_BLOCK_SIZE_DATA3D, D2F_CHUNK_DATA3D>(
+            diff2_CC_fine<true, true, D2F_BLOCK_SIZE_DATA3D, D2F_CHUNK_DATA3D>(
                 block_dim, D2F_BLOCK_SIZE_DATA3D, eulers,
                 Fimgs_real, Fimgs_imag,
                 trans_x, trans_y, trans_z,
@@ -1182,7 +1175,7 @@ void runDiff2KernelFine(
                 rot_idx, trans_idx, job_idx, job_num, stream
             );
         } else if (projector.mdlZ != 0) {
-            AccUtilities::diff2_CC_fine<true, false, D2F_BLOCK_SIZE_REF3D, D2F_CHUNK_REF3D>(
+            diff2_CC_fine<true, false, D2F_BLOCK_SIZE_REF3D, D2F_CHUNK_REF3D>(
                 block_dim, D2F_BLOCK_SIZE_REF3D, eulers,
                 Fimgs_real, Fimgs_imag,
                 trans_x, trans_y, trans_z,
@@ -1195,7 +1188,7 @@ void runDiff2KernelFine(
                 rot_idx, trans_idx, job_idx, job_num, stream
             );
         } else {
-            AccUtilities::diff2_CC_fine<false, false, D2F_BLOCK_SIZE_2D, D2F_CHUNK_2D>(
+            diff2_CC_fine<false, false, D2F_BLOCK_SIZE_2D, D2F_CHUNK_2D>(
                 block_dim, D2F_BLOCK_SIZE_2D, eulers,
                 Fimgs_real, Fimgs_imag,
                 trans_x, trans_y, trans_z,
@@ -1494,7 +1487,7 @@ void scale(RFLOAT *img, size_t sz, RFLOAT val, cudaStream_t stream) {
     int block_size = 256;
     int MultiBsize = ceil(sz / (float) block_size);
     #ifdef CUDA
-    AccUtilities::multiply(MultiBsize,block_size, stream, img, val, (size_t) sz);
+    AccUtilities::GpuKernels::multiply(MultiBsize, block_size, stream, img, val, (size_t) sz);
     #endif
 }
 

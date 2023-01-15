@@ -588,8 +588,7 @@ void Projector::computeFourierTransformMap(
         }
         else
         #endif
-        FOR_ALL_ELEMENTS_IN_ARRAY3D(vol_in, i, j, k) // This will also work for 2D
-            Mpad.elem(i, j, k) = vol_in.elem(i, j, k);
+        std::copy_n(vol_in.data, vol_in.xdim * vol_in.ydim * vol_in.zdim, Mpad.data);
     }
     }
 

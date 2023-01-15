@@ -2,14 +2,17 @@
 #define ACC_BACKPROJECTOR_H_
 
 #ifdef CUDA
-#  include <cuda_runtime.h>
+#include <cuda_runtime.h>
+#else
+#include "src/acc/cpu/cuda_stubs.h"
 #endif
+
 #include "src/complex.h"
 #include "src/acc/settings.h"
 #include "src/acc/acc_ptr.h"
 
 #ifndef CUDA
-#  include <tbb/spin_mutex.h>
+#include <tbb/spin_mutex.h>
 #endif
 
 class AccBackprojector
@@ -22,9 +25,9 @@ public:
 	XFLOAT padding_factor;
 	size_t mdlXYZ;
 
-#ifndef CUDA
+	#ifndef CUDA
 	tbb::spin_mutex *mutexes;
-#endif
+	#endif
 
 	size_t allocaton_size;
 	size_t voxelCount;

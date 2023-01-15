@@ -1,6 +1,7 @@
 #ifndef ACC_PTR_H_
 #define ACC_PTR_H_
 
+#include <algorithm>
 #include "src/acc/settings.h"
 #ifdef CUDA
 #include "src/acc/cuda/cuda_settings.h"
@@ -54,7 +55,7 @@ using AllocatorType  = CudaCustomAllocator;
 using AllocationType = CudaCustomAllocator::Alloc;
 #else
 // Dummy types
-using StreamType     = float;
+using StreamType     = int*;
 using AllocatorType  = double;
 using AllocationType = double;
 #endif
@@ -100,32 +101,39 @@ class AccPtr {
     AccPtr(
         AllocatorType *allocator = nullptr, StreamType stream = cudaStreamPerThread,
         size_t size = 0, T *hptr = nullptr, T *dptr = nullptr
-    ):
-        allocator(allocator), alloc(nullptr), stream(stream),
-        size(size), hPtr(hptr), dPtr(dptr), mustFreeHost(false), mustFreeDevice(false)
+    ): allocator(allocator), alloc(nullptr), stream(stream),
+       size(size), hPtr(hptr), dPtr(dptr), mustFreeHost(false), mustFreeDevice(false)
     {
-        if (size && hPtr && posix_memalign((void**) &hPtr, MEM_ALIGN, sizeof(T) * size))
-            CRITICAL(RAMERR);
+        if (size && hPtr)
+            if (posix_memalign((void**) &hPtr, MEM_ALIGN, sizeof(T) * size))
+                CRITICAL(RAMERR);
     }
 
     AccPtr(
         size_t size, AllocatorType *allocator = nullptr,
         StreamType stream = cudaStreamPerThread,
         T *hptr = nullptr, T *dptr = nullptr
-    ):
-        allocator(allocator), alloc(nullptr), stream(stream),
-        size(size), hPtr(hptr), dPtr(dptr), mustFreeHost(false), mustFreeDevice(false)
-    {
-        if (size && hPtr && posix_memalign((void**) &hPtr, MEM_ALIGN, sizeof(T) * size))
-            CRITICAL(RAMERR);
-    }
+    ): AccPtr(allocator, stream, size, hptr, dptr) {}
 
     AccPtr(size_t size, StreamType stream): AccPtr(nullptr, stream, size) {
         hostAlloc();
     }
 
+    // Get host+device memory from the same allocator
+    // and populate it from a range
+    template <typename U>
+    AccPtr<T, accType> make_like(U const* begin, size_t N) const {
+        auto ptr = make<T>(N);
+        ptr.allAlloc();
+        std::copy_n(begin, N, ptr.getHostPtr());
+        ptr.cpToDevice();
+        ptr.streamSync();
+        return ptr;
+    }
+
     // Copy ctor
     AccPtr(const AccPtr &ptr):
+        // shared_ptr
         size(ptr.size), hPtr(ptr.hPtr), dPtr(ptr.dPtr), mustFreeHost(false), mustFreeDevice(false),
         allocator(ptr.allocator), alloc(nullptr), stream(ptr.stream)
     {}
@@ -504,7 +512,7 @@ class AccPtr {
     }
 
     template <typename U>
-    AccPtr<U, accType> make(size_t s = 0) {
+    AccPtr<U, accType> make(size_t s = 0) const {
         return AccPtr<U, accType>(allocator, stream, s);
     }
 
@@ -570,15 +578,12 @@ class AccPtrFactory {
 
     AllocatorType *allocator;
 
-    AccPtrFactory(): allocator(nullptr), stream(0) {}
-
-    AccPtrFactory(AllocatorType *alloc, StreamType stream = 0):
-        allocator(alloc), stream(stream)
-    {}
+    AccPtrFactory(AllocatorType *alloc = nullptr, StreamType stream = nullptr):
+        allocator(alloc), stream(stream) {}
 
     template <typename T>
-    AccPtr<T> make(size_t size = 0, StreamType stream = cudaStreamPerThread) {
-        return AccPtr<T, accType>(size, allocator, stream);
+    AccPtr<T, accType> make(size_t size = 0, StreamType stream = cudaStreamPerThread) {
+        return {size, allocator, stream};
     }
 
     AccPtrBundle makeBundle(size_t size = 0) {

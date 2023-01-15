@@ -48,41 +48,38 @@
 #endif
 
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
-#define PRIVATE_ERROR(func, status) {  \
-                       (status) = (func); \
-                       HANDLE_ERROR(status); \
-                   }
+#define PRIVATE_ERROR(func, status) { (status) = (func); HANDLE_ERROR(status); }
 
-static void HandleError( cudaError_t err, const char *file, int line )
-{
+static void HandleError(cudaError_t err, const char *file, int line) {
+    if (err == cudaSuccess) return;
+    fprintf(stderr, "ERROR: %s in %s at line %d (error-code %d)\n",
+                    cudaGetErrorString( err ), file, line, err );
+    fflush(stdout);
+    #ifdef DEBUG_CUDA
+    raise(SIGSEGV);
+    #else
+    CRITICAL(ERRGPUKERN);
+    #endif
 
-    if (err != cudaSuccess)
-    {
-    	fprintf(stderr, "ERROR: %s in %s at line %d (error-code %d)\n",
-						cudaGetErrorString( err ), file, line, err );
-		fflush(stdout);
-#ifdef DEBUG_CUDA
-		raise(SIGSEGV);
-#else
-		CRITICAL(ERRGPUKERN);
-#endif
-    }
+    // #ifdef DEBUG_CUDA
+    // cudaError_t peek = cudaPeekAtLastError();
+    // if (peek == cudaSuccess) return;
+    // printf("DEBUG_ERROR: %s in %s at line %d (error-code %d)\n",
+    //                 cudaGetErrorString(peek), file, line, err );
+    // fflush(stdout);
+    // raise(SIGSEGV);
+    // #endif
 }
 
 #ifdef LAUNCH_CHECK
-static void LaunchHandleError( cudaError_t err, const char *file, int line )
-{
-
-    if (err != cudaSuccess)
-    {
-        printf( "KERNEL_ERROR: %s in %s at line %d (error-code %d)\n",
-                        cudaGetErrorString( err ), file, line, err );
-        fflush(stdout);
-        CRITICAL(ERRGPUKERN);
-    }
+static void LaunchHandleError(cudaError_t err, const char *file, int line) {
+    if (err == cudaSuccess) return;
+    printf( "KERNEL_ERROR: %s in %s at line %d (error-code %d)\n",
+                    cudaGetErrorString( err ), file, line, err );
+    fflush(stdout);
+    CRITICAL(ERRGPUKERN);
 }
 #endif
-
 
 // GENERAL -----------------------------
 #define MAX_RESOL_SHARED_MEM 		32

@@ -3,7 +3,7 @@
 
 #include <cuda_runtime.h>
 #include "src/gpu_utils/cuda_settings.h"
-#include "src/gpu_utils/cuda_mem_utils.h"
+#include "src/acc/cuda/cuda_mem_utils.h"
 #include <stdio.h>
 #include <signal.h>
 #include <vector>
