@@ -17,6 +17,7 @@
 #include <stack>
 
 #ifdef ACC_DOUBLE_PRECISION
+// #ifdef CUDA_DOUBLE_PRECISION
 typedef double XFLOAT;
 #else
 typedef float XFLOAT;
@@ -37,7 +38,14 @@ class AutoPickerCuda {
     CudaFFT cudaTransformer1;
     CudaFFT cudaTransformer2;
 
-    std::vector<AccProjector> projectors;
+    // using Projector = CudaProjector;
+    using Projector = AccProjector;
+
+    template <typename T>
+    using Ptr = AccPtr<T>;
+    // using Ptr = CudaGlobalPtr<T>;
+
+    std::vector<Projector> projectors;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
     std::vector<cudaStream_t> classStreams;
@@ -62,11 +70,12 @@ class AutoPickerCuda {
     void autoPickOneMicrograph(FileName &fn_mic, long int imic);
 
     void calculateStddevAndMeanUnderMask(
-        AccPtr<acc::Complex> &d_Fmic, 
-        AccPtr<acc::Complex> &d_Fmic2, 
-        AccPtr<acc::Complex> &d_Fmsk,
-        int nr_nonzero_pixels_mask, AccPtr< XFLOAT > &d_Mstddev, 
-        AccPtr<XFLOAT> &d_Mmean,
+        Ptr<acc::Complex> &d_Fmic, 
+        Ptr<acc::Complex> &d_Fmic2, 
+        Ptr<acc::Complex> &d_Fmsk,
+        int nr_nonzero_pixels_mask,
+        Ptr<XFLOAT> &d_Mstddev, 
+        Ptr<XFLOAT> &d_Mmean,
         size_t x, size_t y, size_t mic_size, size_t workSize
     );
 

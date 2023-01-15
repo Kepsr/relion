@@ -44,7 +44,7 @@ inline RFLOAT Z(RFLOAT x, RFLOAT mu, RFLOAT sigma) {
 AutoPickerCuda::AutoPickerCuda(
     AutoPicker *basePicker, int dev_id, const char * timing_fnm
 ):
-    node(NULL),
+    node(nullptr),
     basePckr(basePicker),
     allocator(new CudaCustomAllocator(0, 1)),
     micTransformer(0, allocator),
@@ -64,15 +64,14 @@ AutoPickerCuda::AutoPickerCuda(
     HANDLE_ERROR(cudaGetDeviceCount(&devCount));
 
     if (dev_id >= devCount) {
-        // std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
+        // std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id + 1 << ") which is higher than the available number of devices=" << devCount << std::endl;
         CRITICAL(ERR_GPUID);
     } else {
         HANDLE_ERROR(cudaSetDevice(dev_id));
     }
 };
 
-
-AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char * timing_fnm) :
+AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char *timing_fnm):
     basePckr(basePicker),
     allocator(new CudaCustomAllocator(0, 1)),
     micTransformer(0, allocator),
@@ -83,10 +82,10 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
     cudaTransformer2(0, allocator)
 {
     node = basePicker->getNode();
-    basePicker->verb = (node->isLeader()) ? 1 : 0;
+    basePicker->verb = node->isLeader();
 
     projectors.resize(basePckr->Mrefs.size());
-    have_warned_batching=false;
+    have_warned_batching = false;
     /*======================================================
                         DEVICE SETTINGS
     ======================================================*/
@@ -95,17 +94,16 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
     HANDLE_ERROR(cudaGetDeviceCount(&devCount));
 
     if (dev_id >= devCount) {
-        // std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
+        // std::cerr << " using device_id=" << dev_id << " (device no. " << dev_id + 1 << ") which is higher than the available number of devices=" << devCount << std::endl;
         CRITICAL(ERR_GPUID);
     } else {
         HANDLE_ERROR(cudaSetDevice(dev_id));
     }
 };
 
-
 void AutoPickerCuda::run() {
     long int my_first_micrograph, my_last_micrograph, my_nr_micrographs;
-    if (node != NULL) {
+    if (node) {
         // Each node does part of the work
         divide_equally(basePckr->fn_micrographs.size(), node->size, node->rank, my_first_micrograph, my_last_micrograph);
     } else {
@@ -122,16 +120,17 @@ void AutoPickerCuda::run() {
     }
 
     if (!basePckr->do_read_fom_maps) {
-        CTICTOC(timer, "setupProjectors", {
-        for (int iref = 0; iref < basePckr->Mrefs.size(); iref++) {
-            projectors[iref].setMdlDim(
-                basePckr->PPref[iref].data.xdim, basePckr->PPref[iref].data.ydim, basePckr->PPref[iref].data.zdim,
-                basePckr->PPref[iref].data.yinit, basePckr->PPref[iref].data.zinit,
-                basePckr->PPref[iref].r_max, basePckr->PPref[iref].padding_factor
+        CTICTOC(timer, "setupProjectors", ({
+        for (int i = 0; i < basePckr->Mrefs.size(); i++) {
+            auto& pp = basePckr->PPref[i];
+            projectors[i].setMdlDim(
+                pp.data.xdim, pp.data.ydim, pp.data.zdim,
+                pp.data.yinit, pp.data.zinit,
+                pp.r_max, pp.padding_factor
             );
-            projectors[iref].initMdl(&basePckr->PPref[iref].data.data[0]);
+            projectors[i].initMdl(pp.data.data);
         }
-        });
+        }));
     }
 
     FileName fn_olddir = "";
@@ -145,17 +144,17 @@ void AutoPickerCuda::run() {
         fn_dir = fn_dir.beforeLastOf("/");
         if (fn_dir != fn_olddir) {
             // Make a Particles directory
-            int res = system(("mkdir -p " + fn_dir).c_str());
+            system(("mkdir -p " + fn_dir).c_str());
             fn_olddir = fn_dir;
         }
         #ifdef TIMING
         basePckr->timer.tic(basePckr->TIMING_A5);
         #endif
         autoPickOneMicrograph(basePckr->fn_micrographs[imic], imic);
+        #ifdef TIMING
+        basePckr->timer.toc(basePckr->TIMING_A5);
+        #endif
     }
-    #ifdef TIMING
-    basePckr->timer.toc(basePckr->TIMING_A5);
-    #endif
     if (basePckr->verb > 0)
         progress_bar(my_nr_micrographs);
 
@@ -166,7 +165,8 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     AccPtr<acc::Complex> &d_Fmic,
     AccPtr<acc::Complex> &d_Fmic2,
     AccPtr<acc::Complex> &d_Fmsk,
-    int nr_nonzero_pixels_mask, AccPtr<XFLOAT> &d_Mstddev,
+    int nr_nonzero_pixels_mask,
+    AccPtr<XFLOAT> &d_Mstddev,
     AccPtr<XFLOAT> &d_Mmean,
     size_t x, size_t y, size_t mic_size, size_t workSize
 ) {
@@ -180,9 +180,8 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
     d_Fcov.setSize(d_Fmic.getSize());
     d_Fcov.deviceAlloc();
 
-    int Bsize;
     CTICTOC(timer, "PRE-multi_0", ({
-    Bsize = ceilf((float) d_Fmic.getSize() / (float) BLOCK_SIZE);
+    int Bsize = ceilf((float) d_Fmic.getSize() / (float) BLOCK_SIZE);
     cuda_kernel_convol_B<<<Bsize, BLOCK_SIZE>>>(
         d_Fmic.getAccPtr(), d_Fmsk.getAccPtr(), d_Fcov.getAccPtr(), d_Fmic.getSize()
     );
@@ -191,18 +190,23 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(
 
     CTICTOC(timer, "PRE-window_0", ({
     windowFourierTransform2(
-        d_Fcov, cudaTransformer2.fouriers, x, y, 1, workSize / 2 + 1, workSize, 1
+        d_Fcov,
+        cudaTransformer2.fouriers,
+        x, y, 1,
+        workSize / 2 + 1, workSize, 1
     );
     }));
 
     CTICTOC(timer, "PRE-Transform_0", ({
-    cudaTransformer2.backward();
+        cudaTransformer2.backward();
     }));
 
-    Bsize = ((int) ceilf((float) cudaTransformer2.reals.getSize() / (float) BLOCK_SIZE));
+    int Bsize = ceilf((float) cudaTransformer2.reals.getSize() / (float) BLOCK_SIZE);
     cuda_kernel_multi<XFLOAT><<<Bsize, BLOCK_SIZE>>>(
-        cudaTransformer2.reals.getAccPtr(), cudaTransformer2.reals.getAccPtr(),
-        (XFLOAT) normfft, cudaTransformer2.reals.getSize()
+        cudaTransformer2.reals.getAccPtr(),
+        cudaTransformer2.reals.getAccPtr(),
+        (XFLOAT) normfft,
+        cudaTransformer2.reals.getSize()
     );
     LAUNCH_HANDLE_ERROR(cudaGetLastError());
 
@@ -303,7 +307,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
     if (my_size != basePckr->micrograph_size || my_xsize != basePckr->micrograph_xsize || my_ysize != basePckr->micrograph_ysize) {
         Imic().printShape();
         std::cerr
-        << " micrograph_size= " << basePckr->micrograph_size
+        << " micrograph_size= "  << basePckr->micrograph_size
         << " micrograph_xsize= " << basePckr->micrograph_xsize
         << " micrograph_ysize= " << basePckr->micrograph_ysize
         << std::endl;
@@ -323,14 +327,15 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic) {
 
     if (cudaTransformer1.batchSize.size() > 1 && !have_warned_batching) {
         have_warned_batching = true;
-        std::cerr << std::endl << "*-----------------------------WARNING------------------------------------------------*"<< std::endl;
-        std::cerr 			   << "With the current settings the GPU memory is imposing a soft limit on your performace," << std::endl;
-        std::cerr 			   << "since one or more micrographs has to use (at least " << cudaTransformer1.batchSize.size() << ") batches of orientations to "<< std::endl;
-        std::cerr              << "achieve the total requested " << Npsi << " orientations. Consider using" << std::endl;
-        std::cerr			   << "\t higher --ang" << std::endl;
-        std::cerr 			   << "\t harder --shrink" << std::endl;
-        std::cerr 			   << "\t higher --lowpass with --shrink 0" << std::endl;
-        std::cerr              << "*------------------------------------------------------------------------------------*"<< std::endl;
+        std::cerr << "\n";
+        std::cerr << "*-----------------------------WARNING------------------------------------------------*\n";
+        std::cerr << "With the current settings, the GPU memory is imposing a soft limit on your performace,\n";
+        std::cerr << "since at least one micrograph needs at least " << cudaTransformer1.batchSize.size() << " batches of orientations \n";
+        std::cerr << "to achieve the total requested " << Npsi << " orientations. Consider using\n";
+        std::cerr << "\t higher --ang\n";
+        std::cerr << "\t harder --shrink\n";
+        std::cerr << "\t higher --lowpass with --shrink 0\n";
+        std::cerr << "*------------------------------------------------------------------------------------*"<< std::endl;
     }
 
     // Set mean to zero and stddev to 1
