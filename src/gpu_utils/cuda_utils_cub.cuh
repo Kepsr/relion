@@ -19,10 +19,10 @@
 #if(defined(CubLog) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__<= 520)) // Intetionally force a warning for new arch
     #undef CubLog
 #endif
-#include "src/gpu_utils/cub/device/device_radix_sort.cuh"
-#include "src/gpu_utils/cub/device/device_reduce.cuh"
-#include "src/gpu_utils/cub/device/device_scan.cuh"
-#include "src/gpu_utils/cub/device/device_select.cuh"
+#include "src/acc/cuda/cub/device/device_radix_sort.cuh"
+#include "src/acc/cuda/cub/device/device_reduce.cuh"
+#include "src/acc/cuda/cub/device/device_scan.cuh"
+#include "src/acc/cuda/cub/device/device_select.cuh"
 
 template <typename T>
 static std::pair<int, T> getArgMaxOnDevice(CudaGlobalPtr<T> &ptr) {

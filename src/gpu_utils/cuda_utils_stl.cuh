@@ -8,8 +8,8 @@
 #include <signal.h>
 #include <vector>
 #include <algorithm>
-#include "src/gpu_utils/cub/device/device_radix_sort.cuh"
-#include "src/gpu_utils/cub/device/device_reduce.cuh"
+#include "src/acc/cuda/cub/device/device_radix_sort.cuh"
+#include "src/acc/cuda/cub/device/device_reduce.cuh"
 
 template <typename T>
 static T getMaxOnDevice(CudaGlobalPtr<T> &ptr)
