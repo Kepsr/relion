@@ -30,6 +30,7 @@ class CudaFFT {
     bool planSet;
 
     public:
+
     #ifdef ACC_DOUBLE_PRECISION
     AccPtr<cufftDoubleReal> reals;
     AccPtr<cufftDoubleComplex> fouriers;
