@@ -15,132 +15,148 @@
 #include "src/acc/acc_ml_optimiser.h"
 #include "src/acc/acc_ptr.h"
 
-class MlDeviceBundle
-{
-public:
+//#ifdef DEBUG_CUDA
+//#define HANDLE_CUFFT_ERROR( err ) (CufftHandleError( err, __FILE__, __LINE__ ))
+//#else
+//#define HANDLE_CUFFT_ERROR( err ) (err) //Do nothing
+//#endif
+//static void CufftHandleError( cufftResult err, const char *file, int line )
+//{
+//    if (err != CUFFT_SUCCESS)
+//    {
+//        fprintf(stderr, "Cufft error in file '%s' in line %i : %s.\n",
+//                __FILE__, __LINE__, "error" );
+//		raise(SIGSEGV);
+//    }
+//}
 
-	//The CUDA accelerated projector set
-	std::vector< AccProjector > projectors;
+/*
+ * Bundle of device-objects
+ */
+class MlDeviceBundle {
 
-	//The CUDA accelerated back-projector set
-	std::vector< AccBackprojector > backprojectors;
+    public:
 
-	//Used for precalculations of projection setup
-	CudaCustomAllocator *allocator;
+    //The CUDA accelerated projector set
+    std::vector< AccProjector > projectors;
 
-	//Used for precalculations of projection setup
-	bool generateProjectionPlanOnTheFly;
-	std::vector<AccProjectorPlan> coarseProjectionPlans;
+    //The CUDA accelerated back-projector set
+    std::vector< AccBackprojector > backprojectors;
 
-	MlOptimiser *baseMLO;
+    //Used for precalculations of projection setup
+    CudaCustomAllocator *allocator;
 
-	int device_id;
+    //Used for precalculations of projection setup
+    bool generateProjectionPlanOnTheFly;
+    std::vector<AccProjectorPlan> coarseProjectionPlans;
 
-	int rank_shared_count;
+    MlOptimiser *baseMLO;
 
-	bool haveWarnedRefinementMem;
+    int device_id;
 
-	MlDeviceBundle(MlOptimiser *baseMLOptimiser):
-			baseMLO(baseMLOptimiser),
-			generateProjectionPlanOnTheFly(false),
-			rank_shared_count(1),
-			device_id(-1),
-			haveWarnedRefinementMem(false),
-			allocator(NULL)
-	{};
+    int rank_shared_count;
 
-	void setDevice(int did)
-	{
-		device_id = did;
-	}
+    bool haveWarnedRefinementMem;
 
-	size_t checkFixedSizedObjects(int shares);
-	void setupFixedSizedObjects();
-	void setupTunableSizedObjects(size_t allocationSize);
+    MlDeviceBundle(MlOptimiser *baseMLOptimiser):
+            baseMLO(baseMLOptimiser),
+            generateProjectionPlanOnTheFly(false),
+            rank_shared_count(1),
+            device_id(-1),
+            haveWarnedRefinementMem(false),
+            allocator(NULL)
+    {};
 
-	void syncAllBackprojects()
-	{
-		DEBUG_HANDLE_ERROR(cudaDeviceSynchronize());
-	}
+    void setDevice(int did) {
+        device_id = did;
+    }
 
+    size_t checkFixedSizedObjects(int shares);
+    void setupFixedSizedObjects();
+    void setupTunableSizedObjects(size_t allocationSize);
 
-	~MlDeviceBundle()
-	{
-		projectors.clear();
-		backprojectors.clear();
-		coarseProjectionPlans.clear();
-		//Delete this lastly
-		delete allocator;
-		HANDLE_ERROR(cudaSetDevice(device_id));
-		HANDLE_ERROR(cudaDeviceReset());
-	}
+    void syncAllBackprojects() {
+        DEBUG_HANDLE_ERROR(cudaDeviceSynchronize());
+    }
+
+    ~MlDeviceBundle() {
+        projectors.clear();
+        backprojectors.clear();
+        coarseProjectionPlans.clear();
+        // Delete this lastly
+        delete allocator;
+        HANDLE_ERROR(cudaSetDevice(device_id));
+        HANDLE_ERROR(cudaDeviceReset());
+    }
 
 };
-class MlOptimiserCuda
-{
-public:
-	// transformer as holder for reuse of fftw_plans
-	FourierTransformer transformer;
+
+class MlOptimiserCuda {
+
+    public:
+
+    // transformer as holder for reuse of fftw_plans
+    FourierTransformer transformer;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
-	std::vector<cudaStream_t> classStreams;
-	cudaError_t errorStatus;
+    std::vector<cudaStream_t> classStreams;
+    cudaError_t errorStatus;
 
-	CudaFFT transformer1;
-	CudaFFT transformer2;
+    CudaFFT transformer1;
+    CudaFFT transformer2;
 
-	MlOptimiser *baseMLO;
+    MlOptimiser *baseMLO;
 
-	bool refIs3D;
-	bool dataIs3D;
+    bool refIs3D;
+    bool dataIs3D;
 
-	int device_id;
+    int device_id;
 
-	MlDeviceBundle *bundle;
+    MlDeviceBundle *bundle;
 
-	//Used for precalculations of projection setup
-	CudaCustomAllocator *allocator;
+    //Used for precalculations of projection setup
+    CudaCustomAllocator *allocator;
 
-	//Used for precalculations of projection setup
-	bool generateProjectionPlanOnTheFly;
+    //Used for precalculations of projection setup
+    bool generateProjectionPlanOnTheFly;
 
 
 #ifdef TIMING_FILES
-	relion_timer timer;
+    relion_timer timer;
 #endif
 
-	MlOptimiserCuda(MlOptimiser *baseMLOptimiser, MlDeviceBundle* bundle, const char * timing_fnm) :
-			baseMLO(baseMLOptimiser),
-			transformer1(cudaStreamPerThread, bundle->allocator, baseMLOptimiser->mymodel.data_dim),
-			transformer2(cudaStreamPerThread, bundle->allocator, baseMLOptimiser->mymodel.data_dim),
-			refIs3D(baseMLO->mymodel.ref_dim == 3),
-			dataIs3D(baseMLO->mymodel.data_dim == 3),
-			bundle(bundle),
-			device_id(bundle->device_id),
-#ifdef TIMING_FILES
-			timer(timing_fnm),
-#endif
-			errorStatus((cudaError_t)0),
-			allocator(bundle->allocator),
-			generateProjectionPlanOnTheFly(bundle->generateProjectionPlanOnTheFly)
-	{};
+    MlOptimiserCuda(MlOptimiser *baseMLOptimiser, MlDeviceBundle* bundle, const char * timing_fnm) :
+        baseMLO(baseMLOptimiser),
+        transformer1(cudaStreamPerThread, bundle->allocator, baseMLOptimiser->mymodel.data_dim),
+        transformer2(cudaStreamPerThread, bundle->allocator, baseMLOptimiser->mymodel.data_dim),
+        refIs3D(baseMLO->mymodel.ref_dim == 3),
+        dataIs3D(baseMLO->mymodel.data_dim == 3),
+        bundle(bundle),
+        device_id(bundle->device_id),
+        #ifdef TIMING_FILES
+        timer(timing_fnm),
+        #endif
+        errorStatus((cudaError_t)0),
+        allocator(bundle->allocator),
+        generateProjectionPlanOnTheFly(bundle->generateProjectionPlanOnTheFly)
+    {};
 
-	void resetData();
+    void resetData();
 
-	void doThreadExpectationSomeParticles(int thread_id);
+    void doThreadExpectationSomeParticles(int thread_id);
 
-	~MlOptimiserCuda()
-	{
-		for (int i = 0; i < classStreams.size(); i++)
-			if (classStreams[i] != NULL)
-				HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
-	}
+    ~MlOptimiserCuda()
+    {
+        for (int i = 0; i < classStreams.size(); i++)
+            if (classStreams[i] != NULL)
+                HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
+    }
 
-	CudaCustomAllocator *getAllocator()	
-	{
-		return (bundle->allocator);
-	};
-	
+    CudaCustomAllocator *getAllocator()	
+    {
+        return (bundle->allocator);
+    };
+    
 };
 
 #endif
