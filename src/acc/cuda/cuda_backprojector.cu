@@ -3,7 +3,7 @@
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_backprojector.h"
 #include "src/acc/cuda/cuda_kernels/cuda_device_utils.cuh"
-#include "src/gpu_utils/cuda_projector.cuh"
+#include "src/acc/cuda/cuda_projector.cuh"
 
 size_t CudaBackprojector::setMdlDim(
 			int xdim, int ydim, int zdim,
