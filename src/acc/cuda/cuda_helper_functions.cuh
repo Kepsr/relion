@@ -1,10 +1,11 @@
 #ifndef CUDA_HELPER_FUNCTIONS_CUH_
 #define CUDA_HELPER_FUNCTIONS_CUH_
 
-#include "src/gpu_utils/cuda_ml_optimiser.h"
-#include "src/gpu_utils/cuda_projector.h"
-#include "src/gpu_utils/cuda_projector.cuh"
-#include "src/gpu_utils/cuda_benchmark_utils.h"
+#include "src/acc/cuda/cuda_ml_optimiser.h"
+#include "src/acc/cuda/cuda_backprojector.h"
+#include "src/acc/cuda/cuda_projector.h"
+#include "src/acc/cuda/cuda_projector.cuh"
+#include "src/acc/cuda/cuda_benchmark_utils.h"
 #include "src/acc/cuda/cuda_mem_utils.h"
 #include "src/gpu_utils/cuda_kernels/helper.cuh"
 #include "src/gpu_utils/cuda_kernels/diff2.cuh"
@@ -39,13 +40,6 @@ long int makeJobsForDiff2Fine(
         IndexedDataArray &FPW, // FPW=FinePassWeights
         IndexedDataArrayMask &dataMask,
         int chunk);
-
-/*
- * This assisting function goes over the weight-array and groups all weights with shared
- * orientations into 'jobs' which are fed into the collect-kenrel, which reduces all translations
- * with computed differences into a reduced object to be back-projected.
- */
-int  makeJobsForCollect(IndexedDataArray &FPW, IndexedDataArrayMask &dataMask, unsigned long NewJobNum); // FPW=FinePassWeights
 
 /*
  * Maps weights to a decoupled indexing of translations and orientations
@@ -126,22 +120,6 @@ void runBackProjectKernel(
         cudaStream_t optStream);
 
 #define INIT_VALUE_BLOCK_SIZE 512
-
-template<typename T>
-__global__ void cuda_kernel_init_complex_value(T *data, XFLOAT value, size_t size) {
-    size_t idx = blockIdx.x * INIT_VALUE_BLOCK_SIZE + threadIdx.x;
-    if (idx < size) {
-        data[idx].x = value;
-        data[idx].y = value;
-    }
-}
-
-template<typename T>
-__global__ void cuda_kernel_init_value(T *data, T value, size_t size) {
-    size_t idx = blockIdx.x * INIT_VALUE_BLOCK_SIZE + threadIdx.x;
-    if (idx < size)
-        data[idx] = value;
-}
 
 template<typename T>
 void deviceInitComplexValue(CudaGlobalPtr<T> &data, XFLOAT value) {
@@ -356,223 +334,8 @@ void windowFourierTransform2(
         unsigned oX, unsigned oY, unsigned oZ,  //Output dimensions
         cudaStream_t stream = 0);
 
-#define WINDOW_FT_BLOCK_SIZE 128
-template<bool check_max_r2>
-__global__ void cuda_kernel_window_fourier_transform(
-        CUDACOMPLEX *g_in,
-        CUDACOMPLEX *g_out,
-        size_t iX, size_t iY, size_t iZ, size_t iYX, //Input dimensions
-        size_t oX, size_t oY, size_t oZ, size_t oYX, //Output dimensions
-        size_t max_idx,
-        size_t max_r2 = 0
-        )
-{
-    size_t n = threadIdx.x + WINDOW_FT_BLOCK_SIZE * blockIdx.x;
-    size_t oOFF = oX*oY*oZ*blockIdx.y;
-    size_t iOFF = iX*iY*iZ*blockIdx.y;
-    if (n >= max_idx) return;
-
-    long int k, i, kp, ip, jp;
-
-    if (check_max_r2)
-    {
-        k = n / (iX * iY);
-        i = (n % (iX * iY)) / iX;
-
-        kp = k < iX ? k : k - iZ;
-        ip = i < iX ? i : i - iY;
-        jp = n % iX;
-
-        if (kp*kp + ip*ip + jp*jp > max_r2)
-            return;
-    }
-    else
-    {
-        k = n / (oX * oY);
-        i = (n % (oX * oY)) / oX;
-
-        kp = k < oX ? k : k - oZ;
-        ip = i < oX ? i : i - oY;
-        jp = n % oX;
-    }
-
-    long int  in_idx = (kp < 0 ? kp + iZ : kp) * iYX + (ip < 0 ? ip + iY : ip)*iX + jp;
-    long int out_idx = (kp < 0 ? kp + oZ : kp) * oYX + (ip < 0 ? ip + oY : ip)*oX + jp;
-    g_out[out_idx + oOFF] =  g_in[in_idx + iOFF];
-}
-
-void windowFourierTransform2(
-        CudaGlobalPtr<CUDACOMPLEX > &d_in,
-        CudaGlobalPtr<CUDACOMPLEX > &d_out,
-        size_t iX, size_t iY, size_t iZ, //Input dimensions
-        size_t oX, size_t oY, size_t oZ,  //Output dimensions
-        size_t Npsi = 1,
-        size_t pos = 0,
-        cudaStream_t stream = 0);
-
-
 void selfApplyBeamTilt2(MultidimArray<Complex > &Fimg, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
         RFLOAT wavelength, RFLOAT Cs, RFLOAT angpix, int ori_size);
-
-template <typename T>
-void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allocator)
-{
-    CudaGlobalPtr<XFLOAT >  img_in (v.size(), allocator);   // with original data pointer
-//	CudaGlobalPtr<XFLOAT >  img_aux(v.size(), allocator);   // temporary holder
-
-    for (unsigned i = 0; i < v.size(); i ++)
-        img_in[i] = (XFLOAT) v.data[i];
-
-    img_in.put_on_device();
-//	img_aux.device_alloc();
-
-    if (v.getDim() == 1) {
-        std::cerr << "CenterFFT on gpu reverts to cpu for dim!=2 (now dim=1)" << std::endl;
-        // 1D
-        MultidimArray< T > aux;
-        int l, shift;
-
-        l = Xsize(v);
-        aux.resize(l);
-        shift = (int)(l / 2);
-
-        if (!forward) { shift = -shift; }
-
-        // Shift the input in an auxiliar vector
-        for (int i = 0; i < l; i++) {
-            int ip = i + shift;
-
-            if (ip < 0) {
-                ip += l; 
-            } else if (ip >= l) {
-                ip -= l;
-            }
-
-            aux(ip) = direct::elem(v, i);
-        }
-
-        // Copy the vector
-        for (int i = 0; i < l; i++)
-            direct::elem(v, i) = direct::elem(aux, i);
-    } else if (v.getDim() == 2) {
-        // 2D
-        //std::cerr << "CenterFFT on gpu with dim=2!" <<std::endl;
-
-        long int xshift = (int) (Xsize(v) / 2);
-        long int yshift = (int) (Ysize(v) / 2);
-
-        if (!forward) {
-            xshift = -xshift;
-            yshift = -yshift;
-        }
-
-
-        dim3 dim(ceilf((float) v.size() / (float) (2 * CFTT_BLOCK_SIZE)));
-        cuda_kernel_centerFFT_2D<<<dim, CFTT_BLOCK_SIZE>>>(
-            img_in.d_ptr,
-            v.size(),
-            Xsize(v), Ysize(v),
-            xshift, yshift
-        );
-        LAUNCH_HANDLE_ERROR(cudaGetLastError());
-
-        img_in.cp_to_host();
-
-		// HANDLE_ERROR(cudaStreamSynchronize(0));
-
-        for (unsigned i = 0; i < v.size(); i ++)
-            v.data[i] = (T) img_in[i];
-
-    } else if (v.getDim() == 3) {
-        std::cerr << "CenterFFT on gpu reverts to cpu for dim!=2 (now dim=3)" <<std::endl;
-        // 3D
-        MultidimArray<T> aux;
-        int l, shift;
-
-        // Shift in the X direction
-        l = Xsize(v);
-        aux.resize(l);
-        shift = (int) (l / 2);
-
-        if (!forward) { shift = -shift; }
-
-        for (int k = 0; k < Zsize(v); k++)
-        for (int j = 0; j < Ysize(v); j++) {
-            // Shift the input in an auxiliar vector
-            for (int i = 0; i < l; i++) {
-                int ip = i + shift;
-
-                if (ip < 0) {
-                    ip += l;
-                } else if (ip >= l) {
-                    ip -= l;
-                }
-
-                aux(ip) = direct::elem(v, i, j, k);
-            }
-
-            // Copy the vector
-            for (int i = 0; i < l; i++)
-                direct::elem(v, i, j, k) = direct::elem(aux, j);
-        }
-
-        // Shift in the Y direction
-        l = Ysize(v);
-        aux.resize(l);
-        shift = (int) (l / 2);
-
-        if (!forward) { shift = -shift; }
-
-        for (int k = 0; k < Zsize(v); k++)
-        for (int i = 0; i < Xsize(v); i++) {
-            // Shift the input in an auxiliar vector
-            for (int j = 0; j < l; j++) {
-                int jp = j + shift;
-
-                if (jp < 0) {
-                    jp += l;
-                } else if (jp >= l) {
-                    jp -= l;
-                }
-
-                aux(jp) = direct::elem(v, i, j, k);
-            }
-
-            // Copy the vector
-            for (int j = 0; j < l; j++)
-                direct::elem(v, i, j, k) = direct::elem(aux, i);
-        }
-
-        // Shift in the Z direction
-        l = Zsize(v);
-        aux.resize(l);
-        shift = (int) (l / 2);
-
-        if (!forward) { shift = -shift; }
-
-        for (int j = 0; j < Ysize(v); j++)
-        for (int i = 0; i < Xsize(v); i++) {
-            // Shift the input in an auxiliar vector
-            for (int k = 0; k < l; k++) {
-                int kp = k + shift;
-                if (kp < 0) {
-                    kp += l;
-                } else if (kp >= l) {
-                    kp -= l;
-                }
-
-                aux(kp) = direct::elem(v, i, j, k);
-            }
-
-            // Copy the vector
-            for (int k = 0; k < l; k++)
-                direct::elem(v, i, j, k) = direct::elem(aux, k);
-        }
-    } else {
-        v.printShape();
-        REPORT_ERROR("CenterFFT ERROR: Dimension should be 1, 2 or 3");
-    }
-}
 
 
 template <typename T>
@@ -677,8 +440,8 @@ void lowPassFilterMapGPU(
     int filter_edge_halfwidth = filter_edge_width / 2;
 
     // Soft-edge: from 1 shell less to one shell more:
-    XFLOAT edge_low  = std::max(0.0,  (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size);  // in 1/pix
-    XFLOAT edge_high = std::min(Xdim, (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size);  // in 1/pix
+    XFLOAT edge_low  = std::max((RFLOAT) 0.0,  (ires_filter - filter_edge_halfwidth) / (RFLOAT) ori_size);  // in 1/pix
+    XFLOAT edge_high = std::min((RFLOAT) Xdim, (ires_filter + filter_edge_halfwidth) / (RFLOAT) ori_size);  // in 1/pix
     XFLOAT edge_width = edge_high - edge_low;
 
     dim3 blocks(ceilf((float) (Xdim * Ydim * Zdim) / (float) CFTT_BLOCK_SIZE));
