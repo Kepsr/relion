@@ -23,6 +23,16 @@
 #define LAUNCH_CHECK
 #define CUDA_BENCHMARK_OLD true
 
+#define COMPLEXTEXTURE false
+#define LAUNCH_CHECK
+#define CUDA_BENCHMARK_OLD true
+
+#ifdef CUDA_DOUBLE_PRECISION
+#define CUDACOMPLEX double2
+#else
+#define CUDACOMPLEX float2
+#endif
+
 // Error handling ----------------------
 
 #ifdef LAUNCH_CHECK
