@@ -31,7 +31,7 @@
 #include <cuda_runtime.h>
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_helper_functions.cuh"
-#include "src/gpu_utils/cuda_kernels/BP.cuh"
+#include "src/acc/cuda/cuda_kernels/BP.cuh"
 #include "src/macros.h"
 #include "src/error.h"
 
